@@ -15,6 +15,8 @@
 :root{--bg:#1e1e1e;--card:#2b2b2b;--ink:#f1f1f1;--mute:#a3a3a3;--line:#414141;--acc:#1e96f0;--acc-ink:#fff;--warn:#f5a033;--ok:#47b872;--off:#e5484d;--hdr:#2b2b2b;--hdr-ink:#f1f1f1;--ease:cubic-bezier(.22,.78,.28,1);color-scheme:dark}
 :root[data-theme=light]{--bg:#eef0ec;--card:#fbfbf8;--ink:#1c2b30;--mute:#5d6b70;--line:#c9cfc9;--acc:#0e6a6a;--acc-ink:#fff;--warn:#b4541a;--ok:#2f7d3a;--off:#c9302c;--hdr:#1c2b30;--hdr-ink:#eef0ec;color-scheme:light}
 #thm{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
+#pTg{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
+#pTg:hover{filter:brightness(1.1)}#pTg:active{transform:scale(.95)}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);transition:background-color .3s var(--ease),color .3s var(--ease)}
@@ -67,7 +69,8 @@ textarea{min-height:60px;resize:vertical}
 body.proj-hide #map{height:calc(100vh - 118px)}
 #cv{width:100%;height:100%;display:block;touch-action:none}
 .mb{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
-.mb button{width:46px;height:46px;border-radius:8px;border:1.5px solid var(--acc);background:var(--card);color:var(--acc);font:inherit;font-weight:700;cursor:pointer;transition:transform .15s var(--ease),background-color .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),filter .2s var(--ease),opacity .2s var(--ease)}
+.mb button{width:46px;height:46px;border-radius:8px;border:1.5px solid var(--acc);background:var(--card);color:var(--acc);font:inherit;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease),background-color .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),filter .2s var(--ease),opacity .2s var(--ease)}
+.mb svg{display:block}
 .mb button:disabled{opacity:.35;cursor:not-allowed;filter:none;transform:none}
 #gstat{position:absolute;left:6px;right:62px;top:62px;background:var(--card);border:1.5px solid var(--warn);border-radius:8px;padding:6px 10px;font-size:.82rem;animation:popIn .22s var(--ease);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #gstat span{flex:1;min-width:140px}
@@ -101,7 +104,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 </style>
 </head>
 <body>
-<header><h1 id="title">COTELCO: Transformer Load Management</h1><span id="net" role="status" aria-label="Offline" title="Offline"></span><button id="thm" type="button">Light</button></header>
+<header><h1 id="title">COTELCO: Transformer Load Management</h1><span id="net" role="status" aria-label="Offline" title="Offline"></span><button id="pTg" type="button" aria-expanded="true">Project</button><button id="thm" type="button">Light</button></header>
 <nav role="tablist">
   <button role="tab" aria-selected="true" data-t="map">Map</button>
   <button role="tab" aria-selected="false" data-t="list" id="tabList">Saved (0)</button>
@@ -159,7 +162,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 
 <section id="mapSec">
   <div id="map"><canvas id="cv"></canvas><div id="mnote"></div><div id="gstat" hidden><span id="gmsg"></span><button type="button" class="btn" id="greq">Enable location</button></div><select id="baseSel" aria-label="Base map"></select>
-    <div class="mb"><button id="zi">+</button><button id="zo">-</button><button id="fit">All</button><button id="loc">Me</button></div>
+    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="loc" aria-label="Go to my location" title="Go to my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button></div>
     <div id="pop" hidden></div></div>
 </section>
 
@@ -177,7 +180,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 
 <script>
 (function(){
-var KEY='poleSurvey.v1', recs=[], editId=null, pos=null, lastProj='', projects=[];
+var KEY='poleSurvey.v1', recs=[], editId=null, pos=null, lastProj='', projects=[], projPref=true;
 var $=function(i){return document.getElementById(i)};
 function load(){try{recs=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){recs=[];toast('Could not read saved data')}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(recs));localStorage.setItem(KEY+'.projects',JSON.stringify(projects));return true}catch(e){toast('Save failed: storage full or blocked. Export now!');return false}}
@@ -281,9 +284,9 @@ try{lastProj=localStorage.getItem(KEY+'.proj')||''}catch(e){}
 try{projects=JSON.parse(localStorage.getItem(KEY+'.projects')||'[]')}catch(e){}
 
 // map (own slippy map: works with no tiles, poles still plot over a scale bar)
-var BASES={dkg:{n:'Dark gray (Esri)',u:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',a:'Esri, HERE, Garmin',mz:16},dkc:{n:'Dark (CARTO)',u:'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',a:'© CARTO, © OpenStreetMap contributors'},sat:{n:'Satellite (Esri)',u:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',a:'Esri, Maxar, Earthstar Geographics'},st:{inv:1,n:'Streets (Esri)',u:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',a:'Esri'},car:{inv:1,n:'Light (CARTO)',u:'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',a:'© CARTO, © OpenStreetMap contributors'},osm:{inv:1,n:'OpenStreetMap',u:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',a:'© OpenStreetMap contributors'},cus:{inv:1,n:'Custom tile URL...',u:'',a:''},none:{n:'No map (poles only)',u:'',a:''}};
-var M={base:'sat',cust:'',err:0,pend:null,cen:0,z:16,zt:16,cx:0,cy:0,t:{},me:null,watch:null,sel:null,hits:[],init:0,anchor:null,gpsBtn:0};
-var ZMIN=3,ZMAX=19,zraf=0;
+var BASES={osm:{inv:1,n:'OpenStreetMap',u:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',a:'© OpenStreetMap contributors',mz:19},gsat:{n:'Google Satellite',u:'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',a:'© Google',mz:20},cus:{inv:1,n:'Custom tile URL...',u:'',a:''},none:{n:'No map (poles only)',u:'',a:''}};
+var M={base:'gsat',cust:'',err:0,pend:null,cen:0,z:16,zt:16,cx:0,cy:0,t:{},me:null,watch:null,sel:null,hits:[],init:0,anchor:null,gpsBtn:0};
+var ZMIN=3,ZMAX=20,zraf=0;
 function clampZ(z){return Math.max(ZMIN,Math.min(ZMAX,z))}
 function px(lat,lon,z){var s=256*Math.pow(2,z),r=lat*Math.PI/180;return{x:(lon+180)/360*s,y:(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*s}}
 function ll(x,y,z){var s=256*Math.pow(2,z),n=Math.PI-2*Math.PI*y/s;return{lat:180/Math.PI*Math.atan(Math.sinh(n)),lon:x/s*360-180}}
@@ -293,24 +296,24 @@ function zoomRun(){if(!zraf)zraf=requestAnimationFrame(zoomStep)}
 function zoomStep(){
   zraf=0;var d=M.zt-M.z;
   if(Math.abs(d)<0.0025){if(M.anchor){M.z=M.zt;applyAnchor()}else{var cf=ll(M.cx,M.cy,M.z);M.z=M.zt;var pf=px(cf.lat,cf.lon,M.z);M.cx=pf.x;M.cy=pf.y}draw();return}
-  var prev=M.z;M.z+=d*0.22;
+  var prev=M.z;M.z+=d*0.3;
   if(M.anchor)applyAnchor();else{var c=ll(M.cx,M.cy,prev),p=px(c.lat,c.lon,M.z);M.cx=p.x;M.cy=p.y}
   draw();zraf=requestAnimationFrame(zoomStep)}
 function zoom(d){var base=M.zt==null?M.z:M.zt,z=clampZ(base+d);if(Math.abs(z-base)<0.001)return;M.anchor=null;M.zt=z;projPeek();zoomRun()}
 function projPeek(){
   var b=$('projbar');if(!b)return;clearTimeout(projPeek.h);
-  if(!b.classList.contains('hide'))b.style.maxHeight=b.scrollHeight+'px';
-  b.classList.add('hide');document.body.classList.add('proj-hide');
+  document.body.classList.add('proj-hide');b.classList.add('hide');
   projPeek.h=setTimeout(function(){
-    b.classList.remove('hide');b.style.maxHeight=b.scrollHeight+'px';document.body.classList.remove('proj-hide');
-    projPeek.h=setTimeout(function(){b.style.maxHeight=''},400)
-  },1400)}
+    if(!projPref)return;
+    b.style.transition='none';b.classList.remove('hide');document.body.classList.remove('proj-hide');
+    requestAnimationFrame(function(){b.style.transition=''})
+  },900)}
 function fit(){
-  var a=vis().filter(function(r){return r.pos});if(!a.length){if(M.me)ctr(M.me.lat,M.me.lon,18);else ctr(7.07,125.61,12);draw();return}
+  var a=vis().filter(function(r){return r.pos});if(!a.length){ctr(7.07,125.61,12);draw();return}
   var w=$('map').clientWidth,h=$('map').clientHeight,la=a.map(function(r){return r.pos.lat}),lo=a.map(function(r){return r.pos.lon});
-  var n=Math.max.apply(0,la),s=Math.min.apply(0,la),e=Math.max.apply(0,lo),o=Math.min.apply(0,lo),z=19;
-  for(;z>3;z--){var p1=px(n,o,z),p2=px(s,e,z);if(p2.x-p1.x<w-90&&p2.y-p1.y<h-90)break}
-  ctr((n+s)/2,(e+o)/2,Math.min(z,18));draw()}
+  var n=Math.max.apply(0,la),s=Math.min.apply(0,la),e=Math.max.apply(0,lo),o=Math.min.apply(0,lo),z=ZMAX;
+  for(;z>ZMIN;z--){var p1=px(n,o,z),p2=px(s,e,z);if(p2.x-p1.x<w-90&&p2.y-p1.y<h-90)break}
+  ctr((n+s)/2,(e+o)/2,Math.min(z,ZMAX));draw()}
 function mapOpen(){if(!M.init){M.init=1;fit()}
   gpsStart();
   draw()}
@@ -406,7 +409,7 @@ cv.onpointermove=function(e){var o=P[e.pointerId];if(!o)return;var n=Object.keys
 cv.onpointerup=cv.onpointercancel=function(e){if(P[e.pointerId]&&Object.keys(P).length===1&&mv<8)tap(e);
   delete P[e.pointerId];if(Object.keys(P).length<2){pinch=null;M.anchor=null}};
 cv.onwheel=function(e){e.preventDefault();var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,A=atLL(x,y);
-  var base=M.zt==null?M.z:M.zt,d=-e.deltaY*(e.deltaMode===1?0.25:0.004);d=Math.max(-1,Math.min(1,d));
+  var base=M.zt==null?M.z:M.zt,d=-e.deltaY*(e.deltaMode===1?0.4:0.006);d=Math.max(-1.2,Math.min(1.2,d));
   var z=clampZ(base+d);if(Math.abs(z-base)<0.0001)return;
   M.anchor={lat:A.lat,lon:A.lon,x:e.clientX,y:e.clientY};M.zt=z;projPeek();zoomRun()};
 function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,best=null,bd=26;
@@ -420,14 +423,17 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
     $('pe').onclick=function(){openSheet(r)};
     $('pc').onclick=function(){$('pop').hidden=true;M.sel=null;draw()}}
   draw()}
-$('zi').onclick=function(){zoom(1)};$('zo').onclick=function(){zoom(-1)};$('fit').onclick=fit;
+$('zi').onclick=function(){zoom(1)};$('zo').onclick=function(){zoom(-1)};
 $('loc').onclick=gpsAsk;$('greq').onclick=gpsAsk;
+function projBarShow(s){var b=$('projbar');projPref=!!s;clearTimeout(projPeek.h);b.style.maxHeight='';b.classList.toggle('hide',!s);document.body.classList.toggle('proj-hide',!s);$('pTg').setAttribute('aria-expanded',String(s))}
+$('pTg').onclick=function(){projBarShow(!projPref);try{localStorage.setItem(KEY+'.projbar',projPref?'1':'0')}catch(e){}draw()};
+try{if(localStorage.getItem(KEY+'.projbar')==='0')projBarShow(false)}catch(e){}
 addEventListener('resize',draw);
 if(window.ResizeObserver){var ro=new ResizeObserver(function(){if(ro.p)return;ro.p=requestAnimationFrame(function(){ro.p=0;draw()})});ro.observe($('map'))}
 Object.keys(BASES).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=BASES[k].n;$('baseSel').appendChild(o)});
 try{var th0=localStorage.getItem(KEY+'.theme');if(th0)document.documentElement.dataset.theme=th0}catch(e){}
-try{M.base=localStorage.getItem(KEY+'.base')||(isDark()?'dkg':'st');M.cust=localStorage.getItem(KEY+'.cust')||''}catch(e){}
-if(!BASES[M.base])M.base='dkg';$('baseSel').value=M.base;
+try{M.base=localStorage.getItem(KEY+'.base')||'gsat';M.cust=localStorage.getItem(KEY+'.cust')||''}catch(e){}
+if(!BASES[M.base])M.base='gsat';$('baseSel').value=M.base;
 $('baseSel').onchange=function(){var v=this.value;
   if(v==='cus'){var u=prompt('Tile URL with {z} {x} {y}:',M.cust||'');if(!u){this.value=M.base;return}M.cust=u;try{localStorage.setItem(KEY+'.cust',u)}catch(e){}}
   M.base=v;M.t={};M.err=0;try{localStorage.setItem(KEY+'.base',v)}catch(e){}draw()};
@@ -465,7 +471,7 @@ function projNames(){var o={};projects.forEach(function(n){o[n]=1});recs.forEach
 function projUI(){var n=projNames();if(!n.length)n=['Project 1'];if(n.indexOf(lastProj)<0)lastProj=n[0];projects=n;
   $('projSel').innerHTML=n.map(function(v){return '<option>'+esc(v)+'</option>'}).join('');$('projSel').value=lastProj;
   try{localStorage.setItem(KEY+'.proj',lastProj)}catch(e){}persist()}
-function switchProj(){M.sel=null;M.pend=null;$('pop').hidden=true;count();render();fit()}
+function switchProj(){M.sel=null;M.pend=null;$('pop').hidden=true;count();render();mapOpen();fit()}
 $('projSel').onchange=function(){lastProj=this.value;projUI();switchProj()};
 $('pNew').onclick=function(){var n=(prompt('New project name:')||'').trim();if(!n)return;if(projNames().indexOf(n)<0)projects.push(n);lastProj=n;projUI();switchProj()};
 $('pRen').onclick=function(){var n=(prompt('Rename project:',lastProj)||'').trim();if(!n||n===lastProj)return;if(projNames().indexOf(n)>=0)return toast('That name already exists');
