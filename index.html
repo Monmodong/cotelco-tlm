@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>COTELCO System Planning: Transformer Load Management</title>
+<title>COTELCO System: TLM</title>
 <meta name="theme-color" content="#2b2b2b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -149,7 +149,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 </style>
 </head>
 <body>
-<header><h1 id="title">COTELCO System Planning: Transformer Load Management</h1><span id="net" role="status" aria-label="Offline" title="Offline"></span><button id="vM" type="button" aria-pressed="false">View only</button><button id="pTg" type="button" aria-expanded="true">Project</button><button id="thm" type="button">Light</button></header>
+<header><h1 id="title">COTELCO System: TLM</h1><span id="net" role="status" aria-label="Offline" title="Offline"></span><button id="vM" type="button" aria-pressed="false">View</button><button id="pTg" type="button" aria-expanded="true">Project</button><button id="thm" type="button">Light</button></header>
 <nav role="tablist">
   <button role="tab" aria-selected="true" data-t="map">Map</button>
   <button role="tab" aria-selected="false" data-t="list" id="tabList">Saved (0)</button>
@@ -161,7 +161,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 <form id="f" autocomplete="off">
 <fieldset><legend>Pole</legend>
 <div class="grid">
-  <div><label for="pno">Pole #</label><input type="text" id="pno"></div>
+  <div><label for="pno">Pole #</label><input type="text" id="pno" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
   <div><label for="vp">Voltage at pole</label><div class="unit"><input type="number" id="vp" inputmode="decimal" step="any"><b>V</b></div></div>
   <div id="vcalc" class="calc full"></div><div class="full"><label for="pri">Primary line structure (main / lateral)</label><div class="grid3"><select id="pri"></select><select id="pril" aria-label="Primary lateral"></select></div></div>
   <div class="full"><label for="sec">Secondary line structure * (main / lateral)</label><div class="grid3"><select id="sec"></select><select id="secl" aria-label="Secondary lateral"></select></div></div>
@@ -268,6 +268,7 @@ document.querySelectorAll('nav button').forEach(function(b){b.onclick=function()
 function net(){var n=$('net'),on=navigator.onLine,t=on?'Online':'Offline';n.classList.toggle('on',on);n.title=t;n.setAttribute('aria-label',t)}
 addEventListener('online',net);addEventListener('offline',net);net();
 $('hasTx').onchange=function(){$('txBox').hidden=!this.checked};
+$('pno').addEventListener('input',function(){var v=this.value.replace(/\D/g,'');if(v!==this.value){var c=this.selectionStart;this.value=v;try{this.setSelectionRange(Math.min(c,v.length),Math.min(c,v.length))}catch(e){}}});
 
 function showPos(){$('gps').textContent=pos?pos.lat.toFixed(6)+', '+pos.lon.toFixed(6)+(pos.src==='map'?' (picked on map)':' (±'+pos.acc+' m)'):'No position yet. Works offline; needs a clear sky.'}
 
@@ -345,7 +346,7 @@ $('file').onchange=function(){
   var f=this.files[0];if(!f)return;var rd=new FileReader();
   rd.onload=function(){try{var D=JSON.parse(rd.result),d=Array.isArray(D)?D:D.recs;if(!Array.isArray(d))throw 0;if(D.projects)D.projects.forEach(function(p){if(projects.indexOf(p)<0)projects.push(p)});
     var ids={};recs.forEach(function(r){ids[r.id]=1});var n=0;
-    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;if(!r.project)r.project=lastProj;['P','T'].forEach(function(w){var v=D.photos&&D.photos[r.id+':'+w];if(v)pput(r.id+':'+w,v)})}});
+    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;['P','T'].forEach(function(w){var v=D.photos&&D.photos[r.id+':'+w];if(v)pput(r.id+':'+w,v)})}});
     persist();projUI();render();count();lists();toast('Imported '+n+' new record(s)')}catch(e){toast('Not a valid backup file')}};
   rd.readAsText(f);this.value=''};
 
@@ -515,7 +516,7 @@ try{if(localStorage.getItem(KEY+'.projbar')==='0')projBarShow(false)}catch(e){}
 // view-only mode: browse and inspect, never edit
 var viewMode=0;
 function setView(on,quiet){viewMode=!!on;document.body.classList.toggle('view',viewMode);
-  var b=$('vM');b.textContent=viewMode?'Viewing only':'View only';b.setAttribute('aria-pressed',String(viewMode));
+  $('vM').setAttribute('aria-pressed',String(viewMode));
   if(viewMode&&!$('sheet').hidden)closeSheet();
   $('pop').hidden=true;M.pend=null;M.sel=null;
   render();draw();
@@ -776,7 +777,7 @@ var anaRT;addEventListener('resize',function(){clearTimeout(anaRT);anaRT=setTime
 // entry sheet
 function closeSheet(){$('sheet').hidden=true;document.body.style.overflow=''}
 function cancelSheet(){reset();closeSheet();M.pend=null;draw()}
-function openSheet(r){if(viewMode){toast('View mode is on — tap "View only" in the header to edit');return}reset();ph={P:null,T:null};phD={P:0,T:0};buildConn(r?r.id:'');
+function openSheet(r){if(viewMode){toast('Tap "View" in the header to edit');return}reset();ph={P:null,T:null};phD={P:0,T:0};buildConn(r?r.id:'');
   if(r){editId=r.id;fill(r);['P','T'].forEach(function(w){pget(r.id+':'+w).then(function(v){if(v&&!phD[w]){ph[w]=v;showPh()}})});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
   else{$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:0,src:'map'};showPos()}connNear()}
   $('pop').hidden=true;liveCalc();showPh();$('sheet').hidden=false;$('sheet').scrollTop=0;document.body.style.overflow='hidden';
@@ -818,12 +819,19 @@ $('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button');i
 function pn(id){var x=recs.find(function(y){return y.id===id});return x?x.pole.no:''}
 function priStr(){return[$('pri').value,$('pril').value].filter(Boolean).join(' / ')}
 function secStr(){return[$('sec').value,$('secl').value].filter(Boolean).join(' / ')}
+function secStd(r){var p=r.pole;if(!p)return false;var pr=String(p.secondary||'').split(' / ');
+  var m0=(p.s&&p.s.m)||pr[0]||'',l0=(p.s&&p.s.l)||pr[1]||'',m=m0,l=l0;
+  if(SEC.indexOf(m)<0)m='';if(SECL.indexOf(l)<0)l='';
+  p.s={m:m,l:l};p.secondary=[m,l].filter(Boolean).join(' / ');
+  return m!==m0||l!==l0}
 function pinLabel(r){var t=[r.tx&&r.tx.rating?r.tx.rating+' kVA':'',r.pole.no?'Pole # '+r.pole.no:'',r.pole.material,[r.pole.primary,r.pole.secondary].filter(Boolean).join(' / ')].filter(Boolean).join(', ');return t+(r.pole.voltage!==''&&r.pole.voltage!=null?'; '+r.pole.voltage+' V':'')}
 function isDark(){return document.documentElement.dataset.theme!=='light'}
 $('thm').textContent=isDark()?'Light':'Dark';
 $('thm').onclick=function(){var l=isDark();document.documentElement.dataset.theme=l?'light':'dark';try{localStorage.setItem(KEY+'.theme',l?'light':'dark')}catch(e){}$('thm').textContent=l?'Dark':'Light';draw()};
 
-load();recs.forEach(function(r){if(!r.project)r.project=lastProj||'Project 1'});projUI();lists();count();mapOpen();
+load();var secChg=0;recs.forEach(function(r){if(!r.project)r.project=lastProj||'Project 1';if(!r.pole)return;if(secStd(r))secChg=1});
+if(secChg){persist();toast('Retired secondary classes cleared from saved records')}
+projUI();lists();count();mapOpen();
 try{if(localStorage.getItem(KEY+'.view')==='1')setView(1,1)}catch(e){}
 })();
 </script>
