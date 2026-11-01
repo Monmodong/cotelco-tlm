@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>COTELCO: Transformer Load Management</title>
+<title>COTELCO System Planning: Transformer Load Management</title>
 <meta name="theme-color" content="#2b2b2b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,6 +17,14 @@
 #thm{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
 #pTg{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
 #pTg:hover{filter:brightness(1.1)}#pTg:active{transform:scale(.95)}
+#vM{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
+#vM:hover{filter:brightness(1.1)}#vM:active{transform:scale(.95)}
+body.view #vM{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
+body.view #pNew,body.view #pRen,body.view #pDel{display:none}
+.th img{cursor:zoom-in}
+#lb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px;animation:popIn .2s var(--ease)}
+#lb img{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain}
+#lbX{position:absolute;top:calc(10px + env(safe-area-inset-top));right:14px;width:40px;height:40px;border-radius:99px;border:1px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-size:1.1rem;cursor:pointer}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);transition:background-color .3s var(--ease),color .3s var(--ease)}
@@ -141,7 +149,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 </style>
 </head>
 <body>
-<header><h1 id="title">COTELCO: Transformer Load Management</h1><span id="net" role="status" aria-label="Offline" title="Offline"></span><button id="pTg" type="button" aria-expanded="true">Project</button><button id="thm" type="button">Light</button></header>
+<header><h1 id="title">COTELCO System Planning: Transformer Load Management</h1><span id="net" role="status" aria-label="Offline" title="Offline"></span><button id="vM" type="button" aria-pressed="false">View only</button><button id="pTg" type="button" aria-expanded="true">Project</button><button id="thm" type="button">Light</button></header>
 <nav role="tablist">
   <button role="tab" aria-selected="true" data-t="map">Map</button>
   <button role="tab" aria-selected="false" data-t="list" id="tabList">Saved (0)</button>
@@ -155,10 +163,10 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 <div class="grid">
   <div><label for="pno">Pole #</label><input type="text" id="pno"></div>
   <div><label for="vp">Voltage at pole</label><div class="unit"><input type="number" id="vp" inputmode="decimal" step="any"><b>V</b></div></div>
-  <div id="vcalc" class="calc full"></div><div class="full"><label for="pri">Primary line structure (main / lateral / count)</label><div class="grid3"><select id="pri"></select><select id="pril" aria-label="Primary lateral"></select><select id="priq" aria-label="Number of laterals"></select></div></div>
+  <div id="vcalc" class="calc full"></div><div class="full"><label for="pri">Primary line structure (main / lateral)</label><div class="grid3"><select id="pri"></select><select id="pril" aria-label="Primary lateral"></select></div></div>
   <div class="full"><label for="sec">Secondary line structure * (main / lateral)</label><div class="grid3"><select id="sec"></select><select id="secl" aria-label="Secondary lateral"></select></div></div>
   <div class="full"><label>Material *</label>
-    <div class="seg" id="mat"><label><input type="radio" name="mat" value="Wood"><span>Wood</span></label><label><input type="radio" name="mat" value="Cement"><span>Cement</span></label><label><input type="radio" name="mat" value="Steel"><span>Steel</span></label></div></div>
+    <div class="seg" id="mat"><label><input type="radio" name="mat" value="Wood"><span>Wood</span></label><label><input type="radio" name="mat" value="Concrete"><span>Concrete</span></label><label><input type="radio" name="mat" value="Steel"><span>Steel</span></label></div></div>
   <div class="full"><button type="button" class="btn" id="phP">Take pole photo</button><div id="thP" class="thumbs"></div></div>
   <div class="full"><label for="prem">Pole remarks</label><textarea id="prem"></textarea></div>
 </div>
@@ -238,6 +246,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 </section>
 </main>
 <div id="toast" role="status"></div>
+<div id="lb" hidden><button type="button" id="lbX" aria-label="Close photo">&#10005;</button><img id="lbI" alt="Survey photo enlarged"></div>
 
 <script>
 (function(){
@@ -267,11 +276,12 @@ function num(id){var v=$(id).value;return v===''?'':Number(v)}
 function collect(){
   var tx=$('hasTx').checked;
   return {id:editId||('r'+Date.now()),time:new Date().toISOString(),pos:pos,project:(editId&&(recs.find(function(x){return x.id===editId})||{}).project)||lastProj,from:$('conn').value,
-    pole:{no:$('pno').value.trim(),primary:priStr(),secondary:secStr(),p:{m:$('pri').value,l:$('pril').value,q:parseInt($('priq').value)||1},s:{m:$('sec').value,l:$('secl').value},material:radio('mat'),voltage:num('vp'),lineA:num('lc'),remarks:$('prem').value.trim()},
+    pole:{no:$('pno').value.trim(),primary:priStr(),secondary:secStr(),p:{m:$('pri').value,l:$('pril').value},s:{m:$('sec').value,l:$('secl').value},material:radio('mat'),voltage:num('vp'),lineA:num('lc'),remarks:$('prem').value.trim()},
     tx:tx?{rating:$('kva').value,type:radio('ttype'),tap:$('tap').value,cutout:$('acut').checked,hanger:$('ahan').checked,grounding:$('agnd').checked,line:num('i1'),neutral:num('in'),remarks:$('trem').value.trim()}:null};
 }
+function sv(id,v){var s=$(id);if(v&&![].some.call(s.options,function(o){return o.value===v}))s.appendChild(new Option(v,v));s.value=v||''}
 function fill(r){
-  $('pno').value=r.pole.no;var pp=r.pole.p||{m:r.pole.primary,l:'',q:1},ss=r.pole.s||{m:r.pole.secondary,l:''};$('pri').value=pp.m||'';$('pril').value=pp.l||'';$('priq').value=pp.q>1?pp.q+' laterals':'';$('sec').value=ss.m||'';$('secl').value=ss.l||'';setRadio('mat',r.pole.material);$('vp').value=r.pole.voltage;$('lc').value=r.pole.lineA==null?'':r.pole.lineA;$('conn').value=r.from||'';$('prem').value=r.pole.remarks;
+  $('pno').value=r.pole.no;var pp=r.pole.p||{m:r.pole.primary,l:''},ss=r.pole.s||{m:r.pole.secondary,l:''};sv('pri',pp.m);sv('pril',pp.l);sv('sec',ss.m);sv('secl',ss.l);setRadio('mat',r.pole.material==='Cement'?'Concrete':r.pole.material);$('vp').value=r.pole.voltage;$('lc').value=r.pole.lineA==null?'':r.pole.lineA;$('conn').value=r.from||'';$('prem').value=r.pole.remarks;
   var t=r.tx;$('hasTx').checked=!!t;$('txBox').hidden=!t;t=t||{};
   $('kva').value=t.rating==null?'':t.rating;setRadio('ttype',t.type||'');$('tap').value=t.tap||'';
   $('acut').checked=!!t.cutout;$('ahan').checked=!!t.hanger;$('agnd').checked=!!t.grounding;
@@ -300,9 +310,9 @@ function render(){var recs=vis();
     if(t)l+='<p>Transformer '+(t.rating!==''?t.rating+' kVA ':'')+esc(t.type)+(t.tap?', tap '+esc(t.tap):'')+' | Cutout '+(t.cutout?'yes':'no')+', hanger '+(t.hanger?'yes':'no')+', ground '+(t.grounding?'yes':'no')+'</p>'
       +'<p>Current: line '+(t.line===''||t.line==null?'-':t.line)+' A, neutral '+(t.neutral===''?'-':t.neutral)+' A</p>';
     l+=loadHtml(r)+((r.pole.ph||(r.tx&&r.tx.ph))?'<div class="th" data-i="'+r.id+'"></div>':'')+'<p>'+(r.pos?r.pos.lat.toFixed(5)+', '+r.pos.lon.toFixed(5):'No GPS')+' | '+new Date(r.time).toLocaleString()+'</p>'
-     +'<div class="row"><button class="btn" data-e="'+r.id+'">Edit</button><button class="btn d" data-d="'+r.id+'">Delete</button></div></div>';
+     +(viewMode?'':'<div class="row"><button class="btn" data-e="'+r.id+'">Edit</button><button class="btn d" data-d="'+r.id+'">Delete</button></div>')+'</div>';
     return l}).join('');
-  setTimeout(loadThumbs,0);$('recs').innerHTML=h||'<div class="empty">No poles in this project yet. Tap the map to add one.</div>';
+  setTimeout(loadThumbs,0);$('recs').innerHTML=h||'<div class="empty">No poles in this project yet.'+(viewMode?'':' Tap the map to add one.')+'</div>';
 }
 $('recs').onclick=function(e){
   var b=e.target.closest('button');if(!b)return;
@@ -342,7 +352,8 @@ $('file').onchange=function(){
 // dropdowns
 function opts(id,a,ph){$(id).innerHTML='<option value="">'+(ph||'Select')+'</option>'+a.map(function(v){return '<option>'+v+'</option>'}).join('')}
 var PRI=[];['A','B','C'].forEach(function(l){[1,2,3,4,5,6,7,8,14,15].forEach(function(n){PRI.push(l+n)})});
-opts('pri',PRI);opts('sec',['J3','J5-J8','J6','J6-J15','J7','J15']);opts('kva',[5,10,15,25,37.5,50,75,100,167.5]);opts('tap',[1,2,3,4,5]);opts('pril',PRI,'No lateral');opts('priq',['2 laterals'],'1 lateral');opts('secl',['J3','J5-J8','J6','J6-J15','J7','J15'],'No lateral');$('pril').onchange=syncLat;
+var PRIL=['A5','2-A5','B7','2-B7','C7','2-C7'],SEC=['J5-J8','J6','J6-J15','J7','J10','J15'],SECL=['J6','J15'];
+opts('pri',PRI);opts('sec',SEC);opts('kva',[5,10,15,25,37.5,50,75,100,167.5]);opts('tap',[1,2,3,4,5]);opts('pril',PRIL,'No lateral');opts('secl',SECL,'No lateral');
 try{lastProj=localStorage.getItem(KEY+'.proj')||''}catch(e){}
 try{projects=JSON.parse(localStorage.getItem(KEY+'.projects')||'[]')}catch(e){}
 
@@ -486,19 +497,36 @@ cv.onwheel=function(e){e.preventDefault();var b=cv.getBoundingClientRect(),x=e.c
 function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,best=null,bd=26;
   M.hits.forEach(function(h){var d=Math.hypot(h.x-x,h.y-y);if(d<bd){bd=d;best=h.id}});
   M.sel=best;M.pend=null;$('pop').hidden=true;
-  if(!best){var c0=ll(M.cx-b.width/2+x,M.cy-b.height/2+y,M.z);M.pend={lat:c0.lat,lon:c0.lon};$('pop').hidden=false;$('pop').innerHTML='<b>New pole here</b><br>'+c0.lat.toFixed(6)+', '+c0.lon.toFixed(6)+'<div class="row" style="margin-top:8px"><button class="btn p" id="pn">Save as pole</button><button class="btn" id="pc">Cancel</button></div>';$('pn').onclick=function(){openSheet()};$('pc').onclick=function(){M.pend=null;$('pop').hidden=true;draw()}}
-  if(best){var r=recs.find(function(q){return q.id===best}),t=r.tx,p=r.pole;
+  if(!best&&!viewMode){var c0=ll(M.cx-b.width/2+x,M.cy-b.height/2+y,M.z);M.pend={lat:c0.lat,lon:c0.lon};$('pop').hidden=false;$('pop').innerHTML='<b>New pole here</b><br>'+c0.lat.toFixed(6)+', '+c0.lon.toFixed(6)+'<div class="row" style="margin-top:8px"><button class="btn p" id="pn">Save as pole</button><button class="btn" id="pc">Cancel</button></div>';$('pn').onclick=function(){openSheet()};$('pc').onclick=function(){M.pend=null;$('pop').hidden=true;draw()}}
+  if(best){var r=recs.find(function(q){return q.id===best}),t=r.tx,p=r.pole,hasPh=p.ph||(t&&t.ph);
     $('pop').hidden=false;$('pop').innerHTML='<b>Pole '+esc(p.no)+'</b> ('+esc(r.project||'')+')<br>'+esc(p.primary||'-')+' / '+esc(p.secondary||'-')+(p.voltage!==''?', '+p.voltage+' V':'')
       +(t?'<br>'+esc(t.rating)+' kVA '+esc(t.type)+', tap '+esc(t.tap)+', line '+(t.line===''||t.line==null?'-':t.line)+' A':'')
-      +loadHtml(r)+'<div class="row" style="margin-top:8px"><button class="btn" id="pe">Edit</button><button class="btn" id="pc">Close</button></div>';
-    $('pe').onclick=function(){openSheet(r)};
-    $('pc').onclick=function(){$('pop').hidden=true;M.sel=null;draw()}}
+      +loadHtml(r)+(hasPh?'<div class="th" data-i="'+r.id+'"></div>':'')
+      +'<div class="row" style="margin-top:8px">'+(viewMode?'':'<button class="btn" id="pe">Edit</button>')+'<button class="btn" id="pc">Close</button></div>';
+    if(!viewMode)$('pe').onclick=function(){openSheet(r)};
+    $('pc').onclick=function(){$('pop').hidden=true;M.sel=null;draw()};
+    if(hasPh)loadThumbs()}
   draw()}
 $('zi').onclick=function(){zoom(1)};$('zo').onclick=function(){zoom(-1)};
 $('loc').onclick=gpsAsk;$('greq').onclick=gpsAsk;
 function projBarShow(s){var b=$('projbar');projPref=!!s;clearTimeout(projPeek.h);b.style.maxHeight='';b.classList.toggle('hide',!s);document.body.classList.toggle('proj-hide',!s);$('pTg').setAttribute('aria-expanded',String(s))}
 $('pTg').onclick=function(){projBarShow(!projPref);try{localStorage.setItem(KEY+'.projbar',projPref?'1':'0')}catch(e){}draw()};
 try{if(localStorage.getItem(KEY+'.projbar')==='0')projBarShow(false)}catch(e){}
+// view-only mode: browse and inspect, never edit
+var viewMode=0;
+function setView(on,quiet){viewMode=!!on;document.body.classList.toggle('view',viewMode);
+  var b=$('vM');b.textContent=viewMode?'Viewing only':'View only';b.setAttribute('aria-pressed',String(viewMode));
+  if(viewMode&&!$('sheet').hidden)closeSheet();
+  $('pop').hidden=true;M.pend=null;M.sel=null;
+  render();draw();
+  if(!quiet){try{localStorage.setItem(KEY+'.view',viewMode?'1':'0')}catch(e){}toast(viewMode?'View mode — pins open details only, nothing can be edited':'Survey mode — tap the map to place a new pole')}}
+$('vM').onclick=function(){setView(!viewMode)};
+// photo lightbox
+function lbOpen(src){$('lbI').src=src;$('lb').hidden=false;document.body.style.overflow='hidden'}
+function lbClose(){$('lb').hidden=true;$('lbI').removeAttribute('src');if($('sheet').hidden)document.body.style.overflow=''}
+$('lb').onclick=lbClose;
+addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('lb').hidden)lbClose()});
+document.addEventListener('click',function(e){var im=e.target.closest('.th img');if(im&&im.src)lbOpen(im.src)});
 addEventListener('resize',draw);
 if(window.ResizeObserver){var ro=new ResizeObserver(function(){if(ro.p)return;ro.p=requestAnimationFrame(function(){ro.p=0;draw()})});ro.observe($('map'))}
 Object.keys(BASES).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=BASES[k].n;$('baseSel').appendChild(o)});
@@ -748,10 +776,10 @@ var anaRT;addEventListener('resize',function(){clearTimeout(anaRT);anaRT=setTime
 // entry sheet
 function closeSheet(){$('sheet').hidden=true;document.body.style.overflow=''}
 function cancelSheet(){reset();closeSheet();M.pend=null;draw()}
-function openSheet(r){reset();ph={P:null,T:null};phD={P:0,T:0};buildConn(r?r.id:'');
+function openSheet(r){if(viewMode){toast('View mode is on — tap "View only" in the header to edit');return}reset();ph={P:null,T:null};phD={P:0,T:0};buildConn(r?r.id:'');
   if(r){editId=r.id;fill(r);['P','T'].forEach(function(w){pget(r.id+':'+w).then(function(v){if(v&&!phD[w]){ph[w]=v;showPh()}})});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
-  else{$('conn').value=(vis().filter(function(x){return x.pos})[0]||{}).id||'';$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:0,src:'map'};showPos()}}
-  $('pop').hidden=true;liveCalc();syncLat();showPh();$('sheet').hidden=false;$('sheet').scrollTop=0;document.body.style.overflow='hidden';
+  else{$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:0,src:'map'};showPos()}connNear()}
+  $('pop').hidden=true;liveCalc();showPh();$('sheet').hidden=false;$('sheet').scrollTop=0;document.body.style.overflow='hidden';
   if(!r)setTimeout(function(){$('pno').focus()},60)}
 $('sx').onclick=cancelSheet;
 // projects
@@ -769,6 +797,11 @@ $('pDel').onclick=function(){var k=vis();if(!confirm('Delete project "'+lastProj
   k.forEach(function(r){pput(r.id+':P',null);pput(r.id+':T',null)});recs=recs.filter(function(r){return r.project!==lastProj});projects=projects.filter(function(p){return p!==lastProj});lastProj='';projUI();switchProj()};
 function buildConn(self){var a=vis().filter(function(x){return x.pos&&x.id!==self});
   $('conn').innerHTML='<option value="">None (start of a line)</option>'+a.map(function(x){return '<option value="'+x.id+'">'+esc((x.pole.no?'Pole # '+x.pole.no:'Unnumbered')+(x.pole.primary?' - '+x.pole.primary:''))+'</option>'}).join('')}
+function connNear(){var b=null,bd=1e18;
+  if(pos)vis().forEach(function(x){if(!x.pos)return;
+    var dy=(x.pos.lat-pos.lat)*111320,dx=(x.pos.lon-pos.lon)*111320*Math.cos(pos.lat*Math.PI/180),d=dx*dx+dy*dy;
+    if(d<bd){bd=d;b=x}});
+  $('conn').value=b?b.id:''}
 // photos (stored in IndexedDB so they do not fill localStorage)
 var ph={P:null,T:null},phD={P:0,T:0},phW='P',db=null;
 function idb(){return new Promise(function(res,rej){if(db)return res(db);var q=indexedDB.open('poleSurveyPhotos',1);q.onupgradeneeded=function(){q.result.createObjectStore('p')};q.onsuccess=function(){db=q.result;res(db)};q.onerror=function(){rej(q.error)}})}
@@ -778,20 +811,20 @@ function pall(){return idb().then(function(d){return new Promise(function(res){v
 function shrink(file){return new Promise(function(res){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};im.onerror=function(){res(null)};im.src=u})}
 function showPh(){['P','T'].forEach(function(w){$('th'+w).innerHTML=ph[w]?'<img src="'+ph[w]+'" alt="photo"><button type="button" class="btn d" data-w="'+w+'">Remove</button>':''})}
 function savePh(r,o0){['P','T'].forEach(function(w){if(phD[w])pput(r.id+':'+w,(w==='T'&&!r.tx)?null:ph[w])});if(!r.tx&&o0.tx&&o0.tx.ph)pput(r.id+':T',null)}
-function loadThumbs(){document.querySelectorAll('#recs .th').forEach(function(el){['P','T'].forEach(function(w){pget(el.dataset.i+':'+w).then(function(v){if(v){var i=new Image();i.src=v;i.alt=w==='P'?'Pole photo':'Transformer photo';el.appendChild(i)}})})})}
+function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(el){el.innerHTML='';['P','T'].forEach(function(w){pget(el.dataset.i+':'+w).then(function(v){if(v){var i=new Image();i.src=v;i.alt=w==='P'?'Pole photo, tap to enlarge':'Transformer photo, tap to enlarge';el.appendChild(i)}})})})}
 $('phP').onclick=function(){phW='P';$('phF').click()};$('phT').onclick=function(){phW='T';$('phF').click()};
 $('phF').onchange=function(){var f=this.files[0],w=phW;this.value='';if(!f)return;shrink(f).then(function(d){if(!d)return toast('Could not read photo');ph[w]=d;phD[w]=1;showPh()})};
 $('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button');if(b){ph[b.dataset.w]=null;phD[b.dataset.w]=1;showPh()}};
 function pn(id){var x=recs.find(function(y){return y.id===id});return x?x.pole.no:''}
-function priStr(){var q=parseInt($('priq').value)||1,l=$('pril').value;return[$('pri').value,l?(q>1?q+'-':'')+l:''].filter(Boolean).join(' / ')}
+function priStr(){return[$('pri').value,$('pril').value].filter(Boolean).join(' / ')}
 function secStr(){return[$('sec').value,$('secl').value].filter(Boolean).join(' / ')}
-function syncLat(){var on=!!$('pril').value;$('priq').disabled=!on;if(!on)$('priq').value=''}
 function pinLabel(r){var t=[r.tx&&r.tx.rating?r.tx.rating+' kVA':'',r.pole.no?'Pole # '+r.pole.no:'',r.pole.material,[r.pole.primary,r.pole.secondary].filter(Boolean).join(' / ')].filter(Boolean).join(', ');return t+(r.pole.voltage!==''&&r.pole.voltage!=null?'; '+r.pole.voltage+' V':'')}
 function isDark(){return document.documentElement.dataset.theme!=='light'}
 $('thm').textContent=isDark()?'Light':'Dark';
 $('thm').onclick=function(){var l=isDark();document.documentElement.dataset.theme=l?'light':'dark';try{localStorage.setItem(KEY+'.theme',l?'light':'dark')}catch(e){}$('thm').textContent=l?'Dark':'Light';draw()};
 
 load();recs.forEach(function(r){if(!r.project)r.project=lastProj||'Project 1'});projUI();lists();count();mapOpen();
+try{if(localStorage.getItem(KEY+'.view')==='1')setView(1,1)}catch(e){}
 })();
 </script>
 <script>
