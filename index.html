@@ -72,14 +72,21 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 .mb button{width:46px;height:46px;border-radius:8px;border:1.5px solid var(--acc);background:var(--card);color:var(--acc);font:inherit;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease),background-color .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),filter .2s var(--ease),opacity .2s var(--ease)}
 .mb svg{display:block}
 .mb button:disabled{opacity:.35;cursor:not-allowed;filter:none;transform:none}
-#gstat{position:absolute;left:6px;right:62px;top:62px;background:var(--card);border:1.5px solid var(--warn);border-radius:8px;padding:6px 10px;font-size:.82rem;animation:popIn .22s var(--ease);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#gstat{position:absolute;left:6px;right:64px;top:62px;background:var(--card);border:1.5px solid var(--warn);border-radius:8px;padding:6px 10px;font-size:.82rem;animation:popIn .22s var(--ease);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #gstat span{flex:1;min-width:140px}
 #gstat .btn{padding:6px 10px;font-size:.78rem;line-height:1.2}
 #mnote{position:absolute;left:6px;top:6px;font-size:.72rem;background:var(--card);color:var(--mute);padding:2px 6px;border-radius:4px}
+#offBadge{position:absolute;right:64px;top:6px;font-size:.72rem;background:var(--card);border:1.5px solid var(--acc);color:var(--acc);padding:2px 8px;border-radius:4px;cursor:pointer;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #pop{position:absolute;left:8px;right:64px;bottom:8px;background:var(--card);border:1.5px solid var(--acc);border-radius:8px;padding:10px;font-size:.9rem;animation:popIn .24s var(--ease)}
 @keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 #pop .btn{padding:7px}
 #sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
+#dlSheet{position:fixed;inset:0;z-index:21;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
+#dlSheet .bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:var(--hdr);color:var(--hdr-ink);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+#dlSheet .bar b{flex:1}#dlSheet .bar .btn{border-color:var(--hdr-ink);color:var(--hdr-ink);padding:7px 12px}
+#dlSheet input[type=range]{width:100%;accent-color:var(--acc)}
+#dlProg{height:10px;border:1.5px solid var(--line);border-radius:99px;background:var(--card);overflow:hidden}
+#dlProg i{display:block;height:100%;width:0;background:var(--acc);transition:width .25s var(--ease)}
 @keyframes sheetIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 #sheet .bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:var(--hdr);color:var(--hdr-ink);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
 #sheet .bar b{flex:1}#sheet .bar .btn{border-color:var(--hdr-ink);color:var(--hdr-ink);padding:7px 12px}
@@ -161,10 +168,23 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 </section>
 
 <section id="mapSec">
-  <div id="map"><canvas id="cv"></canvas><div id="mnote"></div><div id="gstat" hidden><span id="gmsg"></span><button type="button" class="btn" id="greq">Enable location</button></div><select id="baseSel" aria-label="Base map"></select>
-    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="loc" aria-label="Go to my location" title="Go to my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button></div>
+  <div id="map"><canvas id="cv"></canvas><div id="mnote"></div><div id="gstat" hidden><span id="gmsg"></span><button type="button" class="btn" id="greq">Enable location</button></div><select id="baseSel" aria-label="Base map"></select><button id="offBadge" type="button" hidden title="Offline map"></button>
+    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Go to my location" title="Go to my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button></div>
     <div id="pop" hidden></div></div>
 </section>
+
+<section id="dlSheet" hidden><div class="bar"><b id="dlT">Offline map</b><button type="button" class="btn" id="dlX">Close</button></div><div style="max-width:720px;margin:0 auto;padding:14px">
+<fieldset><legend>Download area</legend>
+<p style="margin:0 0 10px;font-size:.9rem;color:var(--mute)">Moves the map to cover this area. Everything you see on the map right now is inside it.</p>
+<div class="row"><button type="button" class="btn" id="dlZoom">Zoom out one level</button><button type="button" class="btn" id="dlFit">Cover all my poles</button></div>
+<div class="full" style="margin-top:12px"><label for="dlZmin">Detail levels to store</label><div class="grid3"><select id="dlZmin"></select><select id="dlZmax"></select></div></div>
+<div id="dlEst" class="calc full" style="margin-top:10px"></div>
+<div id="dlProg" style="margin-top:10px"><i></i></div>
+<div id="dlStat" style="font-size:.85rem;color:var(--mute);margin-top:6px"></div>
+<div class="row" style="margin-top:10px"><button type="button" class="btn p" id="dlGo">Download</button><button type="button" class="btn d" id="dlCancel" hidden>Cancel</button><button type="button" class="btn d" id="dlClear" hidden>Clear offline map</button></div>
+</fieldset>
+<fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly.<br><br><b>Use OpenStreetMap for offline maps.</b> Google Satellite blocks the requests this download needs, so Google tiles usually cannot be saved. The offline area is shared by both base maps only if you download each of them. Please download modestly — heavy tile traffic gets the OpenStreetMap server to refuse your phone for a while.</p></fieldset>
+</div></section>
 
 <section id="list" hidden>
   <div class="row" style="margin-bottom:12px">
@@ -368,8 +388,11 @@ function draw(){
   var z=M.z,x0=M.cx-w/2,y0=M.cy-h/2,n=Math.pow(2,z);
   var tz=Math.min(Math.round(z),B.mz||19),ts=256*Math.pow(2,z-tz),nT=Math.pow(2,tz);
   for(var tx=Math.floor(x0/ts);tx<=Math.floor((x0+w)/ts);tx++)for(var ty=Math.floor(y0/ts);ty<=Math.floor((y0+h)/ts);ty++){
-    var U=M.base==='cus'?M.cust:BASES[M.base].u;if(!U||ty<0||ty>=nT)continue;var wx=((tx%nT)+nT)%nT,k=M.base+'/'+tz+'/'+wx+'/'+ty,im=M.t[k],X=tx*ts-x0,Y=ty*ts-y0;
-    if(!im){im=M.t[k]=new Image();im.onload=function(){M.err=0;draw()};(function(k,im){im.onerror=function(){M.err++;draw();setTimeout(function(){delete M.t[k]},15000)}})(k,im);im.src=U.replace('{z}',tz).replace('{x}',wx).replace('{y}',ty)}
+    var U=tileUrl(M.base,tz,tx,ty);if(!U||ty<0||ty>=nT)continue;var wx=((tx%nT)+nT)%nT,k=M.base+'/'+tz+'/'+wx+'/'+ty,im=M.t[k],X=tx*ts-x0,Y=ty*ts-y0;
+    if(!im){im=M.t[k]=new Image();im.onload=function(){M.err=0;draw()};(function(k,im){im.onerror=function(){M.err++;draw();setTimeout(function(){delete M.t[k]},15000)}})(k,im);
+      if(offIdx[k])getOff(M.base,tz,wx,ty).then(function(r){if(!r){delete offIdx[k];im.src=U;return}
+        r.blob().then(function(bl){var u=URL.createObjectURL(bl);im._sz=bl.size;im.onload=function(){URL.revokeObjectURL(u);M.err=0;draw()};im.src=u})});
+      else im.src=U}
     if(im.complete&&im.naturalWidth)g.drawImage(im,X,Y,ts,ts);
     else if(tz>0){var pi=M.t[M.base+'/'+(tz-1)+'/'+(wx>>1)+'/'+(ty>>1)];if(pi&&pi.complete&&pi.naturalWidth)g.drawImage(pi,X-(wx&1)*ts,Y-(ty&1)*ts,ts*2,ts*2)}}
   if(iv){g.filter='none';if(!fl){g.globalCompositeOperation='difference';g.fillStyle='#fff';g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over'}}
@@ -389,9 +412,14 @@ function draw(){
   if(M.me){var m=px(M.me.lat,M.me.lon,z),X=m.x-x0,Y=m.y-y0,mpp=156543.03*Math.cos(M.me.lat*Math.PI/180)/n,ar=M.me.acc/mpp;
     if(ar>8){g.beginPath();g.arc(X,Y,ar,0,7);g.fillStyle='rgba(30,110,230,.15)';g.fill()}
     g.beginPath();g.arc(X,Y,7,0,7);g.fillStyle='#1e6ee6';g.fill();g.lineWidth=3;g.strokeStyle='#fff';g.stroke()}
+  if(!$('dlSheet').hidden){var rg=regionTiles(+$('dlZmin').value||13),c0=px(0,0,z);
+    var rx=c0.x+rg.x0*256-x0,ry=c0.y+rg.y0*256-y0,rw=(rg.x1-rg.x0+1)*256,rf=(rg.y1-rg.y0+1)*256;
+    g.save();g.strokeStyle=wr;g.lineWidth=2.5;g.setLineDash([9,7]);g.strokeRect(rx,ry,rw,rf);g.restore();
+    g.font='bold 12px system-ui,sans-serif';g.textAlign='center';g.lineWidth=3;g.strokeStyle=dk?'#000':'#fff';g.strokeText('offline area',rx+rw/2,ry-8);g.fillStyle=wr;g.fillText('offline area',rx+rw/2,ry-8);g.textAlign='left'}
   var lat=ll(M.cx,M.cy,z).lat,mp=156543.03*Math.cos(lat*Math.PI/180)/n,raw=mp*100,pw=Math.pow(10,Math.floor(Math.log10(raw))),nice=[1,2,5,10].map(function(f){return f*pw}).filter(function(v){return v<=raw}).pop(),bw=nice/mp;
   g.fillStyle=ink;g.fillRect(12,h-18,bw,3);g.textBaseline='bottom';g.fillText(nice>=1000?nice/1000+' km':nice+' m',12,h-22);
-  $('mnote').textContent=BASES[M.base].a+(!navigator.onLine?' (offline: poles only)':M.err>3?' (tiles not loading? try another base map)':'');var gs=$('gstat');$('gmsg').textContent=M.gps||'';$('greq').hidden=!M.gpsBtn;gs.hidden=!(M.gps&&!M.me);
+  var on=offIdxCount()?' (offline: cached map)':' (offline: poles only)';
+  $('mnote').textContent=BASES[M.base].a+(!navigator.onLine?on:M.err>3?' (tiles not loading? try another base map)':'');var gs=$('gstat');$('gmsg').textContent=M.gps||'';$('greq').hidden=!M.gpsBtn;gs.hidden=!(M.gps&&!M.me);
   var zt=M.zt==null?M.z:M.zt,zi=$('zi'),zo=$('zo');if(zi)zi.disabled=zt>=ZMAX-0.001;if(zo)zo.disabled=zt<=ZMIN+0.001}
 var P={},mv=0,cv=$('cv'),pinch=null;
 function pinchD(){var k=Object.keys(P);return k.length===2?Math.hypot(P[k[0]].x-P[k[1]].x,P[k[0]].y-P[k[1]].y):0}
@@ -437,6 +465,115 @@ if(!BASES[M.base])M.base='gsat';$('baseSel').value=M.base;
 $('baseSel').onchange=function(){var v=this.value;
   if(v==='cus'){var u=prompt('Tile URL with {z} {x} {y}:',M.cust||'');if(!u){this.value=M.base;return}M.cust=u;try{localStorage.setItem(KEY+'.cust',u)}catch(e){}}
   M.base=v;M.t={};M.err=0;try{localStorage.setItem(KEY+'.base',v)}catch(e){}draw()};
+
+// offline map tiles (raster images kept in Cache Storage so the basemap works with no internet)
+var OFFC='tlm-tiles-v1',offIdx={},dl=null;
+function kurl(k){var a=k.split('/');return tileUrl(a[0],+a[1],+a[2],+a[3])}
+function tileUrl(b,z,x,y){var u=b==='cus'?M.cust:(BASES[b]||{}).u;return u?u.replace('{z}',z).replace('{x}',x).replace('{y}',y):null}
+function openOff(){if(!window.caches)return Promise.resolve(null);return caches.open(OFFC).catch(function(){return null})}
+function offKeyFor(url){
+  var u=new URL(url),t=u.pathname.match(/\/(\d+)\/(\d+)\/(\d+)/)||u.search.match(/x=(\d+).*?y=(\d+).*?z=(\d+)/);
+  if(!t)return null;
+  var ks=Object.keys(BASES);ks.push('cus');
+  for(var i=0;i<ks.length;i++)if(tileUrl(ks[i],+t[1],+t[2],+t[3])===url)return ks[i]+'/'+t[1]+'/'+t[2]+'/'+t[3];
+  return null}
+function loadOffIdx(){
+  if(!window.caches)return;
+  openOff().then(function(c){if(!c)return null;return c.keys()}).then(function(l){
+    offIdx={};if(l)l.forEach(function(r){var k=offKeyFor(r.url);if(k)offIdx[k]=1});offUI();draw()}).catch(function(){})}
+function getOff(b,z,x,y){var u=kurl(b+'/'+z+'/'+x+'/'+y);if(!u||!window.caches)return Promise.resolve(null);
+  return openOff().then(function(c){return c?c.match(u):null}).catch(function(){return null})}
+function cacheTile(u,bl){return openOff().then(function(c){if(c)c.put(u,new Response(bl,{headers:{'content-type':bl.type||'image/png'}}))})}
+function offIdxCount(){var n=0;for(var k in offIdx)n++;return n}
+function offBytes(){var t=0;for(var k in offIdx){var e=M.t[k];if(e&&e._sz)t+=e._sz}return t}
+function fmtMB(b){return b>1048576?(b/1048576).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB'}
+function viewBounds(padF){
+  var w=$('cv').clientWidth,h=$('cv').clientHeight,pad=Math.round(w*(padF||.4)),z=Math.round(M.z);
+  var a=ll(M.cx-(w/2-pad),M.cy-h/2,z),b=ll(M.cx+(w/2-pad),M.cy+h/2,z);
+  return{x0:Math.floor(a.x/256),x1:Math.floor(b.x/256),y0:Math.floor(a.y/256),y1:Math.floor(b.y/256),z:z}}
+function regionTiles(z){
+  var a=vis().filter(function(r){return r.pos}),x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  if(a.length)a.forEach(function(r){var p=px(r.pos.lat,r.pos.lon,z);x0=Math.min(x0,Math.floor(p.x/256));x1=Math.max(x1,Math.floor(p.x/256));y0=Math.min(y0,Math.floor(p.y/256));y1=Math.max(y1,Math.floor(p.y/256))});
+  else{var v=viewBounds(.4);x0=v.x0;x1=v.x1;y0=v.y0;y1=v.y1}
+  var g=Math.max(1,Math.round((z-11)*1.5));return{x0:x0-g,x1:x1+g,y0:y0-g,y1:y1+g}}
+function yClamp(z,y0,y1){var m=Math.pow(2,z)-1;return[Math.max(0,Math.min(m,y0)),Math.max(0,Math.min(m,y1))]}
+function countTiles(z,x0,x1,y0,y1){var n=Math.max(0,x1-x0+1),y=yClamp(z,y0,y1);return(y[1]<y[0]?0:(y[1]-y[0]+1))*n}
+function rangeOpts(){var o='';for(var z=11;z<=18;z++)o+='<option>'+z+'</option>';$('dlZmin').innerHTML=o;$('dlZmax').innerHTML=o}
+function dlRange(){var a=+$('dlZmin').value,b=+$('dlZmax').value;return a>b?[b,a]:[a,b]}
+function dlEst(){
+  var r=dlRange(),tot=0;for(var z=r[0];z<=r[1];z++){var g=regionTiles(z);tot+=countTiles(z,g.x0,g.x1,g.y0,g.y1)}
+  var mb=tot*18/1024;
+  $('dlEst').innerHTML='<b>'+tot.toLocaleString()+'</b> tiles &middot; about <b>'+mb.toFixed(1)+' MB</b> <span style="color:var(--mute)">(rough estimate)</span>'
+    +'<span id="dlFree"></span>'
+    +(tot>25000?'<br><span class="bad">That is a lot of tiles. Use "Zoom out one level" or narrow the detail range.</span>':'')
+    +(mb>200?'<br><span class="bad">Large download — a whole province at this detail can exceed what a phone will keep.</span>':'');
+  $('dlGo').disabled=!tot||tot>60000;
+  if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(function(e){
+    var f=$('dlFree');if(!f)return;
+    var free=(e.quota||0)-(e.usage||0);
+    f.innerHTML=' &middot; free on this device: '+(free/1048576).toFixed(0)+' MB'
+      +(free&&mb*1048576>free*.6?'<br><span class="bad">This may not fit. Download a smaller area.</span>':'')}).catch(function(){})}
+function dlBox(z,r){var a=px(0,0,z);
+  return{lat1:ll(a.x+r.x0*256,a.y+r.y0*256,z).lat,lat0:ll(a.x+r.x0*256,a.y+(r.y1+1)*256,z).lat,lon0:ll(a.x+r.x0*256,a.y,z).lon,lon1:ll(a.x+(r.x1+1)*256,a.y,z).lon}}
+function dlList(z0,z1){var q=[];for(var z=z0;z<=z1;z++){var g=regionTiles(z),s=Math.pow(2,z),y=yClamp(z,g.y0,g.y1);
+  for(var x=g.x0;x<=g.x1;x++)for(var yy=y[0];yy<=y[1];yy++)q.push(M.base+'/'+z+'/'+(((x%s)+s)%s)+'/'+yy)}return q}
+function dlStop(){if(dl&&dl.on)dl.on=0;$('dlGo').disabled=false;$('dlGo').textContent='Download';$('dlCancel').hidden=true;
+  $('dlProg').querySelector('i').style.width='0%';$('dlStat').textContent='Stopped. Tiles already downloaded are kept.'}
+function dlStart(){
+  if(!window.caches)return toast('This browser cannot store offline maps');
+  if(!navigator.onLine)return toast('No internet: cannot download tiles');
+  var z=dlRange(),q=dlList(z[0],z[1]);
+  if(!q.length)return toast('Nothing to download');
+  dl={on:1,q:q,i:0,ok:0,bad:0,bytes:0,base:M.base,box:dlBox(z[0],regionTiles(z[0])),z0:z[0],z1:z[1],w:4,done:0};
+  $('dlGo').disabled=true;$('dlGo').textContent='Downloading…';$('dlCancel').hidden=false;
+  var b=dl.box;$('dlStat').textContent='Area '+b.lat0.toFixed(4)+', '+b.lon0.toFixed(4)+' to '+b.lat1.toFixed(4)+', '+b.lon1.toFixed(4)+' · zoom '+dl.z0+'–'+dl.z1;
+  function worker(){
+    if(!dl||!dl.on||dl.i>=dl.q.length){fin();return}
+    var k=dl.q[dl.i++],u=kurl(k);
+    if(!u){fin();return}
+    offIdx[k]=1;
+    fetch(u).then(function(res){
+      if(!res.ok)throw 0;
+      return res.blob().then(function(bl){
+        if(!dl||!dl.on)return;
+        if(!bl||!bl.size)throw 0;
+        dl.ok++;dl.bytes+=bl.size;
+        return cacheTile(u,bl)})
+    }).catch(function(){if(dl&&dl.on){dl.bad++;delete offIdx[k]}}).then(fin)}
+  function fin(){if(!dl)return;if(!dl.on||dl.i>=dl.q.length){if(--dl.w<=0)dlDone()}else{dlP();worker()}}
+  for(var i=0;i<dl.w;i++)worker()}
+function dlP(){
+  var p=Math.round(dl.i/dl.q.length*100);$('dlProg').querySelector('i').style.width=p+'%';
+  $('dlStat').textContent=dl.i+' / '+dl.q.length+' tiles · '+fmtMB(dl.bytes)+' stored'+(dl.bad?' · '+dl.bad+' failed':'');
+  draw()}
+function dlDone(){
+  if(!dl||dl.done)return;if(dl)dl.done=1;
+  var d=dl;dl=null;
+  $('dlGo').disabled=false;$('dlGo').textContent='Download';$('dlCancel').hidden=true;
+  $('dlProg').querySelector('i').style.width='100%';
+  $('dlStat').textContent='Stored '+d.ok+' of '+d.q.length+' tiles ('+fmtMB(d.bytes)+')'+(d.bad?', '+d.bad+' failed':'')+'. Zoom in anywhere in that area with no internet.';
+  if(d.q.length&&d.bad/d.q.length>.5)$('dlStat').textContent+=' Most tiles failed — this base map blocks offline saving. Switch to OpenStreetMap and download again.';
+  toast('Offline map ready');M.t={};M.err=0;offUI();draw()}
+function offUI(){var n=offIdxCount();$('dlClear').hidden=!n;$('offBadge').hidden=!n;
+  $('offBadge').textContent=n?n+' offline tiles':'';dlEst()}
+function openDl(){
+  $('dlSheet').hidden=false;$('dlSheet').scrollTop=0;document.body.style.overflow='hidden';
+  rangeOpts();var v=viewBounds(.4);$('dlZmin').value=Math.max(11,Math.min(18,v.z));$('dlZmax').value=Math.max(11,Math.min(18,v.z+2));
+  offUI();$('dlProg').querySelector('i').style.width='0%';
+  var n=offIdxCount(),b=offBytes();
+  $('dlStat').textContent=n?n+' tiles stored on this device'+(b?' ('+fmtMB(b)+' cached this session)':'')+'.':'Nothing stored yet.'}
+function closeDl(){$('dlSheet').hidden=true;document.body.style.overflow=''}
+$('dl').onclick=openDl;$('dlX').onclick=closeDl;
+$('dlZoom').onclick=function(){var b=dlBox(+$('dlZmin').value,regionTiles(+$('dlZmin').value));ctr((b.lat0+b.lat1)/2,(b.lon0+b.lon1)/2,M.z);dlEst()};
+$('dlFit').onclick=function(){if(!vis().some(function(r){return r.pos}))return toast('No poles with a location');var b=dlBox(+$('dlZmin').value,regionTiles(+$('dlZmin').value));ctr((b.lat0+b.lat1)/2,(b.lon0+b.lon1)/2,Math.min(+$('dlZmin').value,14));dlEst()};
+$('dlZmin').onchange=$('dlZmax').onchange=dlEst;
+$('dlGo').onclick=dlStart;$('dlCancel').onclick=dlStop;
+$('dlClear').onclick=function(){
+  if(!confirm('Delete all offline map tiles from this device?'))return;
+  if(window.caches)caches.delete(OFFC);offIdx={};M.t={};M.err=0;offUI();$('dlStat').textContent='Offline map cleared.';draw();toast('Offline map cleared')};
+$('offBadge').onclick=function(){if($('dlSheet').hidden)openDl()};
+document.querySelectorAll('nav button').forEach(function(b){b.addEventListener('click',offUI)});
+loadOffIdx();
 
 // calculations (230 V nominal, single phase)
 var VN=230;
