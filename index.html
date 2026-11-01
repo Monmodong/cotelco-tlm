@@ -643,60 +643,64 @@ function anaHH(h){return(h<10?'0':'')+h+':00'}
 function anaPF(){var v=Number($('pf').value);return(v>0&&v<=1)?v:.95}
 function anaVr(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888'}
 function anaHour(r){var d=new Date(r.time);return isNaN(d.getTime())?ANAPK:d.getHours()}
+function anaVol(r){var v=r.pole.voltage;return(v===''||v==null||isNaN(Number(v)))?null:Number(v)}
 function anaRows(){
   var P=anaPF(),out=[];
   vis().forEach(function(r){
     var t=r.tx;if(!t)return;
     var rating=Number(t.rating),ln=(t.line==null?t.i1:t.line),i0=Number(ln);
     if(!(rating>0)||ln==null||ln===''||!isFinite(i0))return;
-    var h=anaHour(r),f=ANACUR[h]||1,ip=i0/f,rows=[];
+    var h=anaHour(r),f=ANACUR[h]||1,ip=i0/f,fla=rating*1000/VN,rows=[];
     for(var x=0;x<24;x++){
       var i=ip*ANACUR[x],kVA=VN*i/1000;
-      rows.push({h:x,pu:ANACUR[x],pct:kVA/rating*100,kVA:kVA,kW:kVA*P,i:i,meas:x===h});
+      rows.push({h:x,pu:ANACUR[x],pct:i/fla*100,kVA:kVA,kW:kVA*P,i:i,meas:x===h});
     }
-    out.push({r:r,id:r.id,no:r.pole.no,rating:rating,type:t.type||'',h:h,i0:i0,rows:rows,now:rows[h],pk:rows[ANAPK]});
+    out.push({r:r,id:r.id,no:r.pole.no,rating:rating,type:t.type||'',h:h,i0:i0,fla:fla,v:anaVol(r),P:P,rows:rows,now:rows[h],pk:rows[ANAPK]});
   });
   return out}
 function anaPg(p){return p>100?'v-bad':p>80?'v-warn':'v-ok'}
+function anaDev(v){return(v-VN)/VN*100}
 function anaGrade(a){return anaPg(a.pk.pct)}
 function anaVerdict(a){
   var o=[],p=a.pk.pct;
-  o.push('Now ('+anaHH(a.h)+'): '+a.now.kVA.toFixed(2)+' kVA · '+a.i0.toFixed(1)+' A · '+a.now.pct.toFixed(1)+'% of the '+a.rating+' kVA nameplate.');
-  o.push('Projected 6 PM peak: '+a.pk.kVA.toFixed(2)+' kVA · '+a.pk.i.toFixed(1)+' A · '+p.toFixed(1)+'% of rating.');
-  if(p>100)o.push('ACTION — peak demand is '+(p-100).toFixed(1)+'% above nameplate ('+(a.pk.kVA-a.rating).toFixed(2)+' kVA short). Step up the rating or move some services to another transformer.');
-  else if(p>80)o.push('WATCH — only '+(100-p).toFixed(1)+'% headroom left at peak; additional services will likely push it over.');
-  else o.push('OK — '+(100-p).toFixed(1)+'% headroom at peak.');
+  o.push('Now ('+anaHH(a.h)+'): '+a.i0.toFixed(1)+' A against '+a.fla.toFixed(1)+' A full-load current for the '+a.rating+' kVA nameplate at '+VN+' V ('+a.now.pct.toFixed(1)+'% loaded, '+a.now.kVA.toFixed(2)+' kVA).');
+  o.push('Projected 6 PM peak: '+a.pk.i.toFixed(1)+' A ('+p.toFixed(1)+'% of full-load current, '+a.pk.kVA.toFixed(2)+' kVA, '+a.pk.kW.toFixed(2)+' kW at power factor '+a.P+').');
+  if(p>100)o.push('ACTION — peak demand is '+(a.pk.i-a.fla).toFixed(1)+' A above the '+a.fla.toFixed(1)+' A full-load rating. Step up the kVA size or move some services to another transformer.');
+  else if(p>80)o.push('WATCH — only '+(a.fla-a.pk.i).toFixed(1)+' A of headroom left at peak ('+(100-p).toFixed(1)+'%); additional services will likely push it over.');
+  else o.push('OK — '+(a.fla-a.pk.i).toFixed(1)+' A of headroom at peak ('+(100-p).toFixed(1)+'%).');
+  o.push(a.v==null?'No voltage recorded on this pole.':'Voltage as recorded: '+a.v.toFixed(0)+' V ('+sg(anaDev(a.v))+' vs '+VN+' V) — reported as measured, not projected across the day.');
   return o.join(' ')}
 function acell(l,b,s,cls){return'<div class="ac'+(cls?' '+cls:'')+'"><label>'+l+'</label><b>'+b+'</b><span>'+s+'</span></div>'}
 function anaCells(a){
-  return acell('Load now',a.now.pct.toFixed(0)+'%',a.now.kVA.toFixed(2)+' kVA · '+a.i0.toFixed(1)+' A · '+a.now.kW.toFixed(2)+' kW',anaPg(a.now.pct))
-    +acell('Peak 18:00',a.pk.pct.toFixed(0)+'%',a.pk.kVA.toFixed(2)+' kVA · '+a.pk.i.toFixed(1)+' A · '+a.pk.kW.toFixed(2)+' kW',anaPg(a.pk.pct))}
+  return acell('Load now',a.now.pct.toFixed(0)+'%',a.i0.toFixed(1)+' A of '+a.fla.toFixed(1)+' A · '+a.now.kW.toFixed(2)+' kW',anaPg(a.now.pct))
+    +acell('Peak 18:00',a.pk.pct.toFixed(0)+'%',a.pk.i.toFixed(1)+' A of '+a.fla.toFixed(1)+' A · '+a.pk.kW.toFixed(2)+' kW',anaPg(a.pk.pct))
+    +(a.v==null?'':acell('Voltage',a.v.toFixed(0)+' V',sg(anaDev(a.v))+' vs '+VN+' V, as read',Math.abs(anaDev(a.v))>10?'v-bad':Math.abs(anaDev(a.v))>7?'v-warn':'v-ok'))}
 function anaTable(a){
-  return'<thead><tr><th>Hour</th><th>% of peak</th><th>% of kVA</th><th>kVA</th><th>kW</th><th>Amps</th></tr></thead><tbody>'+
+  return'<thead><tr><th>Hour</th><th>% of peak</th><th>% of FLC</th><th>Amps</th><th>kVA</th><th>kW</th></tr></thead><tbody>'+
     a.rows.map(function(x){return'<tr'+(x.meas?' class="meas"':'')+'><td>'+anaHH(x.h)+'</td><td>'+Math.round(x.pu*100)+'%</td><td>'+x.pct.toFixed(1)+'%</td><td>'+
-      x.kVA.toFixed(2)+'</td><td>'+x.kW.toFixed(2)+'</td><td>'+x.i.toFixed(1)+'</td></tr>'}).join('')+'</tbody>'}
+      x.i.toFixed(1)+'</td><td>'+x.kVA.toFixed(2)+'</td><td>'+x.kW.toFixed(2)+'</td></tr>'}).join('')+'</tbody>'}
 function anaCard(a){
   var g=anaGrade(a),lbl={'v-ok':'OK','v-warn':'WATCH','v-bad':'ACTION'}[g];
   return'<div class="rec tx"><h3>Pole '+esc(a.no||'—')+(a.type?' · '+esc(a.type):'')+'<span class="tag '+g+'">'+lbl+'</span></h3>'
     +'<p class="ameta">'+esc(a.r.project||'')+' · reading taken '+anaHH(a.h)+', when a residential feeder carries '+Math.round(a.now.pu*100)+'% of its 6 PM peak</p>'
     +'<div class="ag">'+anaCells(a)+'</div>'
     +'<p class="verdict '+g+'">'+anaVerdict(a)+'</p>'
-    +'<canvas class="anacv" data-i="'+esc(a.id)+'" width="600" height="200" role="img" aria-label="Projected transformer loading, kW and amps by hour of day"></canvas>'
+    +'<canvas class="anacv" data-i="'+esc(a.id)+'" width="600" height="200" role="img" aria-label="Projected current by hour, as a percentage of the full-load current rating"></canvas>'
     +'<details><summary>Hour by hour</summary><div class="twrap"><table class="tbl">'+anaTable(a)+'</table></div></details></div>'}
 function anaSum(a){
   if(!a.length)return'<div class="anasum"><h3>No transformers yet</h3><p>Add a transformer record with a kVA rating and line current and this tab projects the 6 PM peak for every unit.</p></div>';
-  var inst=0,now=0,pk=0,over=0,worst=a[0];
-  a.forEach(function(x){inst+=x.rating;now+=x.now.kVA;pk+=x.pk.kVA;
+  var inst=0,cap=0,now=0,pk=0,over=0,worst=a[0];
+  a.forEach(function(x){inst+=x.rating;cap+=x.fla;now+=x.now.i;pk+=x.pk.i;
     if(x.pk.pct>100)over++;
     if(x.pk.pct>worst.pk.pct)worst=x});
   return'<div class="anasum"><h3>'+a.length+' transformer'+(a.length>1?'s':'')+' in '+esc(lastProj)+'</h3>'
-    +'<div class="ag">'+acell('Installed',inst.toFixed(2)+' kVA','sum of nameplates')
-    +acell('Loading now',inst?(now/inst*100).toFixed(0)+'%':'—',now.toFixed(2)+' kVA total')
-    +acell('Peak 18:00',inst?(pk/inst*100).toFixed(0)+'%':'—',pk.toFixed(2)+' kVA · '+(pk*anaPF()).toFixed(2)+' kW',inst&&pk/inst*100>100?'v-bad':'')
+    +'<div class="ag">'+acell('Capacity',cap.toFixed(1)+' A','full-load current at '+VN+' V ('+inst.toFixed(0)+' kVA)')
+    +acell('Drawing now',cap?(now/cap*100).toFixed(0)+'%':'—',now.toFixed(1)+' A of '+cap.toFixed(1)+' A')
+    +acell('Peak 18:00',cap?(pk/cap*100).toFixed(0)+'%':'—',pk.toFixed(1)+' A · '+(VN*pk/1000*anaPF()).toFixed(2)+' kW',cap&&pk/cap*100>100?'v-bad':'')
     +acell('Over at peak',over+' of '+a.length,over?'need reconfig':'all within rating',over?'v-bad':'v-ok')+'</div>'
-    +'<p class="verdict '+(worst.pk.pct>100?'v-bad':worst.pk.pct>80?'v-warn':'v-ok')+'">Worst case is Pole '+esc(worst.no||'—')+' at '+worst.pk.pct.toFixed(1)+'% of its '+worst.rating+' kVA rating ('+worst.pk.kVA.toFixed(2)+' kVA, '+worst.pk.i.toFixed(1)+' A) at 6 PM.</p></div>'}
+    +'<p class="verdict '+(worst.pk.pct>100?'v-bad':worst.pk.pct>80?'v-warn':'v-ok')+'">Worst case is Pole '+esc(worst.no||'—')+' at '+worst.pk.pct.toFixed(1)+'% of its '+worst.fla.toFixed(1)+' A full-load current ('+worst.pk.i.toFixed(1)+' A, '+worst.pk.kVA.toFixed(2)+' kVA) at 6 PM.</p></div>'}
 function curveHtml(){
-  return'<p class="ameta">Per-unit demand against the 6 PM maximum. Each transformer\'s measured amps are divided by its own hour value to find the implied peak, then the curve is applied hour by hour to get kVA, kW and amps.</p><div class="atab">'
+  return'<p class="ameta">Per-unit demand against the 6 PM maximum. Each transformer\'s measured amps are divided by its own hour value to find the implied peak current, then the curve is applied hour by hour. Loading is expressed against full-load current at '+VN+' V (nameplate kVA × 1000 ÷ '+VN+'), so 100% is the rated amps. Voltage is reported exactly as surveyed and is never projected.</p><div class="atab">'
     +ANACUR.map(function(v,i){return'<i'+(i===ANAPK?' class="hi"':(i===anaHour({time:new Date().toISOString()})?' class="now"':''))+'><b>'+anaHH(i)+'</b>'+Math.round(v*100)+'%</i>'}).join('')+'</div>'}
 function anaChart(cv,a){
   var dpr=window.devicePixelRatio||1,W=cv.clientWidth||600,H=cv.clientHeight||200;
