@@ -292,7 +292,7 @@ function applyAnchor(){if(!M.anchor)return;var p=px(M.anchor.lat,M.anchor.lon,M.
 function zoomRun(){if(!zraf)zraf=requestAnimationFrame(zoomStep)}
 function zoomStep(){
   zraf=0;var d=M.zt-M.z;
-  if(Math.abs(d)<0.0025){M.z=M.zt;applyAnchor();draw();return}
+  if(Math.abs(d)<0.0025){if(M.anchor){M.z=M.zt;applyAnchor()}else{var cf=ll(M.cx,M.cy,M.z);M.z=M.zt;var pf=px(cf.lat,cf.lon,M.z);M.cx=pf.x;M.cy=pf.y}draw();return}
   var prev=M.z;M.z+=d*0.22;
   if(M.anchor)applyAnchor();else{var c=ll(M.cx,M.cy,prev),p=px(c.lat,c.lon,M.z);M.cx=p.x;M.cy=p.y}
   draw();zraf=requestAnimationFrame(zoomStep)}
@@ -395,7 +395,7 @@ function pinchD(){var k=Object.keys(P);return k.length===2?Math.hypot(P[k[0]].x-
 function pMid(){var k=Object.keys(P);return{x:(P[k[0]].x+P[k[1]].x)/2,y:(P[k[0]].y+P[k[1]].y)/2}}
 function atLL(x,y){return ll(M.cx-cv.clientWidth/2+x,M.cy-cv.clientHeight/2+y,M.z)}
 cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);P[e.pointerId]={x:e.clientX,y:e.clientY};mv=0;M.anchor=null;
-  if(Object.keys(P).length===2){var b=cv.getBoundingClientRect(),m=pMid();pinch={d0:pinchD()||1,z0:M.zt==null?M.z:M.zt,ll:atLL(m.x-b.left,m.y-b.top)}}};
+  if(Object.keys(P).length===2){var b=cv.getBoundingClientRect(),m=pMid();pinch={d0:pinchD()||1,z0:M.z,ll:atLL(m.x-b.left,m.y-b.top)}}};
 cv.onpointermove=function(e){var o=P[e.pointerId];if(!o)return;var n=Object.keys(P).length;
   if(n===1){var dx=e.clientX-o.x,dy=e.clientY-o.y;M.cx-=dx;M.cy-=dy;mv+=Math.abs(dx)+Math.abs(dy)}
   P[e.pointerId]={x:e.clientX,y:e.clientY};
