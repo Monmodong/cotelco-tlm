@@ -879,12 +879,14 @@ function gWhy(r){if(r.type==='popup_blocked_to_open'||r.type==='popup_failed_to_
 function gLoad(){return new Promise(function(res,rej){if(window.google&&google.accounts&&google.accounts.oauth2)return res();
   var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=function(){res()};s.onerror=function(){rej(new Error('Google is unreachable — sync needs internet'))};document.head.appendChild(s)})}
 function gAsk(silent){return gLoad().then(function(){return new Promise(function(res,rej){
-  google.accounts.oauth2.initTokenClient({client_id:GC_ID,scope:G_SC,callback:function(){}}).requestAccessToken({prompt:silent?'none':'consent',callback:function(r){
+  var done=0,tm=setTimeout(function(){if(done)return;done=1;rej(new Error('Google never answered — its window was closed or blocked by the browser'))},silent?12000:45000);
+  var fin=function(f){return function(x){if(done)return;done=1;clearTimeout(tm);f(x)}};
+  google.accounts.oauth2.initTokenClient({client_id:GC_ID,scope:G_SC,callback:function(){}}).requestAccessToken({prompt:silent?'none':'consent',callback:fin(function(r){
     if(r.error||!r.access_token)return rej(new Error(gWhy(r)));
     gTok={at:r.access_token,exp:Date.now()+(r.expires_in||3600)*1000,em:''};sySave();
     try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}
     fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:gHdr()}).then(function(x){return x.json()}).then(function(u){gTok.em=u.email||'';try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}syUI()}).catch(function(){});
-    res(gTok)}})})})}
+    res(gTok)})})})})}
 // merge: last save wins, whole record at a time
 function syMerge(o,st){var i=recs.findIndex(function(x){return x.id===o.id}),no=(o.pole&&o.pole.no)||o.id;
   if(o.deleted){if(i<0)return null;recs.splice(i,1);return 'Pole '+no+' was deleted on another device'}
@@ -966,8 +968,11 @@ function syUI(){var w=$('syWho');
   $('syIn').hidden=gOk();$('syOut').hidden=!(gTok&&gTok.at)}
 $('syBtn').onclick=function(){$('syncSheet').hidden=false;$('syncSheet').scrollTop=0;document.body.style.overflow='hidden';syUI()};
 $('syX').onclick=function(){$('syncSheet').hidden=true;document.body.style.overflow=''};
-$('syIn').onclick=function(){if(!GC_ID)return toast('Paste your Google client ID into GC_ID first');
-  gAsk(0).then(function(){syUI();gLog('Token received, valid '+Math.round((gTok.exp-Date.now())/6e4)+' min','ok')}).catch(function(e){gLog('Sign in failed: '+e.message,'bad');toast(e.message)})};
+$('syIn').onclick=function(){
+  if(!GC_ID){$('syWho').textContent='Paste your Google client ID into GC_ID first';return}
+  $('syWho').textContent='Opening Google’s window — finish it in the popup, then wait here';
+  gAsk(0).then(function(){syUI();gLog('Token received, valid '+Math.round((gTok.exp-Date.now())/6e4)+' min','ok')})
+  .catch(function(e){$('syWho').textContent='Sign-in failed: '+e.message;gLog('Sign in failed: '+e.message,'bad');toast(e.message)})};
 $('syOut').onclick=function(){if(!gTok)return;fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(gTok.at),{method:'POST'}).catch(function(){});
   gTok=null;try{localStorage.removeItem(G_TK)}catch(e){}$('syLog').innerHTML='';syUI();toast('Signed out — your saved records are untouched')};
 $('syGo').onclick=syGo;$('syStop').onclick=function(){syStop=1;gLog('Stopping after the current file…')};
