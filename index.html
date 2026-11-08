@@ -89,10 +89,12 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 @keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 #pop .btn{padding:7px}
 #sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
-#dlSheet{position:fixed;inset:0;z-index:21;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
-#dlSheet .bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:var(--hdr);color:var(--hdr-ink);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
-#dlSheet .bar b{flex:1}#dlSheet .bar .btn{border-color:var(--hdr-ink);color:var(--hdr-ink);padding:7px 12px}
+#dlSheet,#syncSheet{position:fixed;inset:0;z-index:21;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
+#dlSheet .bar,#syncSheet .bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:var(--hdr);color:var(--hdr-ink);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+#dlSheet .bar b,#syncSheet .bar b{flex:1}#dlSheet .bar .btn,#syncSheet .bar .btn{border-color:var(--hdr-ink);color:var(--hdr-ink);padding:7px 12px}
 #dlSheet input[type=range]{width:100%;accent-color:var(--acc)}
+.slog{font:12px/1.5 ui-monospace,Consolas,monospace;color:var(--mute);white-space:pre-wrap;word-break:break-word;max-height:38vh;overflow-y:auto;margin-top:10px}
+.slog .ok{color:var(--ok)}.slog .bad{color:var(--off)}
 #dlProg{height:10px;border:1.5px solid var(--line);border-radius:99px;background:var(--card);overflow:hidden}
 #dlProg i{display:block;height:100%;width:0;background:var(--acc);transition:width .25s var(--ease)}
 @keyframes sheetIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -225,10 +227,26 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 <fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly.<br><br><b>Use OpenStreetMap for offline maps.</b> Google Satellite blocks the requests this download needs, so Google tiles usually cannot be saved. The offline area is shared by both base maps only if you download each of them. Please download modestly — heavy tile traffic gets the OpenStreetMap server to refuse your phone for a while.</p></fieldset>
 </div></section>
 
+<section id="syncSheet" hidden><div class="bar"><b>Sync to Google Drive</b><button type="button" class="btn" id="syX">Close</button></div><div style="max-width:720px;margin:0 auto;padding:14px">
+<fieldset><legend>Account</legend>
+<div id="syWho" class="calc"></div>
+<div class="row" style="margin-top:10px"><button type="button" class="btn p" id="syIn">Sign in with Google</button><button type="button" class="btn" id="syOut" hidden>Sign out</button></div>
+<p style="margin:10px 0 0;font-size:.9rem;color:var(--mute)">Signing in only tells this app which Drive is yours. Nothing is uploaded or downloaded until you press Sync.</p>
+</fieldset>
+<fieldset><legend>Sync</legend>
+<div class="row"><button type="button" class="btn p" id="syGo">Sync now</button><button type="button" class="btn d" id="syStop" hidden>Stop</button></div>
+<div id="syStat" class="calc" style="margin-top:8px"></div>
+<div class="row" style="margin-top:10px"><label style="display:flex;align-items:center;gap:8px;font-size:.9rem"><input type="checkbox" id="syPh" checked><span>Send and fetch photos</span></label></div>
+<div id="syLog" class="slog"></div>
+</fieldset>
+<fieldset><legend>Where your data goes</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">A folder named <b>cotelco-tlm</b> in your Drive, with one subfolder per project. Each pole is its own small file inside it, and photos sit in a <b>photos</b> subfolder as ordinary .jpg files you can open without this app.<br><br>Everything stays saved on this device exactly as before, and the app works with no internet — Drive is only a mirror. If the same pole is changed on two devices, the one saved last wins and the log says so.</p></fieldset>
+</div></section>
+
 <section id="list" hidden>
   <div class="row" style="margin-bottom:12px">
     <button class="btn" id="xCsv">Export CSV</button><button class="btn" id="xGeo">Export GeoJSON</button>
     <button class="btn" id="xJson">Backup JSON</button><button class="btn" id="imp">Import backup</button>
+    <button class="btn" id="syBtn">Sync</button>
     <input type="file" id="file" accept=".json,application/json" hidden>
   </div>
   <div id="recs"></div>
@@ -276,7 +294,7 @@ function showPos(){$('gps').textContent=pos?pos.lat.toFixed(6)+', '+pos.lon.toFi
 function num(id){var v=$(id).value;return v===''?'':Number(v)}
 function collect(){
   var tx=$('hasTx').checked;
-  return {id:editId||('r'+Date.now()),time:new Date().toISOString(),pos:pos,project:(editId&&(recs.find(function(x){return x.id===editId})||{}).project)||lastProj,from:$('conn').value,
+  return {id:editId||('r'+Date.now()),time:new Date().toISOString(),up:new Date().toISOString(),pos:pos,project:(editId&&(recs.find(function(x){return x.id===editId})||{}).project)||lastProj,from:$('conn').value,
     pole:{no:$('pno').value.trim(),primary:priStr(),secondary:secStr(),p:{m:$('pri').value,l:$('pril').value},s:{m:$('sec').value,l:$('secl').value},material:radio('mat'),voltage:num('vp'),lineA:num('lc'),remarks:$('prem').value.trim()},
     tx:tx?{rating:$('kva').value,type:radio('ttype'),tap:$('tap').value,cutout:$('acut').checked,hanger:$('ahan').checked,grounding:$('agnd').checked,line:num('i1'),neutral:num('in'),remarks:$('trem').value.trim()}:null};
 }
@@ -318,35 +336,35 @@ function render(){var recs=vis();
 $('recs').onclick=function(e){
   var b=e.target.closest('button');if(!b)return;
   if(b.dataset.e){var r=recs.find(function(x){return x.id===b.dataset.e});if(r)openSheet(r)}
-  if(b.dataset.d&&confirm('Delete this record?')){recs=recs.filter(function(x){return x.id!==b.dataset.d});pput(b.dataset.d+':P',null);pput(b.dataset.d+':T',null);persist();render();count();lists()}
+  if(b.dataset.d&&confirm('Delete this record?')){var rd=recs.find(function(x){return x.id===b.dataset.d});if(rd){var pv=sy.rec[rd.id];if(pv&&pv.f)sy.rec[rd.id]={u:new Date().toISOString(),d:1,g:0,p:rd.project||'',f:pv.f,m:pv.m};else delete sy.rec[rd.id];delete sy.ph[rd.id+':P'];delete sy.ph[rd.id+':T'];sySave()}recs=recs.filter(function(x){return x.id!==b.dataset.d});pput(b.dataset.d+':P',null);pput(b.dataset.d+':T',null);persist();render();count();lists()}
 };
 
 
 // export
-function dl(name,text,type){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
+function dlFile(name,text,type){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
 function stamp(){return new Date().toISOString().slice(0,10)}
 function q(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
 $('xCsv').onclick=function(){var recs=vis();
   if(!recs.length)return toast('Nothing to export');
   var H=['Project','Pole #','Primary structure','Secondary structure','Material','Voltage V','Pole remarks','Has transformer','Rating kVA','Type','Tap','Cutout','Hanger','Grounding','Line A','Neutral A','Load kVA (230 V)','Load %','Voltage dev % (230 V)','Transformer remarks','Latitude','Longitude','Accuracy m','Recorded','Line current A','Connected to pole #'];
   var rows=recs.map(function(r){var t=r.tx||{},p=r.pole,g=r.pos||{};
-    return [r.project,p.no,p.primary,p.secondary,p.material,p.voltage,p.remarks,r.tx?'Yes':'No',t.rating,t.type,t.tap,r.tx?(t.cutout?'Y':'N'):'',r.tx?(t.hanger?'Y':'N'):'',r.tx?(t.grounding?'Y':'N'):'',t.line,t.neutral,cv(r,'kva'),cv(r,'pct'),cv(r,'dev'),t.remarks,g.lat,g.lon,g.acc,r.time,p.lineA,pn(r.from)].map(q).join(',')});
-  dl('pole-survey-'+stamp()+'.csv','\ufeff'+H.map(q).join(',')+'\n'+rows.join('\n'),'text/csv')};
+    return [r.project,p.no,p.primary,p.secondary,p.material,p.voltage,p.remarks,r.tx?'Yes':'No',t.rating,t.type,t.tap,r.tx?(t.cutout?'Y':'N'):'',r.tx?(t.hanger?'Y':'N'):'',r.tx?(t.grounding?'Y':'N'):'',t.line,t.neutral,cval(r,'kva'),cval(r,'pct'),cval(r,'dev'),t.remarks,g.lat,g.lon,g.acc,r.time,p.lineA,pn(r.from)].map(q).join(',')});
+  dlFile('pole-survey-'+stamp()+'.csv','\ufeff'+H.map(q).join(',')+'\n'+rows.join('\n'),'text/csv')};
 $('xGeo').onclick=function(){var recs=vis();
   var f=recs.filter(function(r){return r.pos}).map(function(r){
     var p=r.pole,t=r.tx||{};
     return {type:'Feature',geometry:{type:'Point',coordinates:[r.pos.lon,r.pos.lat]},properties:{project:r.project,pole_no:p.no,primary:p.primary,secondary:p.secondary,material:p.material,voltage_v:p.voltage,pole_remarks:p.remarks,has_tx:!!r.tx,kva:t.rating,tx_type:t.type,tap:t.tap,cutout:t.cutout,hanger:t.hanger,grounding:t.grounding,i_line:t.line,i_neutral:t.neutral,load_kva:cc(r).kva,load_pct:cc(r).pct,volt_dev_pct:cc(r).dev,tx_remarks:t.remarks,gps_acc_m:r.pos.acc,recorded:r.time}}});
   if(!f.length)return toast('No records with GPS');
   var ln=[];recs.forEach(function(r){var a=recs.find(function(x){return x.id===r.from});if(a&&a.pos&&r.pos)ln.push({type:'Feature',geometry:{type:'LineString',coordinates:[[a.pos.lon,a.pos.lat],[r.pos.lon,r.pos.lat]]},properties:{project:r.project,from_pole:a.pole.no,to_pole:r.pole.no,current_a:r.pole.lineA}})});
-  dl('pole-survey-'+stamp()+'.geojson',JSON.stringify({type:'FeatureCollection',features:f.concat(ln)},null,1),'application/geo+json');
+  dlFile('pole-survey-'+stamp()+'.geojson',JSON.stringify({type:'FeatureCollection',features:f.concat(ln)},null,1),'application/geo+json');
   if(f.length<recs.length)toast((recs.length-f.length)+' record(s) without GPS skipped')};
-$('xJson').onclick=function(){if(!recs.length)return toast('Nothing to export');pall().then(function(p){dl('pole-survey-backup-'+stamp()+'.json',JSON.stringify({v:2,projects:projects,recs:recs,photos:p}),'application/json')})};
+$('xJson').onclick=function(){if(!recs.length)return toast('Nothing to export');pallD().then(function(p){dlFile('pole-survey-backup-'+stamp()+'.json',JSON.stringify({v:2,projects:projects,recs:recs,photos:p}),'application/json')})};
 $('imp').onclick=function(){$('file').click()};
 $('file').onchange=function(){
   var f=this.files[0];if(!f)return;var rd=new FileReader();
   rd.onload=function(){try{var D=JSON.parse(rd.result),d=Array.isArray(D)?D:D.recs;if(!Array.isArray(d))throw 0;if(D.projects)D.projects.forEach(function(p){if(projects.indexOf(p)<0)projects.push(p)});
     var ids={};recs.forEach(function(r){ids[r.id]=1});var n=0;
-    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;['P','T'].forEach(function(w){var v=D.photos&&D.photos[r.id+':'+w];if(v)pput(r.id+':'+w,v)})}});
+    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;['P','T'].forEach(function(w){var v=D.photos&&D.photos[r.id+':'+w];if(v)pput(r.id+':'+w,asBlob(v))})}});
     persist();projUI();render();count();lists();toast('Imported '+n+' new record(s)')}catch(e){toast('Not a valid backup file')}};
   rd.readAsText(f);this.value=''};
 
@@ -653,7 +671,7 @@ function calc(kva,amps,v){var o={};
   if(kva!==''&&kva!=null&&amps!==''&&amps!=null&&+kva>0){o.kva=VN*amps/1000;o.pct=o.kva/kva*100}
   if(v!==''&&v!=null)o.dev=(v-VN)/VN*100;return o}
 function cc(r){var t=r.tx;return calc(t?t.rating:'',t&&t.line!=null?t.line:'',r.pole.voltage)}
-function cv(r,k){var v=cc(r)[k];return v==null?'':v.toFixed(2)}
+function cval(r,k){var v=cc(r)[k];return v==null?'':v.toFixed(2)}
 function sg(d){return(d>=0?'+':'')+d.toFixed(1)+'%'}
 function loadHtml(r){var c=cc(r),a=[];
   if(c.kva!=null)a.push('Load '+c.kva.toFixed(2)+' kVA, '+c.pct.toFixed(1)+'% of rating'+(c.pct>100?' (overloaded)':''));
@@ -793,9 +811,11 @@ function switchProj(){M.sel=null;M.pend=null;$('pop').hidden=true;count();render
 $('projSel').onchange=function(){lastProj=this.value;projUI();switchProj()};
 $('pNew').onclick=function(){var n=(prompt('New project name:')||'').trim();if(!n)return;if(projNames().indexOf(n)<0)projects.push(n);lastProj=n;projUI();switchProj()};
 $('pRen').onclick=function(){var n=(prompt('Rename project:',lastProj)||'').trim();if(!n||n===lastProj)return;if(projNames().indexOf(n)>=0)return toast('That name already exists');
-  recs.forEach(function(r){if(r.project===lastProj)r.project=n});projects=projects.filter(function(p){return p!==lastProj});projects.push(n);lastProj=n;projUI();render()};
-$('pDel').onclick=function(){var k=vis();if(!confirm('Delete project "'+lastProj+'" and its '+k.length+' pole(s)? Export a backup first.'))return;
-  k.forEach(function(r){pput(r.id+':P',null);pput(r.id+':T',null)});recs=recs.filter(function(r){return r.project!==lastProj});projects=projects.filter(function(p){return p!==lastProj});lastProj='';projUI();switchProj()};
+  var old=lastProj,ids=[];recs.forEach(function(r){if(r.project===old){r.project=n;ids.push(r.id)}});syDrop(old,ids);
+  projects=projects.filter(function(p){return p!==old});projects.push(n);lastProj=n;projUI();render();
+  if(ids.length)toast('Renamed here — rename it on your other device too')};
+$('pDel').onclick=function(){var nm=lastProj,k=recs.filter(function(r){return r.project===nm});if(!confirm('Delete project "'+nm+'" and its '+k.length+' pole(s)? Export a backup first.'))return;
+  k.forEach(function(r){pput(r.id+':P',null);pput(r.id+':T',null);delete sy.ph[r.id+':P'];delete sy.ph[r.id+':T'];var pv=sy.rec[r.id];if(pv&&pv.f)sy.rec[r.id]={u:new Date().toISOString(),d:1,g:0,p:nm,f:pv.f,m:pv.m};else delete sy.rec[r.id]});sySave();recs=recs.filter(function(r){return r.project!==nm});projects=projects.filter(function(p){return p!==nm});lastProj='';projUI();switchProj()};
 function buildConn(self){var a=vis().filter(function(x){return x.pos&&x.id!==self});
   $('conn').innerHTML='<option value="">None (start of a line)</option>'+a.map(function(x){return '<option value="'+x.id+'">'+esc((x.pole.no?'Pole # '+x.pole.no:'Unnumbered')+(x.pole.primary?' - '+x.pole.primary:''))+'</option>'}).join('')}
 function connNear(){var b=null,bd=1e18;
@@ -803,19 +823,149 @@ function connNear(){var b=null,bd=1e18;
     var dy=(x.pos.lat-pos.lat)*111320,dx=(x.pos.lon-pos.lon)*111320*Math.cos(pos.lat*Math.PI/180),d=dx*dx+dy*dy;
     if(d<bd){bd=d;b=x}});
   $('conn').value=b?b.id:''}
-// photos (stored in IndexedDB so they do not fill localStorage)
-var ph={P:null,T:null},phD={P:0,T:0},phW='P',db=null;
+// photos (stored in IndexedDB as Blobs: a full-size shot is far too big for a base64 string)
+var ph={P:null,T:null},phD={P:0,T:0},phW='P',db=null,uMap={};
 function idb(){return new Promise(function(res,rej){if(db)return res(db);var q=indexedDB.open('poleSurveyPhotos',1);q.onupgradeneeded=function(){q.result.createObjectStore('p')};q.onsuccess=function(){db=q.result;res(db)};q.onerror=function(){rej(q.error)}})}
 function pget(k){return idb().then(function(d){return new Promise(function(res){var r=d.transaction('p').objectStore('p').get(k);r.onsuccess=function(){res(r.result||null)};r.onerror=function(){res(null)}})}).catch(function(){return null})}
-function pput(k,v){return idb().then(function(d){return new Promise(function(res){var t=d.transaction('p','readwrite'),o=t.objectStore('p');if(v)o.put(v,k);else o.delete(k);t.oncomplete=function(){res(1)};t.onerror=function(){res(0)}})}).catch(function(){toast('Photo storage unavailable');return 0})}
+function pput(k,v){if(!v)uDrop(k);return idb().then(function(d){return new Promise(function(res){var t=d.transaction('p','readwrite'),o=t.objectStore('p');if(v)o.put(v,k);else o.delete(k);t.oncomplete=function(){res(1)};t.onerror=function(){res(0)}})}).catch(function(){toast('Photo storage unavailable');return 0})}
+function uGet(k,v){if(!v)return '';if(typeof v==='string')return v;var u=uMap[k];if(!u||u.b!==v){if(u)URL.revokeObjectURL(u.u);u=uMap[k]={b:v,u:URL.createObjectURL(v)}}return u.u}
+function uDrop(k){var u=uMap[k];if(u){URL.revokeObjectURL(u.u);delete uMap[k]}}
+function asBlob(v){if(!v)return null;return typeof v==='string'?dToB(v):v}
+function bSig(v){var b=asBlob(v);if(!b)return Promise.resolve('');
+  return b.slice(0,4096).arrayBuffer().then(function(x){var a=new Uint8Array(x),h=5381;for(var i=0;i<a.length;i++)h=((h<<5)+h+a[i])|0;return (h>>>0)+':'+b.size},function(){return String(b.size)})}
 function pall(){return idb().then(function(d){return new Promise(function(res){var o={},c=d.transaction('p').objectStore('p').openCursor();c.onsuccess=function(){var x=c.result;if(x){o[x.key]=x.value;x.continue()}else res(o)};c.onerror=function(){res(o)}})}).catch(function(){return{}})}
-function shrink(file){return new Promise(function(res){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};im.onerror=function(){res(null)};im.src=u})}
-function showPh(){['P','T'].forEach(function(w){$('th'+w).innerHTML=ph[w]?'<img src="'+ph[w]+'" alt="photo"><button type="button" class="btn d" data-w="'+w+'">Remove</button>':''})}
-function savePh(r,o0){['P','T'].forEach(function(w){if(phD[w])pput(r.id+':'+w,(w==='T'&&!r.tx)?null:ph[w])});if(!r.tx&&o0.tx&&o0.tx.ph)pput(r.id+':T',null)}
-function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(el){el.innerHTML='';['P','T'].forEach(function(w){pget(el.dataset.i+':'+w).then(function(v){if(v){var i=new Image();i.src=v;i.alt=w==='P'?'Pole photo, tap to enlarge':'Transformer photo, tap to enlarge';el.appendChild(i)}})})})}
+// backups keep the old base64 format, so Blobs are converted only for the export file
+function pallD(){return pall().then(function(p){return Promise.all(Object.keys(p).map(function(k){var v=p[k];
+    if(typeof v==='string')return {k:k,v:v};return bToD(v).then(function(s){return {k:k,v:s}})}))})
+  .then(function(a){var out={};a.forEach(function(x){out[x.k]=x.v});return out})}
+function shrink(file){return new Promise(function(res){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,2560/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);if(!c.toBlob)return res(dToB(c.toDataURL('image/jpeg',.92)));c.toBlob(function(b){res(b||null)},'image/jpeg',.92)};im.onerror=function(){res(null)};im.src=u})}
+function showPh(){['P','T'].forEach(function(w){$('th'+w).innerHTML=ph[w]?'<img src="'+uGet('sheet:'+w,ph[w])+'" alt="photo"><button type="button" class="btn d" data-w="'+w+'">Remove</button>':''})}
+function savePh(r,o0){var jobs=[];['P','T'].forEach(function(w){if(phD[w])jobs.push(pput(r.id+':'+w,(w==='T'&&!r.tx)?null:ph[w]))});if(!r.tx&&o0.tx&&o0.tx.ph)jobs.push(pput(r.id+':T',null));
+  return Promise.all(jobs).then(function(){loadThumbs()})}
+function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(el){el.innerHTML='';['P','T'].forEach(function(w){var k=el.dataset.i+':'+w;pget(k).then(function(v){if(v){var i=new Image();i.src=uGet(k,v);i.alt=w==='P'?'Pole photo, tap to enlarge':'Transformer photo, tap to enlarge';el.appendChild(i)}})})})}
 $('phP').onclick=function(){phW='P';$('phF').click()};$('phT').onclick=function(){phW='T';$('phF').click()};
 $('phF').onchange=function(){var f=this.files[0],w=phW;this.value='';if(!f)return;shrink(f).then(function(d){if(!d)return toast('Could not read photo');ph[w]=d;phD[w]=1;showPh()})};
 $('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button');if(b){ph[b.dataset.w]=null;phD[b.dataset.w]=1;showPh()}};
+// ---------- Google Drive sync (mirror only; the device copy stays authoritative) ----------
+var GC_ID='',G_SC='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',G_SK=KEY+'.sy',G_TK=KEY+'.gtok';
+var sy={root:'',proj:{},rec:{},ph:{},at:0},gTok=null,syBusy=0,syStop=0;
+try{sy=Object.assign(sy,JSON.parse(localStorage.getItem(G_SK)||'{}'))}catch(e){}
+try{gTok=JSON.parse(localStorage.getItem(G_TK)||'null')}catch(e){}
+function sySave(){try{localStorage.setItem(G_SK,JSON.stringify(sy))}catch(e){}}
+function upOf(r){return r.up||r.time||''}
+function gOk(){return !!(gTok&&gTok.at&&Date.now()<gTok.exp-12e4)}
+function gLog(s,c){var d=document.createElement('div');if(c)d.className=c;d.textContent=s;var l=$('syLog');l.appendChild(d);l.scrollTop=l.scrollHeight}
+function seq(a){return a.reduce(function(p,f){return p.then(function(){if(syStop)throw new Error('Stopped');return f()})},Promise.resolve())}
+function gErr(r){return r.text().then(function(t){if(!r.ok){var j={};try{j=JSON.parse(t)}catch(e){}throw new Error((j.error&&(j.error.message||j.error.code))||'HTTP '+r.status)}return JSON.parse(t)})}
+function gHdr(c){var h={authorization:'Bearer '+gTok.at};if(c)h['content-type']=c;return h}
+function gJson(p,body){return fetch('https://www.googleapis.com/drive/v3'+p,{method:body?'POST':'GET',headers:gHdr('application/json'),body:body?JSON.stringify(body):null}).then(gErr)}
+function gList(fid){return gJson('/files?q='+encodeURIComponent("'"+fid+"' in parents and trashed=false")+'&fields=files(id,name,mimeType,size,md5Checksum,modifiedTime)&pageSize=1000').then(function(d){return d.files||[]})}
+function gFolder(name,parent){return gList(parent).then(function(fs){var f=fs.filter(function(x){return x.name===name&&x.mimeType==='application/vnd.google-apps.folder'})[0];
+  return f||gJson('/files?fields=id,name',{name:name,mimeType:'application/vnd.google-apps.folder',parents:[parent]})})}
+function gNew(parent,name,mime,buf){var b='cotelco'+Date.now().toString(36);
+  var pre='--'+b+'\r\ncontent-type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:name,parents:[parent]})+'\r\n--'+b+'\r\ncontent-type: '+(mime||'application/octet-stream')+'\r\n\r\n';
+  return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,md5Checksum',{method:'POST',headers:gHdr('multipart/related; boundary='+b),body:new Blob([pre,buf,'\r\n--'+b+'--\r\n'])}).then(gErr)}
+function gOver(fid,mime,buf){return fetch('https://www.googleapis.com/upload/drive/v3/files/'+fid+'?uploadType=media&fields=id,name,md5Checksum',{method:'PATCH',headers:gHdr(mime||'application/octet-stream'),body:buf}).then(gErr)}
+function gText(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',{headers:gHdr()}).then(function(r){if(!r.ok)throw new Error('Could not read '+fid);return r.text()})}
+function gBlob(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',{headers:gHdr()}).then(function(r){if(!r.ok)throw new Error('Could not read '+fid);return r.blob()})}
+function gDel(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid,{method:'DELETE',headers:gHdr()}).then(function(r){if(!r.ok&&r.status!==204)throw new Error('Could not remove a stale photo')})}
+function dToB(d){var i=d.indexOf(','),t=/:(.*?);/.exec(d.slice(0,i)),s=atob(d.slice(i+1)),u=new Uint8Array(s.length);for(var x=0;x<s.length;x++)u[x]=s.charCodeAt(x);return new Blob([u],{type:t?t[1]:'image/jpeg'})}
+function bToD(b){return new Promise(function(res,rej){var f=new FileReader();f.onload=function(){res(f.result)};f.onerror=function(){rej(new Error('Could not read a photo'))};f.readAsDataURL(b)})}
+// sign-in: Google Identity Services, token flow, no client secret (the app's source is public)
+function gLoad(){return new Promise(function(res,rej){if(window.google&&google.accounts&&google.accounts.oauth2)return res();
+  var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=function(){res()};s.onerror=function(){rej(new Error('Google is unreachable — sync needs internet'))};document.head.appendChild(s)})}
+function gAsk(silent){return gLoad().then(function(){return new Promise(function(res,rej){
+  google.accounts.oauth2.initTokenClient({client_id:GC_ID,scope:G_SC,callback:function(){}}).requestAccessToken({prompt:silent?'none':'consent',callback:function(r){
+    if(r.error||!r.access_token)return rej(new Error(r.error==='access_denied'?'Sign-in was cancelled':'Google did not return a token'));
+    gTok={at:r.access_token,exp:Date.now()+(r.expires_in||3600)*1000,em:''};sySave();
+    try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}
+    fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:gHdr()}).then(function(x){return x.json()}).then(function(u){gTok.em=u.email||'';try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}syUI()}).catch(function(){});
+    res(gTok)}})})})}
+// merge: last save wins, whole record at a time
+function syMerge(o,st){var i=recs.findIndex(function(x){return x.id===o.id}),no=(o.pole&&o.pole.no)||o.id;
+  if(o.deleted){if(i<0)return null;recs.splice(i,1);return 'Pole '+no+' was deleted on another device'}
+  if(st&&st.d&&st.u>=upOf(o))return 'skip';
+  if(i<0)return (recs.push(o),'Pulled new pole '+no);
+  if(upOf(o)<=upOf(recs[i]))return null;
+  recs[i]=o;return 'Pole '+no+' was newer on Drive, it replaces this copy'}
+function sySend(r,fid,remote){var f=remote[r.id+'.json'],b=new Blob([JSON.stringify(r)],{type:'application/json'});
+  return (f?gOver(f.id,'application/json',b):gNew(fid,r.id+'.json','application/json',b)).then(function(x){
+    sy.rec[r.id]={f:x.id,u:upOf(r),m:x.md5Checksum||''};sySave();gLog('Sent pole '+r.pole.no)})}
+function syProj(name,fid){
+  var wantPh=$('syPh').checked;
+  return gList(fid).then(function(fs){
+    var remote={},pulls=[];
+    fs.forEach(function(f){remote[f.name]=f});
+    fs.forEach(function(f){if(!/\.json$/i.test(f.name))return;var id=f.name.slice(0,-5),s=sy.rec[id];
+      if(s&&s.f===f.id&&(!f.md5Checksum||s.m===f.md5Checksum))return;
+      pulls.push(function(){return gText(f.id).then(function(t){var o;try{o=JSON.parse(t)}catch(e){return gLog('Skipped unreadable '+f.name,'bad')}
+        var m=syMerge(o,s);if(m==='skip')return;
+        sy.rec[id]={f:f.id,u:upOf(o),m:f.md5Checksum||'',d:o.deleted?1:0,g:o.deleted?1:0,p:(s&&s.p)||o.project||''};sySave();if(m)gLog(m)})})});
+    var mine=recs.filter(function(r){return r.project===name});
+    // what has to go up is decided only after every pull has landed, so a record that Drive just handed back is not deleted again
+    var pushWork=function(){
+      var out=[],now=recs.filter(function(r){return r.project===name});
+      now.forEach(function(r){var s=sy.rec[r.id];if(s&&s.f&&remote[r.id+'.json']&&upOf(r)<=s.u)return;out.push(function(){return sySend(r,fid,remote)})});
+      Object.keys(sy.rec).forEach(function(id){var s=sy.rec[id];if(!s.d||s.p!==name)return;
+        if(now.some(function(r){return r.id===id}))return;
+        var f=remote[id+'.json'];if(f&&s.g)return;
+        var body=function(){return new Blob([JSON.stringify({id:id,deleted:1,up:s.u})],{type:'application/json'})};
+        out.push(function(){return (f?gOver(f.id,'application/json',body()):gNew(fid,id+'.json','application/json',body())).then(function(x){
+          var cs=sy.rec[id]||s;cs.f=x.id;cs.m=x.md5Checksum||'';cs.g=1;cs.d=1;cs.p=name;sySave();gLog('Sent the delete of '+id)})})});
+      return out};
+    var ph=seq(pulls).then(function(){return seq(pushWork())});
+    if(!wantPh)return ph.then(function(){return 0});
+    return ph.then(function(){return gFolder('photos',fid)}).then(function(pf){return gList(pf.id).then(function(pfs){
+      var jobs=[],byKey={},orph=[];
+      pfs.forEach(function(f){if(!/\.(jpe?g|png)$/i.test(f.name))return;var k=f.name.replace(/\.(jpe?g|png)$/i,'').replace('-',':');byKey[k]=f;
+        if(!recs.some(function(r){return r.id===k.split(':')[0]})){delete sy.ph[k];orph.push(function(){return gDel(f.id)});return}
+        var s=sy.ph[k];if(s&&s.f===f.id&&(!f.md5Checksum||s.m===f.md5Checksum))return;
+        jobs.push(function(){return gBlob(f.id).then(function(bl){uDrop(k);return pput(k,bl).then(function(){return bSig(bl)}).then(function(sg){sy.ph[k]={f:f.id,m:f.md5Checksum||'',s:sg};sySave();gLog('Fetched photo '+f.name)})})});
+      });
+      if(orph.length)gLog(orph.length+' photo(s) of poles no longer here will be removed from Drive');
+      var up=[];
+      mine.forEach(function(r){['P','T'].forEach(function(w){var k=r.id+':'+w;
+        up.push(function(){return pget(k).then(function(d){if(!d)return;var s=sy.ph[k],f=byKey[k];
+          return bSig(d).then(function(sg){if(s&&s.f&&f&&s.s===sg)return;
+            var b=asBlob(d),nm=r.id+'-'+w+'.jpg';
+            return (f?gOver(f.id,'image/jpeg',b):gNew(pf.id,nm,'image/jpeg',b)).then(function(x){sy.ph[k]={f:x.id,m:x.md5Checksum||'',s:sg};sySave();gLog((f?'Updated photo ':'Sent photo ')+nm)})})})})})});
+      return seq(orph).then(function(){return seq(jobs)}).then(function(){return seq(up)})})})})}
+function syGo(){
+  if(syBusy)return;
+  if(!GC_ID){toast('Paste your Google client ID into GC_ID first');return}
+  if(!navigator.onLine){toast('No internet — everything stays saved here; sync just cannot run now');return}
+  syBusy=1;syStop=0;$('syGo').disabled=1;$('syStop').hidden=0;$('syLog').innerHTML='';gLog('Signing in…');
+  var t0=Date.now(),p=gOk()?Promise.resolve():gAsk(1).catch(function(){return gAsk(0)});
+  p.then(function(){gLog('Connected'+(gTok.em?' as '+gTok.em:''));return gFolder('cotelco-tlm','root')}).then(function(root){
+    sy.root=root.id;sySave();var names=projNames(),live=names.slice();
+    // a project deleted here still needs one visit to report its poles as deleted
+    Object.keys(sy.rec).forEach(function(id){var s=sy.rec[id];if(s.d&&!s.g&&s.p&&live.indexOf(s.p)<0&&names.indexOf(s.p)<0)names.push(s.p)});
+    if(!names.length)gLog('No projects yet — nothing to send');
+    return seq(names.map(function(n){return function(){
+      var nm=String(n).replace(/[\/\\\?:\*|"<>]/g,'-');
+      return gFolder(nm,sy.root).then(function(f){sy.proj[n]=f.id;sySave();gLog('Project '+n);return syProj(n,f.id)}).then(function(){
+        if(live.indexOf(n)<0)return syForget(n)}).then(syFlush)}}))}).then(function(){
+    sy.at=Date.now();sySave();syFlush();
+    gLog('Done in '+((Date.now()-t0)/1000).toFixed(1)+'s','ok');syUI()}).catch(function(e){
+    gLog(e.message||'Sync failed — nothing was lost','bad');syFlush();toast('Sync stopped: '+(e.message||'could not reach Drive'))})
+  .then(function(){syBusy=0;$('syGo').disabled=0;$('syStop').hidden=1})}
+function syFlush(){persist();projUI();lists();count();render();draw()}
+// a renamed project is a new mirror folder: forget the old one so the records upload again under the new name
+function syDrop(name,ids){delete sy.proj[name];ids.forEach(function(id){delete sy.rec[id];delete sy.ph[id+':P'];delete sy.ph[id+':T']});sySave()}
+// once every pole of a removed project has been reported, stop tracking its folder
+function syForget(name){var ids=Object.keys(sy.rec).filter(function(id){return sy.rec[id].p===name});
+  if(ids.some(function(id){return sy.rec[id].d&&!sy.rec[id].g}))return;
+  ids.forEach(function(id){delete sy.rec[id]});delete sy.proj[name];sySave();gLog('Project '+name+' is deleted on Drive too','ok')}
+function syUI(){var w=$('syWho');
+  if(gOk())w.textContent='Signed in'+(gTok.em?' as '+gTok.em:'')+' · last sync '+(sy.at?new Date(sy.at).toLocaleString():'never');
+  else w.textContent='Not signed in';
+  $('syIn').hidden=gOk();$('syOut').hidden=!gOk()}
+$('syBtn').onclick=function(){$('syncSheet').hidden=false;$('syncSheet').scrollTop=0;document.body.style.overflow='hidden';syUI()};
+$('syX').onclick=function(){$('syncSheet').hidden=true;document.body.style.overflow=''};
+$('syIn').onclick=function(){if(!GC_ID)return toast('Paste your Google client ID into GC_ID first');gAsk(0).then(function(){syUI();gLog('Signed in'+(gTok.em?' as '+gTok.em:''),'ok')}).catch(function(e){toast(e.message)})};
+$('syOut').onclick=function(){if(!gTok)return;fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(gTok.at),{method:'POST'}).catch(function(){});
+  gTok=null;try{localStorage.removeItem(G_TK)}catch(e){}$('syLog').innerHTML='';syUI();toast('Signed out — your saved records are untouched')};
+$('syGo').onclick=syGo;$('syStop').onclick=function(){syStop=1;gLog('Stopping after the current file…')};
 function pn(id){var x=recs.find(function(y){return y.id===id});return x?x.pole.no:''}
 function priStr(){return[$('pri').value,$('pril').value].filter(Boolean).join(' / ')}
 function secStr(){return[$('sec').value,$('secl').value].filter(Boolean).join(' / ')}
