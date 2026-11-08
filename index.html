@@ -872,11 +872,15 @@ function gDel(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid
 function dToB(d){var i=d.indexOf(','),t=/:(.*?);/.exec(d.slice(0,i)),s=atob(d.slice(i+1)),u=new Uint8Array(s.length);for(var x=0;x<s.length;x++)u[x]=s.charCodeAt(x);return new Blob([u],{type:t?t[1]:'image/jpeg'})}
 function bToD(b){return new Promise(function(res,rej){var f=new FileReader();f.onload=function(){res(f.result)};f.onerror=function(){rej(new Error('Could not read a photo'))};f.readAsDataURL(b)})}
 // sign-in: Google Identity Services, token flow, no client secret (the app's source is public)
+function gWhy(r){if(r.type==='popup_blocked_to_open'||r.type==='popup_failed_to_open')return 'The browser blocked the Google window — open this page in Chrome, not in an in-app view';
+  if(!r.error)return 'Google returned no token';
+  if(r.error==='access_denied')return 'Google refused the grant: not a test user, or the consent screen is still in Testing';
+  return r.error_description||r.error}
 function gLoad(){return new Promise(function(res,rej){if(window.google&&google.accounts&&google.accounts.oauth2)return res();
   var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=function(){res()};s.onerror=function(){rej(new Error('Google is unreachable — sync needs internet'))};document.head.appendChild(s)})}
 function gAsk(silent){return gLoad().then(function(){return new Promise(function(res,rej){
   google.accounts.oauth2.initTokenClient({client_id:GC_ID,scope:G_SC,callback:function(){}}).requestAccessToken({prompt:silent?'none':'consent',callback:function(r){
-    if(r.error||!r.access_token)return rej(new Error(r.error==='access_denied'?'Sign-in was cancelled':'Google did not return a token'));
+    if(r.error||!r.access_token)return rej(new Error(gWhy(r)));
     gTok={at:r.access_token,exp:Date.now()+(r.expires_in||3600)*1000,em:''};sySave();
     try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}
     fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:gHdr()}).then(function(x){return x.json()}).then(function(u){gTok.em=u.email||'';try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}syUI()}).catch(function(){});
@@ -958,11 +962,12 @@ function syForget(name){var ids=Object.keys(sy.rec).filter(function(id){return s
   ids.forEach(function(id){delete sy.rec[id]});delete sy.proj[name];sySave();gLog('Project '+name+' is deleted on Drive too','ok')}
 function syUI(){var w=$('syWho');
   if(gOk())w.textContent='Signed in'+(gTok.em?' as '+gTok.em:'')+' · last sync '+(sy.at?new Date(sy.at).toLocaleString():'never');
-  else w.textContent='Not signed in';
-  $('syIn').hidden=gOk();$('syOut').hidden=!gOk()}
+  else w.textContent=gTok&&gTok.at?'Token expired — sign in again':'Not signed in';
+  $('syIn').hidden=gOk();$('syOut').hidden=!(gTok&&gTok.at)}
 $('syBtn').onclick=function(){$('syncSheet').hidden=false;$('syncSheet').scrollTop=0;document.body.style.overflow='hidden';syUI()};
 $('syX').onclick=function(){$('syncSheet').hidden=true;document.body.style.overflow=''};
-$('syIn').onclick=function(){if(!GC_ID)return toast('Paste your Google client ID into GC_ID first');gAsk(0).then(function(){syUI();gLog('Signed in'+(gTok.em?' as '+gTok.em:''),'ok')}).catch(function(e){toast(e.message)})};
+$('syIn').onclick=function(){if(!GC_ID)return toast('Paste your Google client ID into GC_ID first');
+  gAsk(0).then(function(){syUI();gLog('Token received, valid '+Math.round((gTok.exp-Date.now())/6e4)+' min','ok')}).catch(function(e){gLog('Sign in failed: '+e.message,'bad');toast(e.message)})};
 $('syOut').onclick=function(){if(!gTok)return;fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(gTok.at),{method:'POST'}).catch(function(){});
   gTok=null;try{localStorage.removeItem(G_TK)}catch(e){}$('syLog').innerHTML='';syUI();toast('Signed out — your saved records are untouched')};
 $('syGo').onclick=syGo;$('syStop').onclick=function(){syStop=1;gLog('Stopping after the current file…')};
