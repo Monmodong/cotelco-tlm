@@ -847,7 +847,7 @@ $('phP').onclick=function(){phW='P';$('phF').click()};$('phT').onclick=function(
 $('phF').onchange=function(){var f=this.files[0],w=phW;this.value='';if(!f)return;shrink(f).then(function(d){if(!d)return toast('Could not read photo');ph[w]=d;phD[w]=1;showPh()})};
 $('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button');if(b){ph[b.dataset.w]=null;phD[b.dataset.w]=1;showPh()}};
 // ---------- Google Drive sync (mirror only; the device copy stays authoritative) ----------
-var GC_ID='',G_SC='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',G_SK=KEY+'.sy',G_TK=KEY+'.gtok';
+var GC_ID='1006330015593-kqgs7iutiji3ss2u5igbifs6qk9nf839.apps.googleusercontent.com',G_SC='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',G_SK=KEY+'.sy',G_TK=KEY+'.gtok';
 var sy={root:'',proj:{},rec:{},ph:{},at:0},gTok=null,syBusy=0,syStop=0;
 try{sy=Object.assign(sy,JSON.parse(localStorage.getItem(G_SK)||'{}'))}catch(e){}
 try{gTok=JSON.parse(localStorage.getItem(G_TK)||'null')}catch(e){}
