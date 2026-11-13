@@ -95,7 +95,12 @@ textarea{min-height:60px;resize:vertical}
 #pop p{margin:3px 0}
 #baseSel{position:absolute;left:6px;top:32px;width:auto;max-width:60%;padding:6px 8px;font-size:.85rem}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px}
-.thumbs{display:flex;gap:8px;align-items:center;margin-top:6px}.thumbs img,.th img{height:84px;border-radius:6px;border:1.5px solid var(--line);animation:popIn .25s var(--ease)}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}.thumbs img,.th img{height:84px;border-radius:6px;border:1.5px solid var(--line);animation:popIn .25s var(--ease)}
+.phc{position:relative;flex:none}
+.phc button.x{position:absolute;top:5px;right:5px;width:26px;height:26px;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;border:0;border-radius:99px;background:rgba(0,0,0,.66);color:#fff;font-size:.78rem;cursor:pointer;transition:background-color .2s var(--ease),transform .12s var(--ease)}
+.phc button.x:hover{background:var(--warn)}
+.phc button.x:active{transform:scale(.92)}
+.thumbs .cnt{font-size:.74rem;font-weight:400;color:var(--mute)}
 .th{display:flex;gap:6px;margin:6px 0}
 #mapSec,#list,#ana{animation:secIn .28s var(--ease)}
 @keyframes secIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -251,7 +256,7 @@ body.dr #drScrim{opacity:1;visibility:visible;transition:opacity .26s var(--ease
   <div id="gps"></div>
 </fieldset>
 
-<input type="file" id="phF" accept="image/*" capture="environment" hidden>
+<input type="file" id="phF" accept="image/*" capture="environment" multiple hidden>
 <div class="row"><button type="submit" class="btn p" id="saveBtn">Save record</button><button type="button" class="btn" id="clr">Cancel</button></div>
 </form></div>
 </section>
@@ -336,7 +341,7 @@ function fill(r){
 function reset(){$('f').reset();$('txBox').hidden=true;pos=null;editId=null;showPos();$('saveBtn').textContent='Save record'}
 $('clr').onclick=cancelSheet;
 $('f').onsubmit=function(e){
-  e.preventDefault();var r=collect();var o0=recs.find(function(x){return x.id===r.id})||{pole:{}};r.pole.ph=phD.P?!!ph.P:!!o0.pole.ph;if(r.tx)r.tx.ph=phD.T?!!ph.T:!!(o0.tx&&o0.tx.ph);var miss=[];if(!r.pole.s.m)miss.push('Secondary structure');if(!r.pole.material)miss.push('Material');if(r.tx){if(r.tx.rating==='')miss.push('Transformer rating');if(!r.tx.type)miss.push('Transformer type');if(r.tx.line===''||r.tx.line==null)miss.push('Line current')}if(miss.length){toast('Required: '+miss.join(', '));return}if(!pos){toast('No location: tap the map to place the pole');return}if(r.pole.no&&recs.some(function(x){return x.id!==r.id&&x.project===r.project&&String(x.pole.no).toLowerCase()===r.pole.no.toLowerCase()})&&!confirm('Pole '+r.pole.no+' already exists in this project. Save anyway?'))return;if(r.tx){var n=recs.filter(function(x){return x.tx&&x.project===r.project&&x.id!==r.id}).length;if(n>=5&&!confirm('This project already has '+n+' transformers (max 5). Save anyway?'))return}
+  e.preventDefault();var r=collect();var o0=recs.find(function(x){return x.id===r.id})||{pole:{}};r.pole.ph=phD.P?!!ph.P.length:!!o0.pole.ph;if(r.tx)r.tx.ph=phD.T?!!ph.T.length:!!(o0.tx&&o0.tx.ph);var miss=[];if(!r.pole.s.m)miss.push('Secondary structure');if(!r.pole.material)miss.push('Material');if(r.tx){if(r.tx.rating==='')miss.push('Transformer rating');if(!r.tx.type)miss.push('Transformer type');if(r.tx.line===''||r.tx.line==null)miss.push('Line current')}if(miss.length){toast('Required: '+miss.join(', '));return}if(!pos){toast('No location: tap the map to place the pole');return}if(r.pole.no&&recs.some(function(x){return x.id!==r.id&&x.project===r.project&&String(x.pole.no).toLowerCase()===r.pole.no.toLowerCase()})&&!confirm('Pole '+r.pole.no+' already exists in this project. Save anyway?'))return;if(r.tx){var n=recs.filter(function(x){return x.tx&&x.project===r.project&&x.id!==r.id}).length;if(n>=5&&!confirm('This project already has '+n+' transformers (max 5). Save anyway?'))return}
   var i=recs.findIndex(function(x){return x.id===r.id});
   if(i>=0)recs[i]=r;else recs.unshift(r);
   if(persist()){toast('Saved pole '+r.pole.no);savePh(r,o0);reset();closeSheet();lists();count();M.pend=null;M.sel=null;draw()}
@@ -362,7 +367,7 @@ function render(){var recs=vis();
 $('recs').onclick=function(e){
   var b=e.target.closest('button');if(!b)return;
   if(b.dataset.e){var r=recs.find(function(x){return x.id===b.dataset.e});if(r)openSheet(r)}
-  if(b.dataset.d&&confirm('Delete this record?')){var rd=recs.find(function(x){return x.id===b.dataset.d});if(rd)hMark(rd.id,upOf(rd),rd.project||'');recs=recs.filter(function(x){return x.id!==b.dataset.d});pput(b.dataset.d+':P',null);pput(b.dataset.d+':T',null);persist();render();count();lists()}
+  if(b.dataset.d&&confirm('Delete this record?')){var rd=recs.find(function(x){return x.id===b.dataset.d});if(rd)hMark(rd.id,upOf(rd),rd.project||'');recs=recs.filter(function(x){return x.id!==b.dataset.d});phDel(b.dataset.d);persist();render();count();lists()}
 };
 
 
@@ -390,7 +395,7 @@ $('file').onchange=function(){
   var f=this.files[0];if(!f)return;var rd=new FileReader();
   rd.onload=function(){try{var D=JSON.parse(rd.result),d=Array.isArray(D)?D:D.recs;if(!Array.isArray(d))throw 0;if(D.projects)D.projects.forEach(function(p){if(projects.indexOf(p)<0)projects.push(p)});
     var ids={};recs.forEach(function(r){ids[r.id]=1});var n=0;
-    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;['P','T'].forEach(function(w){var v=D.photos&&D.photos[r.id+':'+w];if(v)pput(r.id+':'+w,asBlob(v))})}});
+    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;phAll(r.id).forEach(function(x){var v=D.photos&&D.photos[x[2]];if(v)pput(x[2],asBlob(v))})}});
     persist();projUI();render();count();lists();toast('Imported '+n+' new record(s)')}catch(e){toast('Not a valid backup file')}};
   rd.readAsText(f);this.value=''};
 
@@ -402,7 +407,7 @@ function hMark(id,up,p){var w=String(up||new Date().toISOString());
   hand.push({id:id,up:w,p:p||''});hSave()}
 function hFile(){return ($('hPh').checked?pallD():Promise.resolve({})).then(function(ph){
   return JSON.stringify({v:3,kind:'cotelco-handoff',projects:projects,recs:recs,deleted:hand,photos:ph||{}})})}
-function hTake(r,D,box){var q=D.photos||{};['P','T'].forEach(function(w){var v=q[r.id+':'+w];if(v){pput(r.id+':'+w,asBlob(v));box.p++}})}
+function hTake(r,D,box){var q=D.photos||{};phAll(r.id).forEach(function(x){var v=q[x[2]];if(v){pput(x[2],asBlob(v));box.p++}})}
 function hApply(D){
   var ins={},rdel={};
   (D.recs||[]).forEach(function(r){if(r&&r.id&&r.pole)ins[r.id]=r});
@@ -413,7 +418,7 @@ function hApply(D){
   ids.forEach(function(id){var i=ins[id],rd=rdel[id],l=byId[id],ld=ldel[id];
     if(rd&&(!i||upOf(rd)>=upOf(i))){                       // that device knows this pole is gone
       if(l&&upOf(l)<=upOf(rd)){recs=recs.filter(function(x){return x.id!==id});delete byId[id];
-        pput(id+':P',null);pput(id+':T',null);hMark(id,upOf(rd),(rd.p||(l&&l.project)||''));a.g++}
+        phDel(id);hMark(id,upOf(rd),(rd.p||(l&&l.project)||''));a.g++}
       return}
     if(!i)return;
     if(ld){if(upOf(i)<=upOf(ld))return;                    // deleted here, and that edit predates the delete
@@ -851,8 +856,8 @@ var anaRT;addEventListener('resize',function(){clearTimeout(anaRT);anaRT=setTime
 // entry sheet
 function closeSheet(){$('sheet').hidden=true;document.body.style.overflow=''}
 function cancelSheet(){reset();closeSheet();M.pend=null;draw()}
-function openSheet(r){if(viewMode){toast('View mode is on — turn it off in the menu to edit');return}reset();ph={P:null,T:null};phD={P:0,T:0};buildConn(r?r.id:'');
-  if(r){editId=r.id;fill(r);['P','T'].forEach(function(w){pget(r.id+':'+w).then(function(v){if(v&&!phD[w]){ph[w]=v;showPh()}})});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
+function openSheet(r){if(viewMode){toast('View mode is on — turn it off in the menu to edit');return}reset();ph={P:[],T:[]};phD={P:0,T:0};buildConn(r?r.id:'');
+  if(r){editId=r.id;fill(r);['P','T'].forEach(function(w){Promise.all(phAll(r.id).filter(function(x){return x[0]===w}).map(function(x){return pget(x[2])})).then(function(a){if(phD[w])return;var f=a.filter(function(v){return v});if(!f.length)return;ph[w]=f;showPh()})});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
   else{$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:0,src:'map'};showPos()}connNear()}
   $('pop').hidden=true;liveCalc();showPh();$('sheet').hidden=false;$('sheet').scrollTop=0;document.body.style.overflow='hidden';
   if(!r)setTimeout(function(){$('pno').focus()},60)}
@@ -876,7 +881,7 @@ $('pRen').onclick=function(){var n=(prompt('Rename project:',lastProj)||'').trim
   projects=projects.filter(function(p){return p!==old});projects.push(n);lastProj=n;projUI();render();
   if(ids.length)toast('Renamed here — rename it on your other device too')};
 $('pDel').onclick=function(){var nm=lastProj,k=recs.filter(function(r){return r.project===nm});if(!confirm('Delete project "'+nm+'" and its '+k.length+' pole(s)? Export a backup first.'))return;
-  k.forEach(function(r){hMark(r.id,upOf(r),nm);pput(r.id+':P',null);pput(r.id+':T',null)});recs=recs.filter(function(r){return r.project!==nm});projects=projects.filter(function(p){return p!==nm});lastProj='';projUI();switchProj()};
+  k.forEach(function(r){hMark(r.id,upOf(r),nm);phDel(r.id)});recs=recs.filter(function(r){return r.project!==nm});projects=projects.filter(function(p){return p!==nm});lastProj='';projUI();switchProj()};
 function buildConn(self){var a=vis().filter(function(x){return x.pos&&x.id!==self});
   $('conn').innerHTML='<option value="">None (start of a line)</option>'+a.map(function(x){return '<option value="'+x.id+'">'+esc((x.pole.no?'Pole # '+x.pole.no:'Unnumbered')+(x.pole.primary?' - '+x.pole.primary:''))+'</option>'}).join('')}
 function connNear(){var b=null,bd=1e18;
@@ -885,7 +890,13 @@ function connNear(){var b=null,bd=1e18;
     if(d<bd){bd=d;b=x}});
   $('conn').value=b?b.id:''}
 // photos (stored in IndexedDB as Blobs: a full-size shot is far too big for a base64 string)
-var ph={P:null,T:null},phD={P:0,T:0},phW='P',db=null,uMap={};
+var PHN=4,ph={P:[],T:[]},phD={P:0,T:0},phW='P',db=null,uMap={};
+// slots: photo 1 of a tag keeps the original 'id:P' key, later ones are 'id:P2', 'id:P3'...
+function phKey(id,w,i){return id+':'+w+(i?i+1:'')}
+function phAll(id){var a=[];['P','T'].forEach(function(w){for(var i=0;i<PHN;i++)a.push([w,i,id+':'+w+(i?i+1:'')])});return a}
+function phDel(id){phAll(id).forEach(function(x){pput(x[2],null)})}
+function phCount(){return ph.P.length+ph.T.length}
+function phCap(){return phCount()>=PHN}
 function idb(){return new Promise(function(res,rej){if(db)return res(db);var q=indexedDB.open('poleSurveyPhotos',1);q.onupgradeneeded=function(){q.result.createObjectStore('p')};q.onsuccess=function(){db=q.result;res(db)};q.onerror=function(){rej(q.error)}})}
 function pget(k){return idb().then(function(d){return new Promise(function(res){var r=d.transaction('p').objectStore('p').get(k);r.onsuccess=function(){res(r.result||null)};r.onerror=function(){res(null)}})}).catch(function(){return null})}
 function pput(k,v){if(!v)uDrop(k);return idb().then(function(d){return new Promise(function(res){var t=d.transaction('p','readwrite'),o=t.objectStore('p');if(v)o.put(v,k);else o.delete(k);t.oncomplete=function(){res(1)};t.onerror=function(){res(0)}})}).catch(function(){toast('Photo storage unavailable');return 0})}
@@ -900,13 +911,26 @@ function pallD(){return pall().then(function(p){return Promise.all(Object.keys(p
     if(typeof v==='string')return {k:k,v:v};return bToD(v).then(function(s){return {k:k,v:s}})}))})
   .then(function(a){var out={};a.forEach(function(x){out[x.k]=x.v});return out})}
 function shrink(file){return new Promise(function(res){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,2560/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);if(!c.toBlob)return res(dToB(c.toDataURL('image/jpeg',.92)));c.toBlob(function(b){res(b||null)},'image/jpeg',.92)};im.onerror=function(){res(null)};im.src=u})}
-function showPh(){['P','T'].forEach(function(w){$('th'+w).innerHTML=ph[w]?'<img src="'+uGet('sheet:'+w,ph[w])+'" alt="photo"><button type="button" class="btn d" data-w="'+w+'">Remove</button>':''})}
-function savePh(r,o0){var jobs=[];['P','T'].forEach(function(w){if(phD[w])jobs.push(pput(r.id+':'+w,(w==='T'&&!r.tx)?null:ph[w]))});if(!r.tx&&o0.tx&&o0.tx.ph)jobs.push(pput(r.id+':T',null));
+function showPh(){['P','T'].forEach(function(w){
+  $('th'+w).innerHTML=ph[w].map(function(b,i){return'<span class="phc"><img src="'+uGet('sheet:'+w+i,b)+'" alt="'+(w==='P'?'Pole':'Transformer')+' photo '+(i+1)+'"><button type="button" class="x" data-w="'+w+'" data-i="'+i+'" aria-label="Remove this photo">&#10005;</button></span>'}).join('')
+    +'<b class="cnt">'+phCount()+' of '+PHN+' photos</b>'})}
+function savePh(r,o0){var jobs=[];['P','T'].forEach(function(w){if(!phD[w])return;
+  for(var i=0;i<PHN;i++)jobs.push(pput(phKey(r.id,w,i),(w==='T'&&!r.tx)?null:(ph[w][i]||null)))});
+  if(!r.tx&&o0.tx&&o0.tx.ph)for(var j=0;j<PHN;j++)jobs.push(pput(phKey(r.id,'T',j),null));
   return Promise.all(jobs).then(function(){loadThumbs()})}
-function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(el){el.innerHTML='';['P','T'].forEach(function(w){var k=el.dataset.i+':'+w;pget(k).then(function(v){if(v){var i=new Image();i.src=uGet(k,v);i.alt=w==='P'?'Pole photo, tap to enlarge':'Transformer photo, tap to enlarge';el.appendChild(i)}})})})}
-$('phP').onclick=function(){phW='P';$('phF').click()};$('phT').onclick=function(){phW='T';$('phF').click()};
-$('phF').onchange=function(){var f=this.files[0],w=phW;this.value='';if(!f)return;shrink(f).then(function(d){if(!d)return toast('Could not read photo');ph[w]=d;phD[w]=1;showPh()})};
-$('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button');if(b){ph[b.dataset.w]=null;phD[b.dataset.w]=1;showPh()}};
+function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(el){el.innerHTML='';
+  phAll(el.dataset.i).forEach(function(x){var s=document.createElement('span');el.appendChild(s);
+    pget(x[2]).then(function(v){if(v){var i=new Image();i.src=uGet(x[2],v);i.alt=(x[0]==='P'?'Pole':'Transformer')+' photo '+(x[1]+1)+', tap to enlarge';s.appendChild(i)}})})})}
+$('phP').onclick=function(){phTake('P')};$('phT').onclick=function(){phTake('T')};
+function phTake(w){if(phCap())return toast('Four photos per record — remove one first');phW=w;$('phF').click()}
+$('phF').onchange=function(){var fs=[].slice.call(this.files),w=phW;this.value='';if(!fs.length)return;
+  Promise.all(fs.map(function(f){return shrink(f)})).then(function(a){var ok=0,bad=0,skip=0;
+    a.forEach(function(d){if(!d){bad++;return}if(phCap()){skip++;return}ph[w].push(d);phD[w]=1;ok++});
+    showPh();
+    if(!ok)toast(bad&&!skip?'Could not read photo':'Four photos per record — remove one first');
+    else if(bad||skip)toast('Added '+(ok===1?'a photo':ok+' photos')+' — limit is '+PHN)})};
+$('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button.x');if(!b)return;
+  var w=b.dataset.w,i=+b.dataset.i;if(ph[w][i]){ph[w].splice(i,1);phD[w]=1;showPh()}};
 // shared helpers: record stamp for handoff, and photo blob <-> data URL conversion
 function upOf(r){return r.up||r.time||''}
 function dToB(d){var i=d.indexOf(','),t=/:(.*?);/.exec(d.slice(0,i)),s=atob(d.slice(i+1)),u=new Uint8Array(s.length);for(var x=0;x<s.length;x++)u[x]=s.charCodeAt(x);return new Blob([u],{type:t?t[1]:'image/jpeg'})}
