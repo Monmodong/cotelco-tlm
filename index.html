@@ -14,11 +14,8 @@
 <style>
 :root{--bg:#1e1e1e;--card:#2b2b2b;--ink:#f1f1f1;--mute:#a3a3a3;--line:#414141;--acc:#1e96f0;--acc-ink:#fff;--warn:#f5a033;--ok:#47b872;--off:#e5484d;--hdr:#2b2b2b;--hdr-ink:#f1f1f1;--ease:cubic-bezier(.22,.78,.28,1);color-scheme:dark}
 :root[data-theme=light]{--bg:#eef0ec;--card:#fbfbf8;--ink:#1c2b30;--mute:#5d6b70;--line:#c9cfc9;--acc:#0e6a6a;--acc-ink:#fff;--warn:#b4541a;--ok:#2f7d3a;--off:#c9302c;--hdr:#1c2b30;--hdr-ink:#eef0ec;color-scheme:light}
-#thm{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
-#pTg{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
-#pTg:hover{filter:brightness(1.1)}#pTg:active{transform:scale(.95)}
-#vM{padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer}
-#vM:hover{filter:brightness(1.1)}#vM:active{transform:scale(.95)}
+#projNow{flex:none;max-width:46%;padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#projNow:hover{filter:brightness(1.1)}#projNow:active{transform:scale(.95)}
 body.view #vM{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
 body.view #pNew,body.view #pRen,body.view #pDel{display:none}
 .th img{cursor:zoom-in}
@@ -29,7 +26,7 @@ body.view #pNew,body.view #pRen,body.view #pDel{display:none}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);transition:background-color .3s var(--ease),color .3s var(--ease)}
 header{position:sticky;top:0;z-index:5;background:var(--hdr);color:var(--hdr-ink);padding:10px 14px;display:flex;align-items:center;gap:10px;transition:background-color .3s var(--ease),color .3s var(--ease)}
-header h1{font-size:clamp(.9rem,3.4vw,1.05rem);line-height:1.25;margin:0;flex:1;letter-spacing:.2px}
+header h1{font-size:clamp(.9rem,3.4vw,1.05rem);line-height:1.25;margin:0;flex:1;min-width:0;letter-spacing:.2px}
 #net{width:10px;height:10px;border-radius:50%;flex:none;background:var(--off);box-shadow:0 0 0 3px rgba(229,72,77,.16);transition:background-color .35s var(--ease),box-shadow .35s var(--ease)}
 #net.on{background:var(--ok);box-shadow:0 0 0 3px rgba(71,184,114,.16);animation:netPulse 2.6s ease-out infinite}
 @keyframes netPulse{0%{box-shadow:0 0 0 0 rgba(71,184,114,.45)}70%{box-shadow:0 0 0 7px rgba(71,184,114,0)}100%{box-shadow:0 0 0 0 rgba(71,184,114,0)}}
@@ -57,8 +54,8 @@ textarea{min-height:60px;resize:vertical}
 .btn{padding:12px 16px;border-radius:6px;border:1.5px solid var(--acc);background:none;color:var(--acc);font:inherit;font-weight:700;cursor:pointer;transition:transform .15s var(--ease),background-color .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),filter .2s var(--ease)}
 .btn.p{background:var(--acc);color:var(--acc-ink)}
 .btn.d{border-color:var(--warn);color:var(--warn)}
-.btn:hover,#thm:hover,.mb button:hover{filter:brightness(1.1)}
-.btn:active,#thm:active,.mb button:active{transform:scale(.95)}
+.btn:hover,.mb button:hover{filter:brightness(1.1)}
+.btn:active,.mb button:active{transform:scale(.95)}
 .btn.p:not(:disabled):hover{box-shadow:0 4px 14px rgba(30,150,240,.3)}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row .btn{flex:1}
@@ -73,8 +70,7 @@ textarea{min-height:60px;resize:vertical}
 .empty{text-align:center;color:var(--mute);padding:40px 10px}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,10px) scale(.98);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .22s var(--ease),transform .22s var(--ease);pointer-events:none;z-index:9}
 #toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
-#map{position:relative;height:calc(100vh - 170px);min-height:340px;background:var(--card);border:1.5px solid var(--line);border-radius:8px;overflow:hidden;transition:height .34s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease)}
-body.proj-hide #map{height:calc(100vh - 118px)}
+#map{position:relative;height:calc(100vh - 118px);min-height:340px;background:var(--card);border:1.5px solid var(--line);border-radius:8px;overflow:hidden;transition:height .34s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease)}
 #cv{width:100%;height:100%;display:block;touch-action:none}
 .mb{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
 .mb button{width:46px;height:46px;border-radius:8px;border:1.5px solid var(--acc);background:var(--card);color:var(--acc);font:inherit;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease),background-color .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),filter .2s var(--ease),opacity .2s var(--ease)}
@@ -89,12 +85,10 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 @keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 #pop .btn{padding:7px}
 #sheet{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
-#dlSheet,#syncSheet{position:fixed;inset:0;z-index:21;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
-#dlSheet .bar,#syncSheet .bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:var(--hdr);color:var(--hdr-ink);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
-#dlSheet .bar b,#syncSheet .bar b{flex:1}#dlSheet .bar .btn,#syncSheet .bar .btn{border-color:var(--hdr-ink);color:var(--hdr-ink);padding:7px 12px}
+#dlSheet{position:fixed;inset:0;z-index:21;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);animation:sheetIn .3s var(--ease)}
+#dlSheet .bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:var(--hdr);color:var(--hdr-ink);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+#dlSheet .bar b{flex:1}#dlSheet .bar .btn{border-color:var(--hdr-ink);color:var(--hdr-ink);padding:7px 12px}
 #dlSheet input[type=range]{width:100%;accent-color:var(--acc)}
-.slog{font:12px/1.5 ui-monospace,Consolas,monospace;color:var(--mute);white-space:pre-wrap;word-break:break-word;max-height:38vh;overflow-y:auto;margin-top:10px}
-.slog .ok{color:var(--ok)}.slog .bad{color:var(--off)}
 #dlProg{height:10px;border:1.5px solid var(--line);border-radius:99px;background:var(--card);overflow:hidden}
 #dlProg i{display:block;height:100%;width:0;background:var(--acc);transition:width .25s var(--ease)}
 @keyframes sheetIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -104,12 +98,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 .bad{color:var(--warn);font-weight:700}
 #pop p{margin:3px 0}
 #baseSel{position:absolute;left:6px;top:32px;width:auto;max-width:60%;padding:6px 8px;font-size:.85rem}
-#projbar{display:flex;align-items:center;gap:10px;background:var(--card);padding:8px 14px;border-bottom:2px solid var(--line);overflow:hidden;max-height:300px;transition:max-height .34s var(--ease),opacity .24s var(--ease),padding .34s var(--ease),background-color .3s var(--ease),border-bottom-width .34s var(--ease),border-color .3s var(--ease)}
-#projbar.hide{max-height:0!important;opacity:0;padding-top:0;padding-bottom:0;border-bottom-width:0;pointer-events:none}
-#projbar label{margin:0;white-space:nowrap;font-weight:700;color:var(--ink)}#projbar input{padding:8px}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px}
-#projbar{flex-wrap:wrap}#projbar select{flex:1;min-width:120px;padding:8px}#projbar .btn{padding:7px 10px;font-size:.85rem;flex:none}
-@media (max-width:480px){#projbar{gap:6px;padding-left:10px;padding-right:10px}#projbar select{min-width:80px}#projbar .btn{padding:7px 6px}}
 .thumbs{display:flex;gap:8px;align-items:center;margin-top:6px}.thumbs img,.th img{height:84px;border-radius:6px;border:1.5px solid var(--line);animation:popIn .25s var(--ease)}
 .th{display:flex;gap:6px;margin:6px 0}
 #mapSec,#list,#ana{animation:secIn .28s var(--ease)}
@@ -144,6 +133,36 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 .atab i.hi b{color:var(--acc-ink)}
 .atab i.now{border-color:var(--warn)}
 .rec details summary{cursor:pointer;font-size:.85rem;color:var(--acc);font-weight:700;padding:4px 0}
+#menu{flex:none;width:42px;height:36px;padding:0;border-radius:8px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#menu svg{display:block}
+#menu:hover{filter:brightness(1.1)}#menu:active{transform:scale(.95)}
+#drawer{position:fixed;top:0;bottom:0;left:0;z-index:26;width:280px;max-width:84vw;background:var(--card);border-right:1.5px solid var(--line);overflow-y:auto;overscroll-behavior:contain;visibility:hidden;transform:translateX(-101%);transition:transform .3s var(--ease),visibility 0s .3s,background-color .3s var(--ease),border-color .3s var(--ease)}
+body.dr{overflow:hidden}
+body.dr #drawer{visibility:visible;transform:none;transition:transform .3s var(--ease),visibility 0s,background-color .3s var(--ease),border-color .3s var(--ease)}
+#drScrim{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.55);opacity:0;visibility:hidden;transition:opacity .26s var(--ease),visibility 0s .26s}
+body.dr #drScrim{opacity:1;visibility:visible;transition:opacity .26s var(--ease),visibility 0s}
+#drawer .dh{position:sticky;top:0;display:flex;align-items:center;gap:8px;background:var(--hdr);color:var(--hdr-ink);padding:calc(12px + env(safe-area-inset-top)) 12px 12px}
+#drawer .dh b{flex:1;font-size:.95rem}
+#drawer .grp{padding:0 12px 6px}
+#drawer .grp>b{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;color:var(--mute);margin:14px 2px 7px}
+#drawer button{display:block;width:100%;text-align:left;padding:12px;min-height:44px;margin-bottom:6px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:.92rem;font-weight:600;cursor:pointer}
+#drawer button:hover{border-color:var(--acc);color:var(--acc)}
+#drawer button:active{transform:scale(.98)}
+#drawer button.p{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+#drawer button.d{border-color:var(--warn);color:var(--warn)}
+#projList{margin:0 0 8px}
+#projList button em{float:right;font-style:normal;font-weight:400;color:var(--mute)}
+#projList button.p em{color:var(--acc-ink)}
+#drawer .dh button{width:34px;height:34px;min-height:0;padding:0;border:1px solid var(--hdr-ink);border-radius:99px;background:none;color:var(--hdr-ink);font-size:.95rem}
+#drawer .note{font-size:.76rem;line-height:1.45;color:var(--mute);margin:2px 2px 10px}
+#drawer label.sw{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--mute);margin:2px 2px 10px}
+#drawer label.sw input{width:auto;flex:none}
+@media (min-width:900px){
+  #menu,#drScrim{display:none}
+  #drawer{visibility:visible;transform:none;box-shadow:1.5px 0 0 var(--line)}
+  body{padding-left:280px}
+  #sheet,#dlSheet{left:280px}
+}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
@@ -151,13 +170,45 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 </style>
 </head>
 <body>
-<header><h1 id="title">COTELCO System: TLM</h1><span id="net" role="status" aria-label="Offline" title="Offline"></span><button id="vM" type="button" aria-pressed="false">View</button><button id="pTg" type="button" aria-expanded="true">Project</button><button id="thm" type="button">Light</button></header>
+<header><button id="menu" type="button" aria-label="Menu" aria-controls="drawer" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1 id="title">COTELCO System: TLM</h1><button id="projNow" type="button" aria-label="Open project. Change it in the menu">Project 1</button><span id="net" role="status" aria-label="Offline" title="Offline"></span></header>
+<aside id="drawer" aria-label="Menu" aria-hidden="true">
+  <div class="dh"><b>Menu</b><button type="button" id="drX" aria-label="Close menu">&#10005;</button></div>
+  <div class="grp"><b>Project</b>
+    <button class="btn" id="pOpen" type="button" data-keep="1" aria-expanded="false">Open project</button>
+    <div id="projList" hidden></div>
+    <button class="btn" id="pNew" type="button">New project</button>
+    <button class="btn" id="pRen" type="button">Rename project</button>
+    <button class="btn d" id="pDel" type="button">Delete project</button>
+  </div>
+  <div class="grp"><b>Move data</b>
+    <button class="btn p" id="hSend" type="button">Send to PC</button>
+    <button class="btn" id="hMerge" type="button">Merge phone file</button>
+    <label class="sw"><input type="checkbox" id="hPh" checked><span>Include photos in the file</span></label>
+    <button class="btn" id="xJson" type="button">Backup JSON</button>
+    <button class="btn" id="imp" type="button">Import backup</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+    <input type="file" id="hFile" accept=".json,application/json" hidden>
+    <p class="note">No account needed. <b>Send to PC</b> hands one file to the phone&rsquo;s share sheet &mdash; WhatsApp to yourself, your Drive app, email, a cable. On the PC press <b>Merge phone file</b> and pick it: poles added on either side both arrive, the newer copy of a pole changed on both wins, deletes carry over. Photos off makes the file a few hundred kilobytes instead of megabytes.</p>
+  </div>
+  <div class="grp"><b>Reports</b>
+    <button class="btn" id="xCsv" type="button">Export CSV</button>
+    <button class="btn" id="xGeo" type="button">Export GeoJSON</button>
+  </div>
+  <div class="grp"><b>Map</b>
+    <button class="btn" id="dlBtn" type="button">Offline map tiles</button>
+  </div>
+  <div class="grp"><b>App</b>
+    <button class="btn" id="vM" type="button" aria-pressed="false">View mode</button>
+    <button class="btn" id="thm" type="button">Light theme</button>
+    <p class="note">Records and photos live on this device and work with no internet. Nothing leaves unless you export or hand off.</p>
+  </div>
+</aside>
+<div id="drScrim"></div>
 <nav role="tablist">
   <button role="tab" aria-selected="true" data-t="map">Map</button>
   <button role="tab" aria-selected="false" data-t="list" id="tabList">Saved (0)</button>
   <button role="tab" aria-selected="false" data-t="ana" id="tabAna">Analysis</button>
 </nav>
-<div id="projbar"><label for="projSel">Project</label><select id="projSel"></select><button class="btn" id="pNew">New</button><button class="btn" id="pRen">Rename</button><button class="btn d" id="pDel">Delete</button></div>
 <main>
 <section id="sheet" hidden><div class="bar"><b id="sheetT">New pole</b><button type="button" class="btn" id="sx">Cancel</button></div><div style="max-width:720px;margin:0 auto;padding:14px">
 <form id="f" autocomplete="off">
@@ -226,36 +277,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 </fieldset>
 <fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly.<br><br><b>Use OpenStreetMap for offline maps.</b> Google Satellite blocks the requests this download needs, so Google tiles usually cannot be saved. The offline area is shared by both base maps only if you download each of them. Please download modestly — heavy tile traffic gets the OpenStreetMap server to refuse your phone for a while.</p></fieldset>
 </div></section>
-
-<section id="syncSheet" hidden><div class="bar"><b>Sync to Google Drive</b><button type="button" class="btn" id="syX">Close</button></div><div style="max-width:720px;margin:0 auto;padding:14px">
-<fieldset><legend>Account</legend>
-<div id="syWho" class="calc"></div>
-<div class="row" style="margin-top:10px"><button type="button" class="btn p" id="syIn">Sign in with Google</button><button type="button" class="btn" id="syOut" hidden>Sign out</button></div>
-<div id="syCode" class="calc" hidden></div>
-<p style="margin:10px 0 0;font-size:.9rem;color:var(--mute)">Signing in only tells this app which Drive is yours. It shows a short code to type into Google on any screen — no window has to open inside this app, which is why it works from the phone’s installed icon as well as a browser tab. Nothing is uploaded or downloaded until you press Sync.</p>
-</fieldset>
-<fieldset><legend>Sync</legend>
-<div class="row"><button type="button" class="btn p" id="syGo">Sync now</button><button type="button" class="btn d" id="syStop" hidden>Stop</button></div>
-<div id="syStat" class="calc" style="margin-top:8px"></div>
-<div class="row" style="margin-top:10px"><label style="display:flex;align-items:center;gap:8px;font-size:.9rem"><input type="checkbox" id="syPh" checked><span>Send and fetch photos</span></label></div>
-<div id="syLog" class="slog"></div>
-</fieldset>
-<fieldset><legend>Where your data goes</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">A folder named <b>cotelco-tlm</b> in your Drive, with one subfolder per project. Each pole is its own small file inside it, and photos sit in a <b>photos</b> subfolder as ordinary .jpg files you can open without this app.<br><br>Everything stays saved on this device exactly as before, and the app works with no internet — Drive is only a mirror. If the same pole is changed on two devices, the one saved last wins and the log says so.</p></fieldset>
-</div></section>
-
 <section id="list" hidden>
-  <div class="row" style="margin-bottom:12px">
-    <button class="btn" id="xCsv">Export CSV</button><button class="btn" id="xGeo">Export GeoJSON</button>
-    <button class="btn" id="xJson">Backup JSON</button><button class="btn" id="imp">Import backup</button>
-    <button class="btn" id="syBtn">Sync</button>
-    <input type="file" id="file" accept=".json,application/json" hidden>
-  </div>
-  <div class="row" style="margin-bottom:6px">
-    <button class="btn p" id="hSend">Send to PC</button><button class="btn" id="hMerge">Merge phone file</button>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;flex:none"><input type="checkbox" id="hPh" checked><span>with photos</span></label>
-    <input type="file" id="hFile" accept=".json,application/json" hidden>
-  </div>
-  <p style="font-size:.85rem;color:var(--mute);margin:0 0 12px">Move work between the phone and the PC without any account. <b>Send to PC</b> hands one file to the phone&rsquo;s share sheet — WhatsApp to yourself, your Drive app, email, a cable, anything. On the PC press <b>Merge phone file</b> and pick that file: poles you added on either side both arrive, the newer copy of a pole you changed on both wins, and poles deleted on one side go on the other. Turn <b>with photos</b> off for a file that is a few hundred kilobytes instead of megabytes.</p>
   <div id="recs"></div>
   
 </section>
@@ -275,7 +297,7 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 
 <script>
 (function(){
-var KEY='poleSurvey.v1', recs=[], editId=null, pos=null, lastProj='', projects=[], projPref=true;
+var KEY='poleSurvey.v1', recs=[], editId=null, pos=null, lastProj='', projects=[];
 var $=function(i){return document.getElementById(i)};
 function load(){try{recs=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){recs=[];toast('Could not read saved data')}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(recs));localStorage.setItem(KEY+'.projects',JSON.stringify(projects));return true}catch(e){toast('Save failed: storage full or blocked. Export now!');return false}}
@@ -343,7 +365,7 @@ function render(){var recs=vis();
 $('recs').onclick=function(e){
   var b=e.target.closest('button');if(!b)return;
   if(b.dataset.e){var r=recs.find(function(x){return x.id===b.dataset.e});if(r)openSheet(r)}
-  if(b.dataset.d&&confirm('Delete this record?')){var rd=recs.find(function(x){return x.id===b.dataset.d});if(rd){hMark(rd.id,upOf(rd),rd.project||'');var pv=sy.rec[rd.id];if(pv&&pv.f)sy.rec[rd.id]={u:new Date().toISOString(),d:1,g:0,p:rd.project||'',f:pv.f,m:pv.m};else delete sy.rec[rd.id];delete sy.ph[rd.id+':P'];delete sy.ph[rd.id+':T'];sySave()}recs=recs.filter(function(x){return x.id!==b.dataset.d});pput(b.dataset.d+':P',null);pput(b.dataset.d+':T',null);persist();render();count();lists()}
+  if(b.dataset.d&&confirm('Delete this record?')){var rd=recs.find(function(x){return x.id===b.dataset.d});if(rd)hMark(rd.id,upOf(rd),rd.project||'');recs=recs.filter(function(x){return x.id!==b.dataset.d});pput(b.dataset.d+':P',null);pput(b.dataset.d+':T',null);persist();render();count();lists()}
 };
 
 
@@ -440,15 +462,7 @@ function zoomStep(){
   var prev=M.z;M.z+=d*0.3;
   if(M.anchor)applyAnchor();else{var c=ll(M.cx,M.cy,prev),p=px(c.lat,c.lon,M.z);M.cx=p.x;M.cy=p.y}
   draw();zraf=requestAnimationFrame(zoomStep)}
-function zoom(d){var base=M.zt==null?M.z:M.zt,z=clampZ(base+d);if(Math.abs(z-base)<0.001)return;M.anchor=null;M.zt=z;projPeek();zoomRun()}
-function projPeek(){
-  var b=$('projbar');if(!b)return;clearTimeout(projPeek.h);
-  document.body.classList.add('proj-hide');b.classList.add('hide');
-  projPeek.h=setTimeout(function(){
-    if(!projPref)return;
-    b.style.transition='none';b.classList.remove('hide');document.body.classList.remove('proj-hide');
-    requestAnimationFrame(function(){b.style.transition=''})
-  },900)}
+function zoom(d){var base=M.zt==null?M.z:M.zt,z=clampZ(base+d);if(Math.abs(z-base)<0.001)return;M.anchor=null;M.zt=z;zoomRun()}
 function fit(){
   var a=vis().filter(function(r){return r.pos});if(!a.length){ctr(7.07,125.61,12);draw();return}
   var w=$('map').clientWidth,h=$('map').clientHeight,la=a.map(function(r){return r.pos.lat}),lo=a.map(function(r){return r.pos.lon});
@@ -553,14 +567,14 @@ cv.onpointermove=function(e){var o=P[e.pointerId];if(!o)return;var n=Object.keys
   P[e.pointerId]={x:e.clientX,y:e.clientY};
   if(n===2&&pinch){mv=99;var m=pMid(),d=pinchD();
     M.anchor={lat:pinch.ll.lat,lon:pinch.ll.lon,x:m.x,y:m.y};
-    M.zt=clampZ(pinch.z0+Math.log2(Math.max(d,.001)/pinch.d0));projPeek();zoomRun()}
+    M.zt=clampZ(pinch.z0+Math.log2(Math.max(d,.001)/pinch.d0));zoomRun()}
   draw()};
 cv.onpointerup=cv.onpointercancel=function(e){if(P[e.pointerId]&&Object.keys(P).length===1&&mv<8)tap(e);
   delete P[e.pointerId];if(Object.keys(P).length<2){pinch=null;M.anchor=null}};
 cv.onwheel=function(e){e.preventDefault();var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,A=atLL(x,y);
   var base=M.zt==null?M.z:M.zt,d=-e.deltaY*(e.deltaMode===1?0.4:0.006);d=Math.max(-1.2,Math.min(1.2,d));
   var z=clampZ(base+d);if(Math.abs(z-base)<0.0001)return;
-  M.anchor={lat:A.lat,lon:A.lon,x:e.clientX,y:e.clientY};M.zt=z;projPeek();zoomRun()};
+  M.anchor={lat:A.lat,lon:A.lon,x:e.clientX,y:e.clientY};M.zt=z;zoomRun()};
 function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,best=null,bd=26;
   M.hits.forEach(function(h){var d=Math.hypot(h.x-x,h.y-y);if(d<bd){bd=d;best=h.id}});
   M.sel=best;M.pend=null;$('pop').hidden=true;
@@ -576,9 +590,6 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
   draw()}
 $('zi').onclick=function(){zoom(1)};$('zo').onclick=function(){zoom(-1)};
 $('loc').onclick=gpsAsk;$('greq').onclick=gpsAsk;
-function projBarShow(s){var b=$('projbar');projPref=!!s;clearTimeout(projPeek.h);b.style.maxHeight='';b.classList.toggle('hide',!s);document.body.classList.toggle('proj-hide',!s);$('pTg').setAttribute('aria-expanded',String(s))}
-$('pTg').onclick=function(){projBarShow(!projPref);try{localStorage.setItem(KEY+'.projbar',projPref?'1':'0')}catch(e){}draw()};
-try{if(localStorage.getItem(KEY+'.projbar')==='0')projBarShow(false)}catch(e){}
 // view-only mode: browse and inspect, never edit
 var viewMode=0;
 function setView(on,quiet){viewMode=!!on;document.body.classList.toggle('view',viewMode);
@@ -843,7 +854,7 @@ var anaRT;addEventListener('resize',function(){clearTimeout(anaRT);anaRT=setTime
 // entry sheet
 function closeSheet(){$('sheet').hidden=true;document.body.style.overflow=''}
 function cancelSheet(){reset();closeSheet();M.pend=null;draw()}
-function openSheet(r){if(viewMode){toast('Tap "View" in the header to edit');return}reset();ph={P:null,T:null};phD={P:0,T:0};buildConn(r?r.id:'');
+function openSheet(r){if(viewMode){toast('View mode is on — turn it off in the menu to edit');return}reset();ph={P:null,T:null};phD={P:0,T:0};buildConn(r?r.id:'');
   if(r){editId=r.id;fill(r);['P','T'].forEach(function(w){pget(r.id+':'+w).then(function(v){if(v&&!phD[w]){ph[w]=v;showPh()}})});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
   else{$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:0,src:'map'};showPos()}connNear()}
   $('pop').hidden=true;liveCalc();showPh();$('sheet').hidden=false;$('sheet').scrollTop=0;document.body.style.overflow='hidden';
@@ -853,17 +864,22 @@ $('sx').onclick=cancelSheet;
 function vis(){return recs.filter(function(r){return r.project===lastProj})}
 function projNames(){var o={};projects.forEach(function(n){o[n]=1});recs.forEach(function(r){if(r.project)o[r.project]=1});return Object.keys(o)}
 function projUI(){var n=projNames();if(!n.length)n=['Project 1'];if(n.indexOf(lastProj)<0)lastProj=n[0];projects=n;
-  $('projSel').innerHTML=n.map(function(v){return '<option>'+esc(v)+'</option>'}).join('');$('projSel').value=lastProj;
+  $('projNow').textContent=lastProj;$('projNow').title='Open project: '+lastProj;
+  $('projList').innerHTML=n.map(function(v){var c=recs.filter(function(r){return r.project===v}).length;
+    return '<button type="button" data-p="'+esc(v)+'"'+(v===lastProj?' class="p"':'')+'>'+esc(v)+'<em>'+c+' pole'+(c===1?'':'s')+'</em></button>'}).join('');
   try{localStorage.setItem(KEY+'.proj',lastProj)}catch(e){}persist()}
 function switchProj(){M.sel=null;M.pend=null;$('pop').hidden=true;count();render();renderAna();mapOpen();fit()}
-$('projSel').onchange=function(){lastProj=this.value;projUI();switchProj()};
+function openProj(n){if(n===lastProj)return;lastProj=n;projUI();switchProj()}
+$('pOpen').onclick=function(){var l=$('projList');l.hidden=!l.hidden;$('pOpen').setAttribute('aria-expanded',String(!l.hidden))};
+$('projList').onclick=function(e){var b=e.target.closest('button');if(b&&b.dataset.p)openProj(b.dataset.p)};
+$('projNow').onclick=function(){if(drW.matches)$('pOpen').focus();else drSet(1)};
 $('pNew').onclick=function(){var n=(prompt('New project name:')||'').trim();if(!n)return;if(projNames().indexOf(n)<0)projects.push(n);lastProj=n;projUI();switchProj()};
 $('pRen').onclick=function(){var n=(prompt('Rename project:',lastProj)||'').trim();if(!n||n===lastProj)return;if(projNames().indexOf(n)>=0)return toast('That name already exists');
-  var old=lastProj,ids=[];recs.forEach(function(r){if(r.project===old){r.project=n;ids.push(r.id)}});syDrop(old,ids);
+  var old=lastProj,ids=[];recs.forEach(function(r){if(r.project===old){r.project=n;ids.push(r.id)}});
   projects=projects.filter(function(p){return p!==old});projects.push(n);lastProj=n;projUI();render();
   if(ids.length)toast('Renamed here — rename it on your other device too')};
 $('pDel').onclick=function(){var nm=lastProj,k=recs.filter(function(r){return r.project===nm});if(!confirm('Delete project "'+nm+'" and its '+k.length+' pole(s)? Export a backup first.'))return;
-  k.forEach(function(r){hMark(r.id,upOf(r),nm);pput(r.id+':P',null);pput(r.id+':T',null);delete sy.ph[r.id+':P'];delete sy.ph[r.id+':T'];var pv=sy.rec[r.id];if(pv&&pv.f)sy.rec[r.id]={u:new Date().toISOString(),d:1,g:0,p:nm,f:pv.f,m:pv.m};else delete sy.rec[r.id]});sySave();recs=recs.filter(function(r){return r.project!==nm});projects=projects.filter(function(p){return p!==nm});lastProj='';projUI();switchProj()};
+  k.forEach(function(r){hMark(r.id,upOf(r),nm);pput(r.id+':P',null);pput(r.id+':T',null)});recs=recs.filter(function(r){return r.project!==nm});projects=projects.filter(function(p){return p!==nm});lastProj='';projUI();switchProj()};
 function buildConn(self){var a=vis().filter(function(x){return x.pos&&x.id!==self});
   $('conn').innerHTML='<option value="">None (start of a line)</option>'+a.map(function(x){return '<option value="'+x.id+'">'+esc((x.pole.no?'Pole # '+x.pole.no:'Unnumbered')+(x.pole.primary?' - '+x.pole.primary:''))+'</option>'}).join('')}
 function connNear(){var b=null,bd=1e18;
@@ -894,160 +910,10 @@ function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(
 $('phP').onclick=function(){phW='P';$('phF').click()};$('phT').onclick=function(){phW='T';$('phF').click()};
 $('phF').onchange=function(){var f=this.files[0],w=phW;this.value='';if(!f)return;shrink(f).then(function(d){if(!d)return toast('Could not read photo');ph[w]=d;phD[w]=1;showPh()})};
 $('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button');if(b){ph[b.dataset.w]=null;phD[b.dataset.w]=1;showPh()}};
-// ---------- Google Drive sync (mirror only; the device copy stays authoritative) ----------
-var GC_ID='1006330015593-kqgs7iutiji3ss2u5igbifs6qk9nf839.apps.googleusercontent.com',G_SC='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',G_SK=KEY+'.sy',G_TK=KEY+'.gtok',G_DEV=KEY+'.gdev';
-var sy={root:'',proj:{},rec:{},ph:{},at:0},gTok=null,syDev=null,syBusy=0,syStop=0;
-try{sy=Object.assign(sy,JSON.parse(localStorage.getItem(G_SK)||'{}'))}catch(e){}
-try{gTok=JSON.parse(localStorage.getItem(G_TK)||'null')}catch(e){}
-try{syDev=JSON.parse(localStorage.getItem(G_DEV)||'null')}catch(e){}
-function sySave(){try{localStorage.setItem(G_SK,JSON.stringify(sy))}catch(e){}}
+// shared helpers: record stamp for handoff, and photo blob <-> data URL conversion
 function upOf(r){return r.up||r.time||''}
-function gOk(){return !!(gTok&&gTok.at&&Date.now()<gTok.exp-12e4)}
-function gLog(s,c){var d=document.createElement('div');if(c)d.className=c;d.textContent=s;var l=$('syLog');l.appendChild(d);l.scrollTop=l.scrollHeight}
-function seq(a){return a.reduce(function(p,f){return p.then(function(){if(syStop)throw new Error('Stopped');return f()})},Promise.resolve())}
-function gErr(r){return r.text().then(function(t){if(!r.ok){var j={};try{j=JSON.parse(t)}catch(e){}throw new Error((j.error&&(j.error.message||j.error.code))||'HTTP '+r.status)}return JSON.parse(t)})}
-function gHdr(c){var h={authorization:'Bearer '+gTok.at};if(c)h['content-type']=c;return h}
-function gJson(p,body){return fetch('https://www.googleapis.com/drive/v3'+p,{method:body?'POST':'GET',headers:gHdr('application/json'),body:body?JSON.stringify(body):null}).then(gErr)}
-function gList(fid){return gJson('/files?q='+encodeURIComponent("'"+fid+"' in parents and trashed=false")+'&fields=files(id,name,mimeType,size,md5Checksum,modifiedTime)&pageSize=1000').then(function(d){return d.files||[]})}
-function gFolder(name,parent){return gList(parent).then(function(fs){var f=fs.filter(function(x){return x.name===name&&x.mimeType==='application/vnd.google-apps.folder'})[0];
-  return f||gJson('/files?fields=id,name',{name:name,mimeType:'application/vnd.google-apps.folder',parents:[parent]})})}
-function gNew(parent,name,mime,buf){var b='cotelco'+Date.now().toString(36);
-  var pre='--'+b+'\r\ncontent-type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:name,parents:[parent]})+'\r\n--'+b+'\r\ncontent-type: '+(mime||'application/octet-stream')+'\r\n\r\n';
-  return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,md5Checksum',{method:'POST',headers:gHdr('multipart/related; boundary='+b),body:new Blob([pre,buf,'\r\n--'+b+'--\r\n'])}).then(gErr)}
-function gOver(fid,mime,buf){return fetch('https://www.googleapis.com/upload/drive/v3/files/'+fid+'?uploadType=media&fields=id,name,md5Checksum',{method:'PATCH',headers:gHdr(mime||'application/octet-stream'),body:buf}).then(gErr)}
-function gText(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',{headers:gHdr()}).then(function(r){if(!r.ok)throw new Error('Could not read '+fid);return r.text()})}
-function gBlob(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',{headers:gHdr()}).then(function(r){if(!r.ok)throw new Error('Could not read '+fid);return r.blob()})}
-function gDel(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid,{method:'DELETE',headers:gHdr()}).then(function(r){if(!r.ok&&r.status!==204)throw new Error('Could not remove a stale photo')})}
 function dToB(d){var i=d.indexOf(','),t=/:(.*?);/.exec(d.slice(0,i)),s=atob(d.slice(i+1)),u=new Uint8Array(s.length);for(var x=0;x<s.length;x++)u[x]=s.charCodeAt(x);return new Blob([u],{type:t?t[1]:'image/jpeg'})}
 function bToD(b){return new Promise(function(res,rej){var f=new FileReader();f.onload=function(){res(f.result)};f.onerror=function(){rej(new Error('Could not read a photo'))};f.readAsDataURL(b)})}
-// sign-in: Google's device flow — the app never opens a window, because a PWA cannot hear one come back
-var dvOn=0;
-function dPost(p,q){var b=Object.keys(q).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(q[k])}).join('&');
-  return fetch('https://oauth2.googleapis.com/'+p,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:b}).then(function(r){
-    return r.json().then(function(j){if(!r.ok){var e=new Error(dWhy(j));e.code=j.error||'';throw e}return j})})}
-function dWhy(j){var m=j.error||'';
-  if(m==='invalid_client')return 'This client ID cannot do device sign-in — it has to be an OAuth client of type "TV and Limited-Input devices"';
-  if(m==='invalid_scope')return 'Google refused the Drive scope — add drive.file to the consent screen';
-  if(m==='access_denied')return 'You declined the request on Google’s page';
-  if(m==='expired_token')return 'That code timed out — start again';
-  return j.error_description||m||'Google refused the request'}
-function dvSay(u,w){dvOn=1;var c=$('syCode');c.hidden=0;c.innerHTML='';
-  var t=document.createElement('div');t.textContent='On any screen signed in to your Google account, open '+w+' and enter:';t.style.cssText='margin:8px 0 6px';
-  var k=document.createElement('div');k.textContent=u;k.style.cssText='font:700 1.6rem/1.2 ui-monospace,Consolas,monospace;letter-spacing:.18em;text-align:center;padding:10px;border:1.5px dashed var(--acc);border-radius:6px';
-  var r=document.createElement('div');r.className='row';r.style.marginTop='10px';
-  var a=document.createElement('a');a.href=w;a.target='_blank';a.rel='noopener';a.className='btn p';a.style.cssText='text-decoration:none;text-align:center;flex:1';a.textContent='Open Google';
-  var x=document.createElement('button');x.type='button';x.className='btn';x.textContent='Cancel';x.onclick=function(){dvOff();toast('Cancelled — nothing was connected')};
-  r.appendChild(a);r.appendChild(x);c.appendChild(t);c.appendChild(k);c.appendChild(r)}
-function dvOff(){dvOn=0;var c=$('syCode');c.hidden=1;c.innerHTML=''}
-function dvPoll(d,i){return new Promise(function(res,rej){setTimeout(function(){
-  if(!dvOn)return rej(new Error('Sign-in was cancelled'));
-  dPost('token',{grant_type:'urn:ietf:params:oauth:grant-type:device_code',client_id:GC_ID,device_code:d.device_code}).then(res,function(e){
-    if(e.code==='authorization_pending')return dvPoll(d,i).then(res,rej);
-    if(e.code==='slow_down')return dvPoll(d,i+5000).then(res,rej);
-    rej(e)})},i)})}
-function dvGo(){return dPost('device/code',{client_id:GC_ID,scope:G_SC}).then(function(d){
-  dvSay(d.user_code,d.verification_uri_complete||d.verification_url||d.verification_uri||'https://www.google.com/device');return dvPoll(d,(d.interval||5)*1000)})}
-function gAsk(silent){return new Promise(function(res,rej){
-  if(gOk())return res(gTok);
-  var got=function(j){dvOff();gTok={at:j.access_token,exp:Date.now()+(j.expires_in||3600)*1000,em:'',rt:j.refresh_token||(gTok&&gTok.rt)||''};sySave();
-    try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}
-    fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:gHdr()}).then(function(x){return x.json()}).then(function(u){gTok.em=u.email||'';try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}syUI()}).catch(function(){});
-    res(gTok)};
-  var dev=function(){if(!navigator.onLine)return Promise.reject(new Error('No internet — Google cannot be reached'));return dvGo()};
-  if(gTok&&gTok.rt)return dPost('token',{grant_type:'refresh_token',client_id:GC_ID,refresh_token:gTok.rt}).then(got,function(e){
-    if(silent)throw e;return dev().then(got)});
-  if(silent)return rej(new Error('Not signed in'));
-  dev().then(got,rej)})}
-// merge: last save wins, whole record at a time
-function syMerge(o,st){var i=recs.findIndex(function(x){return x.id===o.id}),no=(o.pole&&o.pole.no)||o.id;
-  if(o.deleted){if(i<0)return null;recs.splice(i,1);return 'Pole '+no+' was deleted on another device'}
-  if(st&&st.d&&st.u>=upOf(o))return 'skip';
-  if(i<0)return (recs.push(o),'Pulled new pole '+no);
-  if(upOf(o)<=upOf(recs[i]))return null;
-  recs[i]=o;return 'Pole '+no+' was newer on Drive, it replaces this copy'}
-function sySend(r,fid,remote){var f=remote[r.id+'.json'],b=new Blob([JSON.stringify(r)],{type:'application/json'});
-  return (f?gOver(f.id,'application/json',b):gNew(fid,r.id+'.json','application/json',b)).then(function(x){
-    sy.rec[r.id]={f:x.id,u:upOf(r),m:x.md5Checksum||''};sySave();gLog('Sent pole '+r.pole.no)})}
-function syProj(name,fid){
-  var wantPh=$('syPh').checked;
-  return gList(fid).then(function(fs){
-    var remote={},pulls=[];
-    fs.forEach(function(f){remote[f.name]=f});
-    fs.forEach(function(f){if(!/\.json$/i.test(f.name))return;var id=f.name.slice(0,-5),s=sy.rec[id];
-      if(s&&s.f===f.id&&(!f.md5Checksum||s.m===f.md5Checksum))return;
-      pulls.push(function(){return gText(f.id).then(function(t){var o;try{o=JSON.parse(t)}catch(e){return gLog('Skipped unreadable '+f.name,'bad')}
-        var m=syMerge(o,s);if(m==='skip')return;
-        sy.rec[id]={f:f.id,u:upOf(o),m:f.md5Checksum||'',d:o.deleted?1:0,g:o.deleted?1:0,p:(s&&s.p)||o.project||''};sySave();if(m)gLog(m)})})});
-    var mine=recs.filter(function(r){return r.project===name});
-    // what has to go up is decided only after every pull has landed, so a record that Drive just handed back is not deleted again
-    var pushWork=function(){
-      var out=[],now=recs.filter(function(r){return r.project===name});
-      now.forEach(function(r){var s=sy.rec[r.id];if(s&&s.f&&remote[r.id+'.json']&&upOf(r)<=s.u)return;out.push(function(){return sySend(r,fid,remote)})});
-      Object.keys(sy.rec).forEach(function(id){var s=sy.rec[id];if(!s.d||s.p!==name)return;
-        if(now.some(function(r){return r.id===id}))return;
-        var f=remote[id+'.json'];if(f&&s.g)return;
-        var body=function(){return new Blob([JSON.stringify({id:id,deleted:1,up:s.u})],{type:'application/json'})};
-        out.push(function(){return (f?gOver(f.id,'application/json',body()):gNew(fid,id+'.json','application/json',body())).then(function(x){
-          var cs=sy.rec[id]||s;cs.f=x.id;cs.m=x.md5Checksum||'';cs.g=1;cs.d=1;cs.p=name;sySave();gLog('Sent the delete of '+id)})})});
-      return out};
-    var ph=seq(pulls).then(function(){return seq(pushWork())});
-    if(!wantPh)return ph.then(function(){return 0});
-    return ph.then(function(){return gFolder('photos',fid)}).then(function(pf){return gList(pf.id).then(function(pfs){
-      var jobs=[],byKey={},orph=[];
-      pfs.forEach(function(f){if(!/\.(jpe?g|png)$/i.test(f.name))return;var k=f.name.replace(/\.(jpe?g|png)$/i,'').replace('-',':');byKey[k]=f;
-        if(!recs.some(function(r){return r.id===k.split(':')[0]})){delete sy.ph[k];orph.push(function(){return gDel(f.id)});return}
-        var s=sy.ph[k];if(s&&s.f===f.id&&(!f.md5Checksum||s.m===f.md5Checksum))return;
-        jobs.push(function(){return gBlob(f.id).then(function(bl){uDrop(k);return pput(k,bl).then(function(){return bSig(bl)}).then(function(sg){sy.ph[k]={f:f.id,m:f.md5Checksum||'',s:sg};sySave();gLog('Fetched photo '+f.name)})})});
-      });
-      if(orph.length)gLog(orph.length+' photo(s) of poles no longer here will be removed from Drive');
-      var up=[];
-      mine.forEach(function(r){['P','T'].forEach(function(w){var k=r.id+':'+w;
-        up.push(function(){return pget(k).then(function(d){if(!d)return;var s=sy.ph[k],f=byKey[k];
-          return bSig(d).then(function(sg){if(s&&s.f&&f&&s.s===sg)return;
-            var b=asBlob(d),nm=r.id+'-'+w+'.jpg';
-            return (f?gOver(f.id,'image/jpeg',b):gNew(pf.id,nm,'image/jpeg',b)).then(function(x){sy.ph[k]={f:x.id,m:x.md5Checksum||'',s:sg};sySave();gLog((f?'Updated photo ':'Sent photo ')+nm)})})})})})});
-      return seq(orph).then(function(){return seq(jobs)}).then(function(){return seq(up)})})})})}
-function syGo(){
-  if(syBusy)return;
-  if(!GC_ID){toast('Paste your Google client ID into GC_ID first');return}
-  if(!navigator.onLine){toast('No internet — everything stays saved here; sync just cannot run now');return}
-  syBusy=1;syStop=0;$('syGo').disabled=1;$('syStop').hidden=0;$('syLog').innerHTML='';gLog('Signing in…');
-  var t0=Date.now(),p=gOk()?Promise.resolve():gAsk(1).catch(function(){return gAsk(0)});
-  p.then(function(){gLog('Connected'+(gTok.em?' as '+gTok.em:''));return gFolder('cotelco-tlm','root')}).then(function(root){
-    sy.root=root.id;sySave();var names=projNames(),live=names.slice();
-    // a project deleted here still needs one visit to report its poles as deleted
-    Object.keys(sy.rec).forEach(function(id){var s=sy.rec[id];if(s.d&&!s.g&&s.p&&live.indexOf(s.p)<0&&names.indexOf(s.p)<0)names.push(s.p)});
-    if(!names.length)gLog('No projects yet — nothing to send');
-    return seq(names.map(function(n){return function(){
-      var nm=String(n).replace(/[\/\\\?:\*|"<>]/g,'-');
-      return gFolder(nm,sy.root).then(function(f){sy.proj[n]=f.id;sySave();gLog('Project '+n);return syProj(n,f.id)}).then(function(){
-        if(live.indexOf(n)<0)return syForget(n)}).then(syFlush)}}))}).then(function(){
-    sy.at=Date.now();sySave();syFlush();
-    gLog('Done in '+((Date.now()-t0)/1000).toFixed(1)+'s','ok');syUI()}).catch(function(e){
-    gLog(e.message||'Sync failed — nothing was lost','bad');syFlush();toast('Sync stopped: '+(e.message||'could not reach Drive'))})
-  .then(function(){syBusy=0;$('syGo').disabled=0;$('syStop').hidden=1})}
-function syFlush(){persist();projUI();lists();count();render();draw()}
-// a renamed project is a new mirror folder: forget the old one so the records upload again under the new name
-function syDrop(name,ids){delete sy.proj[name];ids.forEach(function(id){delete sy.rec[id];delete sy.ph[id+':P'];delete sy.ph[id+':T']});sySave()}
-// once every pole of a removed project has been reported, stop tracking its folder
-function syForget(name){var ids=Object.keys(sy.rec).filter(function(id){return sy.rec[id].p===name});
-  if(ids.some(function(id){return sy.rec[id].d&&!sy.rec[id].g}))return;
-  ids.forEach(function(id){delete sy.rec[id]});delete sy.proj[name];sySave();gLog('Project '+name+' is deleted on Drive too','ok')}
-function syUI(){var w=$('syWho');
-  if(gOk())w.textContent='Signed in'+(gTok.em?' as '+gTok.em:'')+' · last sync '+(sy.at?new Date(sy.at).toLocaleString():'never');
-  else w.textContent=gTok&&gTok.at?'Token expired — sign in again':'Not signed in';
-  $('syIn').hidden=gOk();$('syOut').hidden=!(gTok&&gTok.at)}
-$('syBtn').onclick=function(){$('syncSheet').hidden=false;$('syncSheet').scrollTop=0;document.body.style.overflow='hidden';syUI()};
-$('syX').onclick=function(){$('syncSheet').hidden=true;document.body.style.overflow=''};
-$('syIn').onclick=function(){
-  if(!GC_ID){$('syWho').textContent='Paste your Google client ID into GC_ID first';return}
-  if(dvOn){dvOff();toast('Cancelled — nothing was connected');return}
-  $('syWho').textContent='Getting a code from Google…';
-  gAsk(0).then(function(){gLog('Token received, valid '+Math.round((gTok.exp-Date.now())/6e4)+' min','ok')})
-  .catch(function(e){$('syWho').textContent='Sign-in failed: '+e.message;gLog('Sign in failed: '+e.message,'bad');dvOff();toast(e.message)})};
-$('syOut').onclick=function(){if(gTok&&(gTok.rt||gTok.at))fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(gTok.rt||gTok.at),{method:'POST'}).catch(function(){});
-  dvOff();gTok=null;try{localStorage.removeItem(G_TK)}catch(e){}$('syLog').innerHTML='';syUI();toast('Signed out — your saved records are untouched')};
-$('syGo').onclick=syGo;$('syStop').onclick=function(){syStop=1;gLog('Stopping after the current file…')};
 function pn(id){var x=recs.find(function(y){return y.id===id});return x?x.pole.no:''}
 function priStr(){return[$('pri').value,$('pril').value].filter(Boolean).join(' / ')}
 function secStr(){return[$('sec').value,$('secl').value].filter(Boolean).join(' / ')}
@@ -1058,10 +924,33 @@ function secStd(r){var p=r.pole;if(!p)return false;var pr=String(p.secondary||''
   return m!==m0||l!==l0}
 function pinLabel(r){var t=[r.tx&&r.tx.rating?r.tx.rating+' kVA':'',r.pole.no?'Pole # '+r.pole.no:'',r.pole.material,[r.pole.primary,r.pole.secondary].filter(Boolean).join(' / ')].filter(Boolean).join(', ');return t+(r.pole.voltage!==''&&r.pole.voltage!=null?'; '+r.pole.voltage+' V':'')}
 function isDark(){return document.documentElement.dataset.theme!=='light'}
-$('thm').textContent=isDark()?'Light':'Dark';
-$('thm').onclick=function(){var l=isDark();document.documentElement.dataset.theme=l?'light':'dark';try{localStorage.setItem(KEY+'.theme',l?'light':'dark')}catch(e){}$('thm').textContent=l?'Dark':'Light';draw()};
+$('thm').textContent=isDark()?'Light theme':'Dark theme';
+$('thm').onclick=function(){var l=isDark();document.documentElement.dataset.theme=l?'light':'dark';try{localStorage.setItem(KEY+'.theme',l?'light':'dark')}catch(e){}$('thm').textContent=l?'Dark theme':'Light theme';draw()};
+// hamburger drawer: everything that is not the map, the list or the analysis
+var dr=0,drFrom=null,drW=matchMedia('(min-width:900px)');
+function drSet(on){on=!!on;if(on===dr)return;dr=on;
+  document.body.classList.toggle('dr',on);$('menu').setAttribute('aria-expanded',String(on));
+  $('drawer').setAttribute('aria-hidden',(on||drW.matches)?'false':'true');
+  if(on){drFrom=document.activeElement;$('drawer').getBoundingClientRect();$('drX').focus()}
+  else if(!drW.matches)$('menu').focus()}
+$('menu').onclick=function(){drSet(!dr)};
+$('drX').onclick=function(){drSet(0)};
+$('drScrim').onclick=function(){drSet(0)};
+$('drawer').addEventListener('click',function(e){if(e.target.closest('button')&&!e.target.closest('label')&&e.target.closest('[data-keep]')===null)drSet(0)});
+$('drawer').addEventListener('keydown',function(e){
+  if(e.key!=='Tab'||drW.matches)return;
+  var f=[].filter.call($('drawer').querySelectorAll('button,input,select,textarea'),function(x){return !x.hidden&&!x.disabled});
+  if(!f.length)return;var i=f.indexOf(document.activeElement);
+  if(e.shiftKey&&(i<0||i===0)){e.preventDefault();f[f.length-1].focus()}
+  else if(!e.shiftKey&&i===f.length-1){e.preventDefault();f[0].focus()}});
+addEventListener('keydown',function(e){if(e.key==='Escape'&&dr)drSet(0)});
+function drWide(){$('drawer').setAttribute('aria-hidden',(drW.matches||dr)?'false':'true');if(drW.matches)drSet(0)}
+if(drW.addEventListener)drW.addEventListener('change',drWide);else drW.addListener(drWide);drWide();
+$('dlBtn').onclick=openDl;
 
 load();var secChg=0;recs.forEach(function(r){if(!r.project)r.project=lastProj||'Project 1';if(!r.pole)return;if(secStd(r))secChg=1});
+// the Drive sync feature is gone; drop the bookkeeping and any token it left behind
+try{[KEY+'.sy',KEY+'.gtok',KEY+'.gdev',KEY+'.projbar'].forEach(function(k){localStorage.removeItem(k)})}catch(e){}
 if(secChg){persist();toast('Retired secondary classes cleared from saved records')}
 projUI();lists();count();mapOpen();
 try{if(localStorage.getItem(KEY+'.view')==='1')setView(1,1)}catch(e){}
