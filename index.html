@@ -659,6 +659,8 @@ function draw(){
   var on=offIdxCount()?' (offline: cached map)':' (offline: poles only)';
   $('mnote').textContent=BASES[M.base].a+(!navigator.onLine?on:M.err>3?' (tiles not loading? try another base map)':'');var gs=$('gstat');$('gmsg').textContent=M.gps||'';$('greq').hidden=!M.gpsBtn;gs.hidden=!(M.gps&&!M.me);
   var zt=M.zt==null?M.z:M.zt,zi=$('zi'),zo=$('zo');if(zi)zi.disabled=zt>=ZMAX-0.001;if(zo)zo.disabled=zt<=ZMIN+0.001}
+// zoom sensitivity: raise these for faster zooming, lower for finer control
+var ZS_WHEEL=2,ZS_PINCH=1.6,ZS_BTN=1.5;
 var P={},mv=0,cv=$('cv'),pinch=null;
 function pinchD(){var k=Object.keys(P);return k.length===2?Math.hypot(P[k[0]].x-P[k[1]].x,P[k[0]].y-P[k[1]].y):0}
 function pMid(){var k=Object.keys(P);return{x:(P[k[0]].x+P[k[1]].x)/2,y:(P[k[0]].y+P[k[1]].y)/2}}
@@ -670,12 +672,12 @@ cv.onpointermove=function(e){var o=P[e.pointerId];if(!o)return;var n=Object.keys
   P[e.pointerId]={x:e.clientX,y:e.clientY};
   if(n===2&&pinch){mv=99;var m=pMid(),d=pinchD();
     M.anchor={lat:pinch.ll.lat,lon:pinch.ll.lon,x:m.x,y:m.y};
-    M.zt=clampZ(pinch.z0+Math.log2(Math.max(d,.001)/pinch.d0));zoomRun()}
+    M.zt=clampZ(pinch.z0+ZS_PINCH*Math.log2(Math.max(d,.001)/pinch.d0));zoomRun()}
   draw()};
 cv.onpointerup=cv.onpointercancel=function(e){if(P[e.pointerId]&&Object.keys(P).length===1&&mv<8)tap(e);
   delete P[e.pointerId];if(Object.keys(P).length<2){pinch=null;M.anchor=null}};
 cv.onwheel=function(e){e.preventDefault();var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,A=atLL(x,y);
-  var base=M.zt==null?M.z:M.zt,d=-e.deltaY*(e.deltaMode===1?0.4:0.006);d=Math.max(-1.2,Math.min(1.2,d));
+  var base=M.zt==null?M.z:M.zt,d=-e.deltaY*(e.deltaMode===1?0.4:0.006)*ZS_WHEEL;d=Math.max(-2,Math.min(2,d));
   var z=clampZ(base+d);if(Math.abs(z-base)<0.0001)return;
   M.anchor={lat:A.lat,lon:A.lon,x:e.clientX,y:e.clientY};M.zt=z;zoomRun()};
 function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,best=null,bd=26;
@@ -691,7 +693,7 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
     $('pc').onclick=function(){$('pop').hidden=true;M.sel=null;draw()};
     if(hasPh)loadThumbs()}
   draw()}
-$('zi').onclick=function(){zoom(1)};$('zo').onclick=function(){zoom(-1)};
+$('zi').onclick=function(){zoom(ZS_BTN)};$('zo').onclick=function(){zoom(-ZS_BTN)};
 $('loc').onclick=gpsAsk;$('greq').onclick=gpsAsk;
 // view-only mode: browse and inspect, never edit
 var viewMode=0;
