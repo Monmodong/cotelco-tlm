@@ -231,7 +231,8 @@ body.proj-hide #map{height:calc(100vh - 118px)}
 <fieldset><legend>Account</legend>
 <div id="syWho" class="calc"></div>
 <div class="row" style="margin-top:10px"><button type="button" class="btn p" id="syIn">Sign in with Google</button><button type="button" class="btn" id="syOut" hidden>Sign out</button></div>
-<p style="margin:10px 0 0;font-size:.9rem;color:var(--mute)">Signing in only tells this app which Drive is yours. Nothing is uploaded or downloaded until you press Sync.</p>
+<div id="syCode" class="calc" hidden></div>
+<p style="margin:10px 0 0;font-size:.9rem;color:var(--mute)">Signing in only tells this app which Drive is yours. It shows a short code to type into Google on any screen — no window has to open inside this app, which is why it works from the phone’s installed icon as well as a browser tab. Nothing is uploaded or downloaded until you press Sync.</p>
 </fieldset>
 <fieldset><legend>Sync</legend>
 <div class="row"><button type="button" class="btn p" id="syGo">Sync now</button><button type="button" class="btn d" id="syStop" hidden>Stop</button></div>
@@ -249,6 +250,12 @@ body.proj-hide #map{height:calc(100vh - 118px)}
     <button class="btn" id="syBtn">Sync</button>
     <input type="file" id="file" accept=".json,application/json" hidden>
   </div>
+  <div class="row" style="margin-bottom:6px">
+    <button class="btn p" id="hSend">Send to PC</button><button class="btn" id="hMerge">Merge phone file</button>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;flex:none"><input type="checkbox" id="hPh" checked><span>with photos</span></label>
+    <input type="file" id="hFile" accept=".json,application/json" hidden>
+  </div>
+  <p style="font-size:.85rem;color:var(--mute);margin:0 0 12px">Move work between the phone and the PC without any account. <b>Send to PC</b> hands one file to the phone&rsquo;s share sheet — WhatsApp to yourself, your Drive app, email, a cable, anything. On the PC press <b>Merge phone file</b> and pick that file: poles you added on either side both arrive, the newer copy of a pole you changed on both wins, and poles deleted on one side go on the other. Turn <b>with photos</b> off for a file that is a few hundred kilobytes instead of megabytes.</p>
   <div id="recs"></div>
   
 </section>
@@ -336,7 +343,7 @@ function render(){var recs=vis();
 $('recs').onclick=function(e){
   var b=e.target.closest('button');if(!b)return;
   if(b.dataset.e){var r=recs.find(function(x){return x.id===b.dataset.e});if(r)openSheet(r)}
-  if(b.dataset.d&&confirm('Delete this record?')){var rd=recs.find(function(x){return x.id===b.dataset.d});if(rd){var pv=sy.rec[rd.id];if(pv&&pv.f)sy.rec[rd.id]={u:new Date().toISOString(),d:1,g:0,p:rd.project||'',f:pv.f,m:pv.m};else delete sy.rec[rd.id];delete sy.ph[rd.id+':P'];delete sy.ph[rd.id+':T'];sySave()}recs=recs.filter(function(x){return x.id!==b.dataset.d});pput(b.dataset.d+':P',null);pput(b.dataset.d+':T',null);persist();render();count();lists()}
+  if(b.dataset.d&&confirm('Delete this record?')){var rd=recs.find(function(x){return x.id===b.dataset.d});if(rd){hMark(rd.id,upOf(rd),rd.project||'');var pv=sy.rec[rd.id];if(pv&&pv.f)sy.rec[rd.id]={u:new Date().toISOString(),d:1,g:0,p:rd.project||'',f:pv.f,m:pv.m};else delete sy.rec[rd.id];delete sy.ph[rd.id+':P'];delete sy.ph[rd.id+':T'];sySave()}recs=recs.filter(function(x){return x.id!==b.dataset.d});pput(b.dataset.d+':P',null);pput(b.dataset.d+':T',null);persist();render();count();lists()}
 };
 
 
@@ -366,6 +373,47 @@ $('file').onchange=function(){
     var ids={};recs.forEach(function(r){ids[r.id]=1});var n=0;
     d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;['P','T'].forEach(function(w){var v=D.photos&&D.photos[r.id+':'+w];if(v)pput(r.id+':'+w,asBlob(v))})}});
     persist();projUI();render();count();lists();toast('Imported '+n+' new record(s)')}catch(e){toast('Not a valid backup file')}};
+  rd.readAsText(f);this.value=''};
+
+// handoff: one file, carried between devices by whatever the phone's share sheet already does — no account involved
+var hand=[];try{hand=JSON.parse(localStorage.getItem(KEY+'.del')||'[]')}catch(e){}
+function hSave(){try{localStorage.setItem(KEY+'.del',JSON.stringify(hand))}catch(e){}}
+function hMark(id,up,p){var w=String(up||new Date().toISOString());
+  for(var i=0;i<hand.length;i++)if(hand[i].id===id){hand[i]={id:id,up:w,p:p||''};hSave();return}
+  hand.push({id:id,up:w,p:p||''});hSave()}
+function hFile(){return ($('hPh').checked?pallD():Promise.resolve({})).then(function(ph){
+  return JSON.stringify({v:3,kind:'cotelco-handoff',projects:projects,recs:recs,deleted:hand,photos:ph||{}})})}
+function hTake(r,D,box){var q=D.photos||{};['P','T'].forEach(function(w){var v=q[r.id+':'+w];if(v){pput(r.id+':'+w,asBlob(v));box.p++}})}
+function hApply(D){
+  var ins={},rdel={};
+  (D.recs||[]).forEach(function(r){if(r&&r.id&&r.pole)ins[r.id]=r});
+  (D.deleted||[]).forEach(function(x){if(x&&x.id)rdel[x.id]=x});
+  var ldel={},byId={};hand.forEach(function(x){ldel[x.id]=x});recs.forEach(function(r){byId[r.id]=r});
+  var ids=Object.keys(ins);Object.keys(rdel).forEach(function(id){if(!ins[id])ids.push(id)});
+  var a={n:0,u:0,g:0,p:0};
+  ids.forEach(function(id){var i=ins[id],rd=rdel[id],l=byId[id],ld=ldel[id];
+    if(rd&&(!i||upOf(rd)>=upOf(i))){                       // that device knows this pole is gone
+      if(l&&upOf(l)<=upOf(rd)){recs=recs.filter(function(x){return x.id!==id});delete byId[id];
+        pput(id+':P',null);pput(id+':T',null);hMark(id,upOf(rd),(rd.p||(l&&l.project)||''));a.g++}
+      return}
+    if(!i)return;
+    if(ld){if(upOf(i)<=upOf(ld))return;                    // deleted here, and that edit predates the delete
+      hand=hand.filter(function(x){return x.id!==id});hSave()}
+    if(l){if(upOf(i)>upOf(l)){recs[recs.indexOf(l)]=i;byId[id]=i;hTake(i,D,a);a.u++}return}
+    secStd(i);if(!i.project)i.project=lastProj;recs.push(i);byId[id]=i;hTake(i,D,a);a.n++});
+  (D.projects||[]).forEach(function(p){if(p&&projects.indexOf(p)<0)projects.push(p)});
+  persist();projUI();render();count();lists();
+  if(!a.n&&!a.u&&!a.g)toast('Nothing to merge — this device already has the newest copies');
+  else toast(a.n+' new, '+a.u+' newer, '+a.g+' deleted'+(a.p?', '+a.p+' photo(s)':''))}
+$('hSend').onclick=function(){if(!recs.length&&!hand.length)return toast('Nothing to send yet');
+  hFile().then(function(txt){var nm='cotelco-handoff-'+stamp()+'.json',mb=Math.round(txt.length/104857.6)/10;
+    if(navigator.canShare&&navigator.canShare({files:[new File([txt],nm,{type:'application/json'})]}))
+      return navigator.share({files:[new File([txt],nm,{type:'application/json'})],title:'COTELCO survey',text:'Open in COTELCO TLM on the PC, then press Merge phone file'})
+        .then(function(){toast('Handed off, '+mb+' MB')},function(e){if(e&&e.name==='AbortError')return;dlFile(nm,txt,'application/json');toast('Share did not run — saved to Downloads instead')});
+    dlFile(nm,txt,'application/json');toast('Saved '+nm+' ('+mb+' MB) to Downloads — move that file to the PC')})};
+$('hMerge').onclick=function(){$('hFile').click()};
+$('hFile').onchange=function(){var f=this.files[0];if(!f)return;var rd=new FileReader();
+  rd.onload=function(){try{var D=JSON.parse(rd.result);if(!D||!Array.isArray(D.recs))throw 0;hApply(D)}catch(e){toast('Not a COTELCO handoff file')}};
   rd.readAsText(f);this.value=''};
 
 // dropdowns
@@ -815,7 +863,7 @@ $('pRen').onclick=function(){var n=(prompt('Rename project:',lastProj)||'').trim
   projects=projects.filter(function(p){return p!==old});projects.push(n);lastProj=n;projUI();render();
   if(ids.length)toast('Renamed here — rename it on your other device too')};
 $('pDel').onclick=function(){var nm=lastProj,k=recs.filter(function(r){return r.project===nm});if(!confirm('Delete project "'+nm+'" and its '+k.length+' pole(s)? Export a backup first.'))return;
-  k.forEach(function(r){pput(r.id+':P',null);pput(r.id+':T',null);delete sy.ph[r.id+':P'];delete sy.ph[r.id+':T'];var pv=sy.rec[r.id];if(pv&&pv.f)sy.rec[r.id]={u:new Date().toISOString(),d:1,g:0,p:nm,f:pv.f,m:pv.m};else delete sy.rec[r.id]});sySave();recs=recs.filter(function(r){return r.project!==nm});projects=projects.filter(function(p){return p!==nm});lastProj='';projUI();switchProj()};
+  k.forEach(function(r){hMark(r.id,upOf(r),nm);pput(r.id+':P',null);pput(r.id+':T',null);delete sy.ph[r.id+':P'];delete sy.ph[r.id+':T'];var pv=sy.rec[r.id];if(pv&&pv.f)sy.rec[r.id]={u:new Date().toISOString(),d:1,g:0,p:nm,f:pv.f,m:pv.m};else delete sy.rec[r.id]});sySave();recs=recs.filter(function(r){return r.project!==nm});projects=projects.filter(function(p){return p!==nm});lastProj='';projUI();switchProj()};
 function buildConn(self){var a=vis().filter(function(x){return x.pos&&x.id!==self});
   $('conn').innerHTML='<option value="">None (start of a line)</option>'+a.map(function(x){return '<option value="'+x.id+'">'+esc((x.pole.no?'Pole # '+x.pole.no:'Unnumbered')+(x.pole.primary?' - '+x.pole.primary:''))+'</option>'}).join('')}
 function connNear(){var b=null,bd=1e18;
@@ -847,10 +895,11 @@ $('phP').onclick=function(){phW='P';$('phF').click()};$('phT').onclick=function(
 $('phF').onchange=function(){var f=this.files[0],w=phW;this.value='';if(!f)return;shrink(f).then(function(d){if(!d)return toast('Could not read photo');ph[w]=d;phD[w]=1;showPh()})};
 $('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button');if(b){ph[b.dataset.w]=null;phD[b.dataset.w]=1;showPh()}};
 // ---------- Google Drive sync (mirror only; the device copy stays authoritative) ----------
-var GC_ID='1006330015593-kqgs7iutiji3ss2u5igbifs6qk9nf839.apps.googleusercontent.com',G_SC='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',G_SK=KEY+'.sy',G_TK=KEY+'.gtok';
-var sy={root:'',proj:{},rec:{},ph:{},at:0},gTok=null,syBusy=0,syStop=0;
+var GC_ID='1006330015593-kqgs7iutiji3ss2u5igbifs6qk9nf839.apps.googleusercontent.com',G_SC='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',G_SK=KEY+'.sy',G_TK=KEY+'.gtok',G_DEV=KEY+'.gdev';
+var sy={root:'',proj:{},rec:{},ph:{},at:0},gTok=null,syDev=null,syBusy=0,syStop=0;
 try{sy=Object.assign(sy,JSON.parse(localStorage.getItem(G_SK)||'{}'))}catch(e){}
 try{gTok=JSON.parse(localStorage.getItem(G_TK)||'null')}catch(e){}
+try{syDev=JSON.parse(localStorage.getItem(G_DEV)||'null')}catch(e){}
 function sySave(){try{localStorage.setItem(G_SK,JSON.stringify(sy))}catch(e){}}
 function upOf(r){return r.up||r.time||''}
 function gOk(){return !!(gTok&&gTok.at&&Date.now()<gTok.exp-12e4)}
@@ -871,22 +920,44 @@ function gBlob(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fi
 function gDel(fid){return fetch('https://www.googleapis.com/drive/v3/files/'+fid,{method:'DELETE',headers:gHdr()}).then(function(r){if(!r.ok&&r.status!==204)throw new Error('Could not remove a stale photo')})}
 function dToB(d){var i=d.indexOf(','),t=/:(.*?);/.exec(d.slice(0,i)),s=atob(d.slice(i+1)),u=new Uint8Array(s.length);for(var x=0;x<s.length;x++)u[x]=s.charCodeAt(x);return new Blob([u],{type:t?t[1]:'image/jpeg'})}
 function bToD(b){return new Promise(function(res,rej){var f=new FileReader();f.onload=function(){res(f.result)};f.onerror=function(){rej(new Error('Could not read a photo'))};f.readAsDataURL(b)})}
-// sign-in: Google Identity Services, token flow, no client secret (the app's source is public)
-function gWhy(r){if(r.type==='popup_blocked_to_open'||r.type==='popup_failed_to_open')return 'The browser blocked the Google window — open this page in Chrome, not in an in-app view';
-  if(!r.error)return 'Google returned no token';
-  if(r.error==='access_denied')return 'Google refused the grant: not a test user, or the consent screen is still in Testing';
-  return r.error_description||r.error}
-function gLoad(){return new Promise(function(res,rej){if(window.google&&google.accounts&&google.accounts.oauth2)return res();
-  var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=function(){res()};s.onerror=function(){rej(new Error('Google is unreachable — sync needs internet'))};document.head.appendChild(s)})}
-function gAsk(silent){return gLoad().then(function(){return new Promise(function(res,rej){
-  var done=0,tm=setTimeout(function(){if(done)return;done=1;rej(new Error('Google never answered — its window was closed or blocked by the browser'))},silent?12000:45000);
-  var fin=function(f){return function(x){if(done)return;done=1;clearTimeout(tm);f(x)}};
-  google.accounts.oauth2.initTokenClient({client_id:GC_ID,scope:G_SC,callback:function(){}}).requestAccessToken({prompt:silent?'none':'consent',callback:fin(function(r){
-    if(r.error||!r.access_token)return rej(new Error(gWhy(r)));
-    gTok={at:r.access_token,exp:Date.now()+(r.expires_in||3600)*1000,em:''};sySave();
+// sign-in: Google's device flow — the app never opens a window, because a PWA cannot hear one come back
+var dvOn=0;
+function dPost(p,q){var b=Object.keys(q).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(q[k])}).join('&');
+  return fetch('https://oauth2.googleapis.com/'+p,{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:b}).then(function(r){
+    return r.json().then(function(j){if(!r.ok){var e=new Error(dWhy(j));e.code=j.error||'';throw e}return j})})}
+function dWhy(j){var m=j.error||'';
+  if(m==='invalid_client')return 'This client ID cannot do device sign-in — it has to be an OAuth client of type "TV and Limited-Input devices"';
+  if(m==='invalid_scope')return 'Google refused the Drive scope — add drive.file to the consent screen';
+  if(m==='access_denied')return 'You declined the request on Google’s page';
+  if(m==='expired_token')return 'That code timed out — start again';
+  return j.error_description||m||'Google refused the request'}
+function dvSay(u,w){dvOn=1;var c=$('syCode');c.hidden=0;c.innerHTML='';
+  var t=document.createElement('div');t.textContent='On any screen signed in to your Google account, open '+w+' and enter:';t.style.cssText='margin:8px 0 6px';
+  var k=document.createElement('div');k.textContent=u;k.style.cssText='font:700 1.6rem/1.2 ui-monospace,Consolas,monospace;letter-spacing:.18em;text-align:center;padding:10px;border:1.5px dashed var(--acc);border-radius:6px';
+  var r=document.createElement('div');r.className='row';r.style.marginTop='10px';
+  var a=document.createElement('a');a.href=w;a.target='_blank';a.rel='noopener';a.className='btn p';a.style.cssText='text-decoration:none;text-align:center;flex:1';a.textContent='Open Google';
+  var x=document.createElement('button');x.type='button';x.className='btn';x.textContent='Cancel';x.onclick=function(){dvOff();toast('Cancelled — nothing was connected')};
+  r.appendChild(a);r.appendChild(x);c.appendChild(t);c.appendChild(k);c.appendChild(r)}
+function dvOff(){dvOn=0;var c=$('syCode');c.hidden=1;c.innerHTML=''}
+function dvPoll(d,i){return new Promise(function(res,rej){setTimeout(function(){
+  if(!dvOn)return rej(new Error('Sign-in was cancelled'));
+  dPost('token',{grant_type:'urn:ietf:params:oauth:grant-type:device_code',client_id:GC_ID,device_code:d.device_code}).then(res,function(e){
+    if(e.code==='authorization_pending')return dvPoll(d,i).then(res,rej);
+    if(e.code==='slow_down')return dvPoll(d,i+5000).then(res,rej);
+    rej(e)})},i)})}
+function dvGo(){return dPost('device/code',{client_id:GC_ID,scope:G_SC}).then(function(d){
+  dvSay(d.user_code,d.verification_uri_complete||d.verification_url||d.verification_uri||'https://www.google.com/device');return dvPoll(d,(d.interval||5)*1000)})}
+function gAsk(silent){return new Promise(function(res,rej){
+  if(gOk())return res(gTok);
+  var got=function(j){dvOff();gTok={at:j.access_token,exp:Date.now()+(j.expires_in||3600)*1000,em:'',rt:j.refresh_token||(gTok&&gTok.rt)||''};sySave();
     try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}
     fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:gHdr()}).then(function(x){return x.json()}).then(function(u){gTok.em=u.email||'';try{localStorage.setItem(G_TK,JSON.stringify(gTok))}catch(e){}syUI()}).catch(function(){});
-    res(gTok)})})})})}
+    res(gTok)};
+  var dev=function(){if(!navigator.onLine)return Promise.reject(new Error('No internet — Google cannot be reached'));return dvGo()};
+  if(gTok&&gTok.rt)return dPost('token',{grant_type:'refresh_token',client_id:GC_ID,refresh_token:gTok.rt}).then(got,function(e){
+    if(silent)throw e;return dev().then(got)});
+  if(silent)return rej(new Error('Not signed in'));
+  dev().then(got,rej)})}
 // merge: last save wins, whole record at a time
 function syMerge(o,st){var i=recs.findIndex(function(x){return x.id===o.id}),no=(o.pole&&o.pole.no)||o.id;
   if(o.deleted){if(i<0)return null;recs.splice(i,1);return 'Pole '+no+' was deleted on another device'}
@@ -970,11 +1041,12 @@ $('syBtn').onclick=function(){$('syncSheet').hidden=false;$('syncSheet').scrollT
 $('syX').onclick=function(){$('syncSheet').hidden=true;document.body.style.overflow=''};
 $('syIn').onclick=function(){
   if(!GC_ID){$('syWho').textContent='Paste your Google client ID into GC_ID first';return}
-  $('syWho').textContent='Opening Google’s window — finish it in the popup, then wait here';
-  gAsk(0).then(function(){syUI();gLog('Token received, valid '+Math.round((gTok.exp-Date.now())/6e4)+' min','ok')})
-  .catch(function(e){$('syWho').textContent='Sign-in failed: '+e.message;gLog('Sign in failed: '+e.message,'bad');toast(e.message)})};
-$('syOut').onclick=function(){if(!gTok)return;fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(gTok.at),{method:'POST'}).catch(function(){});
-  gTok=null;try{localStorage.removeItem(G_TK)}catch(e){}$('syLog').innerHTML='';syUI();toast('Signed out — your saved records are untouched')};
+  if(dvOn){dvOff();toast('Cancelled — nothing was connected');return}
+  $('syWho').textContent='Getting a code from Google…';
+  gAsk(0).then(function(){gLog('Token received, valid '+Math.round((gTok.exp-Date.now())/6e4)+' min','ok')})
+  .catch(function(e){$('syWho').textContent='Sign-in failed: '+e.message;gLog('Sign in failed: '+e.message,'bad');dvOff();toast(e.message)})};
+$('syOut').onclick=function(){if(gTok&&(gTok.rt||gTok.at))fetch('https://oauth2.googleapis.com/revoke?token='+encodeURIComponent(gTok.rt||gTok.at),{method:'POST'}).catch(function(){});
+  dvOff();gTok=null;try{localStorage.removeItem(G_TK)}catch(e){}$('syLog').innerHTML='';syUI();toast('Signed out — your saved records are untouched')};
 $('syGo').onclick=syGo;$('syStop').onclick=function(){syStop=1;gLog('Stopping after the current file…')};
 function pn(id){var x=recs.find(function(y){return y.id===id});return x?x.pole.no:''}
 function priStr(){return[$('pri').value,$('pril').value].filter(Boolean).join(' / ')}
