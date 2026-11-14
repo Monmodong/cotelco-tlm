@@ -280,7 +280,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 #toast.u{pointer-events:auto}
 #cv:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
 #rpt{display:none}
-@media print{body>*:not(#rpt){display:none!important}#rpt{display:block;color:#000;background:#fff;font:12px/1.4 system-ui,sans-serif;padding:0}#rpt h1{font-size:18px;margin:0 0 4px}#rpt table{border-collapse:collapse;width:100%;margin-top:10px}#rpt th,#rpt td{border:1px solid #999;padding:3px 5px;text-align:left;font-size:11px}#rpt th{background:#eee}}
+@media print{body>*:not(#rpt){display:none!important}#rpt{display:block;color:#000;background:#fff;font:12px/1.4 system-ui,sans-serif;padding:0}#rpt h1{font-size:18px;margin:0 0 4px}#rpt canvas{max-width:100%}#rpt table{border-collapse:collapse;width:100%;margin-top:10px}#rpt th,#rpt td{border:1px solid #999;padding:3px 5px;text-align:left;font-size:11px}#rpt th{background:#eee}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){
@@ -426,7 +426,7 @@ function load(){try{recs=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){re
 var kvP;function kvDb(){return kvP||(kvP=new Promise(function(res,rej){try{var q=indexedDB.open('poleSurveyData',1);q.onupgradeneeded=function(){q.result.createObjectStore('kv')};q.onsuccess=function(){res(q.result)};q.onerror=function(){rej()}}catch(e){rej()}}))}
 function kvPut(k,v){return kvDb().then(function(d){return new Promise(function(res,rej){var t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=rej})})}
 function kvGet(k){return kvDb().then(function(d){return new Promise(function(res,rej){var q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=function(){res(q.result)};q.onerror=rej})})}
-function persist(){var ok=0;try{localStorage.setItem(KEY,JSON.stringify(recs));ok=1}catch(e){}
+function persist(){var ok=0;hCache=null;try{localStorage.setItem(KEY,JSON.stringify(recs));ok=1}catch(e){}
   try{localStorage.setItem(KEY+'.projects',JSON.stringify(projects));localStorage.setItem(KEY+'.chg',(+localStorage.getItem(KEY+'.chg')||0)+1)}catch(e){}
   kvPut('recs',recs).catch(function(){if(!ok)toast('Save failed: storage full or blocked. Export now!')});
   if(!ok&&!window.indexedDB){toast('Save failed: storage full or blocked. Export now!');return false}return true}
@@ -581,12 +581,22 @@ function hApply(D){
   persist();projUI();render();count();lists();
   if(!a.n&&!a.u&&!a.g)toast('Nothing to merge — this device already has the newest copies');
   else toast(a.n+' new, '+a.u+' newer, '+a.g+' deleted'+(a.p?', '+a.p+' photo(s)':''))}
+var hCache=null;
+function hKey(){return recs.length+'|'+recs.reduce(function(m,r){return Math.max(m,Date.parse(upOf(r))||0)},0)+'|'+hand.length+'|'+$('hPh').checked}
+function hPrep(){var k=hKey();if(hCache&&hCache.key===k)return Promise.resolve(hCache);return hFile().then(function(txt){return hCache={key:k,txt:txt,nm:'cotelco-handoff-'+stamp()+'.json',mb:Math.round(txt.length/104857.6)/10}})}
+function hShare(c){if(!navigator.share||!navigator.canShare)return null;var ty=['application/json','text/plain','application/octet-stream'];
+  for(var i=0;i<ty.length;i++){var f=new File([c.txt],c.nm,{type:ty[i]});if(navigator.canShare({files:[f]}))return navigator.share({files:[f],title:'COTELCO survey',text:'Open in COTELCO TLM on the PC, then press Merge phone file'})}return null}
+function hGo(c,fresh){var p;try{p=hShare(c)}catch(e){p=Promise.reject(e)}
+  if(!p){dlFile(c.nm,c.txt,'application/json');return toast('Share menu not available here (needs https) — saved '+c.nm+' to Downloads')}
+  p.then(function(){toast('Handed off, '+c.mb+' MB')},function(e){if(e&&e.name==='AbortError')return;
+    if(e&&e.name==='NotAllowedError'&&fresh){toast('File is ready — tap Send again to open the share menu');return}
+    dlFile(c.nm,c.txt,'application/json');toast('Share did not run — saved to Downloads instead')})}
 $('hSend').onclick=function(){if(!recs.length&&!hand.length)return toast('Nothing to send yet');
-  hFile().then(function(txt){var nm='cotelco-handoff-'+stamp()+'.json',mb=Math.round(txt.length/104857.6)/10;
-    if(navigator.canShare&&navigator.canShare({files:[new File([txt],nm,{type:'application/json'})]}))
-      return navigator.share({files:[new File([txt],nm,{type:'application/json'})],title:'COTELCO survey',text:'Open in COTELCO TLM on the PC, then press Merge phone file'})
-        .then(function(){toast('Handed off, '+mb+' MB')},function(e){if(e&&e.name==='AbortError')return;dlFile(nm,txt,'application/json');toast('Share did not run — saved to Downloads instead')});
-    dlFile(nm,txt,'application/json');toast('Saved '+nm+' ('+mb+' MB) to Downloads — move that file to the PC')})};
+  if(hCache&&hCache.key===hKey())return hGo(hCache,0);   // file already built: share opens instantly inside the tap
+  toast('Preparing file…');hPrep().then(function(c){hGo(c,1)})};
+$('hPh').addEventListener('change',function(){hCache=null;hPrep().catch(function(){})});
+$('menu').addEventListener('click',function(){setTimeout(function(){if(recs.length)hPrep().catch(function(){})},400)});
+var _pp=pput;pput=function(){hCache=null;return _pp.apply(this,arguments)};
 $('hMerge').onclick=function(){$('hFile').click()};
 $('hFile').onchange=function(){var f=this.files[0];if(!f)return;var rd=new FileReader();
   rd.onload=function(){try{var D=JSON.parse(rd.result);if(!D||!Array.isArray(D.recs))throw 0;hApply(D)}catch(e){toast('Not a COTELCO handoff file')}};
@@ -1139,9 +1149,29 @@ try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)$
 // KML + printable report
 $('xKml').onclick=function(){var a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles');
   dlFile('poles-'+stamp()+'.kml','<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(lastProj)+'</name>'+a.map(function(r){return '<Placemark><name>Pole '+esc(r.pole.no)+'</name><description>'+esc([r.pole.material,r.pole.primary,r.pole.secondary,r.pole.voltage!==''?r.pole.voltage+' V':'',r.tx?r.tx.rating+' kVA '+r.tx.type:''].filter(Boolean).join(' | '))+'</description><Point><coordinates>'+r.pos.lon+','+r.pos.lat+',0</coordinates></Point></Placemark>'}).join('')+'</Document></kml>','application/vnd.google-earth.kml+xml')};
+function rptMap(a,by){var W=1000,H=640,L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
+  var la=L.map(function(r){return r.pos.lat}),lo=L.map(function(r){return r.pos.lon}),mnA=Math.min.apply(0,la),mxA=Math.max.apply(0,la),mnO=Math.min.apply(0,lo),mxO=Math.max.apply(0,lo),z=19;
+  for(;z>3;z--){var q1=px(mxA,mnO,z),q2=px(mnA,mxO,z);if(q2.x-q1.x<=W-160&&q2.y-q1.y<=H-160)break}
+  if(L.length===1)z=Math.min(z,18);
+  var c=px((mnA+mxA)/2,(mnO+mxO)/2,z),x0=c.x-W/2,y0=c.y-H/2,cv=document.createElement('canvas'),ok=0,n=Math.pow(2,z),jobs=[];
+  cv.width=W;cv.height=H;cv.style.cssText='width:100%;height:auto;border:1px solid #999';
+  var g=cv.getContext('2d');g.fillStyle='#2b3a2b';g.fillRect(0,0,W,H);
+  for(var ty=Math.floor(y0/256);ty<=Math.floor((y0+H)/256);ty++)for(var tx=Math.floor(x0/256);tx<=Math.floor((x0+W)/256);tx++){(function(tx,ty){if(ty<0||ty>=n)return;var xx=((tx%n)+n)%n;
+    jobs.push(new Promise(function(res){var im=new Image(),t=setTimeout(res,9000);im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);res()};im.onerror=function(){clearTimeout(t);res()};im.src=tileUrl('gsat',z,xx,ty)}))})(tx,ty)}
+  return Promise.all(jobs).then(function(){
+    var P=function(r){var p=px(r.pos.lat,r.pos.lon,z);return{x:p.x-x0,y:p.y-y0}};
+    g.lineCap='round';g.font='bold 15px system-ui,sans-serif';g.textBaseline='middle';
+    L.forEach(function(r){var f=r.from&&by[r.from];if(!f||!f.pos)return;var p1=P(f),p2=P(r);g.beginPath();g.moveTo(p1.x,p1.y);g.lineTo(p2.x,p2.y);g.lineWidth=7;g.strokeStyle='#000';g.stroke();g.lineWidth=3.5;g.strokeStyle='#ffd400';g.stroke();
+      if(z>=16){var tt=Math.round(hav(f.pos,r.pos))+' m',mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;g.textAlign='center';g.lineWidth=4;g.strokeStyle='#000';g.strokeText(tt,mx,my-12);g.fillStyle='#fff';g.fillText(tt,mx,my-12)}});
+    g.textAlign='left';
+    L.forEach(function(r){var p=P(r),t=!!r.tx;g.beginPath();if(t){g.moveTo(p.x,p.y-13);g.lineTo(p.x+12,p.y+9);g.lineTo(p.x-12,p.y+9);g.closePath()}else g.arc(p.x,p.y,8,0,7);
+      g.fillStyle=t?'#ff4d4f':'#3b82f6';g.fill();g.lineWidth=r.flag?5:2.5;g.strokeStyle=r.flag?'#ff9f1a':'#fff';g.stroke();
+      var lb=String(r.pole.no||'');g.lineWidth=4;g.strokeStyle='#000';g.strokeText(lb,p.x+15,p.y);g.fillStyle='#fff';g.fillText(lb,p.x+15,p.y)});
+    return{cv:cv,ok:ok}})}
 $('xPrint').onclick=function(){var a=vis();if(!a.length)return toast('Nothing to print');var by={};a.forEach(function(r){by[r.id]=r});
   var d=document.createElement('div');d.id='rpt';d.innerHTML='<h1>'+esc(lastProj)+' — pole survey report</h1><div>'+new Date().toLocaleString()+' · '+a.length+' poles · '+a.filter(function(r){return r.tx}).length+' transformers · '+a.filter(function(r){return r.flag}).length+' flagged</div><table><tr><th>Pole</th><th>Material</th><th>Primary</th><th>Secondary</th><th>V</th><th>Transformer</th><th>Line A</th><th>Span</th><th>GPS</th><th>Remarks</th></tr>'+a.map(function(r){var t=r.tx,f=r.from&&by[r.from];return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no)+'</td><td>'+esc(r.pole.material)+'</td><td>'+esc(r.pole.primary)+'</td><td>'+esc(r.pole.secondary)+'</td><td>'+esc(r.pole.voltage)+'</td><td>'+(t?esc(t.rating+' kVA '+t.type+(t.tap?' tap '+t.tap:'')):'')+'</td><td>'+esc(t?t.line:r.pole.lineA)+'</td><td>'+(f&&f.pos&&r.pos?Math.round(hav(f.pos,r.pos))+' m':'')+'</td><td>'+(r.pos?r.pos.lat.toFixed(5)+', '+r.pos.lon.toFixed(5):'')+'</td><td>'+esc((r.pole.remarks||'')+(t&&t.remarks?' / '+t.remarks:''))+'</td></tr>'}).join('')+'</table>';
-  document.body.appendChild(d);var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(function(){window.print()},50)};
+  toast('Preparing map…');rptMap(a,by).then(function(m){if(m){var w=document.createElement('div');w.style.cssText='page-break-inside:avoid;margin:10px 0';w.appendChild(m.cv);var lg=document.createElement('div');lg.style.cssText='font-size:11px;margin-top:3px';lg.textContent='● pole   ▲ transformer   yellow line = span (metres)   orange ring = flagged'+(m.ok?'   · Imagery © Google':'   · Satellite imagery could not load (offline?)');w.appendChild(lg);d.insertBefore(w,d.querySelector('table'))}
+    document.body.appendChild(d);var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(function(){window.print()},50)})};
 // keyboard map controls
 $('cv').addEventListener('keydown',function(e){var k=e.key,st=60,h=1;if(k==='+'||k==='=')zoom(ZS_BTN);else if(k==='-'||k==='_')zoom(-ZS_BTN);else if(k==='ArrowLeft')M.cx-=st;else if(k==='ArrowRight')M.cx+=st;else if(k==='ArrowUp')M.cy-=st;else if(k==='ArrowDown')M.cy+=st;else h=0;if(h){e.preventDefault();M.anchor=null;draw()}});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
