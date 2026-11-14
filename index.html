@@ -386,8 +386,8 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 
 <section id="mapSec">
   <div id="map"><canvas id="cv" tabindex="0" role="img" aria-label="Survey map. Use plus and minus to zoom, arrow keys to pan."></canvas><div id="mnote"></div><div id="gstat" hidden><span id="gmsg"></span><button type="button" class="btn" id="greq">Enable location</button></div><select id="baseSel" aria-label="Base map"></select><button id="offBadge" type="button" hidden title="Offline map"></button>
-    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="gcol" aria-label="Color poles and lines by grade" aria-pressed="true" title="Color by OK / WATCH / ACTION"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="7" cy="8" r="3.4" fill="#22c55e"/><circle cx="17" cy="8" r="3.4" fill="#f59e0b"/><circle cx="12" cy="17" r="3.4" fill="#ef4444"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Go to my location" title="Go to my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button></div>
-    <div id="glg" hidden><span style="color:#22c55e">●</span> OK &nbsp;<span style="color:#f59e0b">●</span> WATCH &nbsp;<span style="color:#ef4444">●</span> ACTION</div><div id="pop" hidden></div></div>
+    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="gcol" aria-label="Color poles and lines by grade" aria-pressed="true" title="Color by OK / WATCH / ACTION"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="7" cy="8" r="3.4" style="fill:var(--ok)"/><circle cx="17" cy="8" r="3.4" style="fill:var(--warn)"/><circle cx="12" cy="17" r="3.4" style="fill:var(--off)"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Go to my location" title="Go to my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button></div>
+    <div id="glg" hidden><span style="color:var(--ok)">●</span> OK &nbsp;<span style="color:var(--warn)">●</span> WATCH &nbsp;<span style="color:var(--off)">●</span> ACTION</div><div id="pop" hidden></div></div>
 </section>
 
 <section id="dlSheet" hidden><div class="bar"><b id="dlT">Offline map</b><button type="button" class="btn" id="dlX">Close</button></div><div style="max-width:720px;margin:0 auto;padding:14px">
@@ -477,7 +477,7 @@ $('f').onsubmit=function(e){
   e.preventDefault();var r=collect();var o0=recs.find(function(x){return x.id===r.id})||{pole:{}};r.pole.ph=phD.P?!!ph.P.length:!!o0.pole.ph;if(r.tx)r.tx.ph=phD.T?!!ph.T.length:!!(o0.tx&&o0.tx.ph);var miss=[];if(!r.pole.s.m)miss.push('Secondary structure');if(!r.pole.material)miss.push('Material');if(r.tx){if(r.tx.rating==='')miss.push('Transformer rating');if(!r.tx.type)miss.push('Transformer type');if(r.tx.line===''||r.tx.line==null)miss.push('Line current')}if(miss.length){toast('Required: '+miss.join(', '));return}if(!pos){toast('No location: tap the map to place the pole');return}var bn=badNum(r);if(bn){toast(bn);return}var nb=recs.find(function(x){return x.id!==r.id&&x.project===r.project&&x.pos&&hav(x.pos,pos)<3});if(nb&&!confirm('Pole '+nb.pole.no+' is only '+Math.round(hav(nb.pos,pos))+' m away. Save anyway?'))return;if(r.pole.no&&recs.some(function(x){return x.id!==r.id&&x.project===r.project&&String(x.pole.no).toLowerCase()===r.pole.no.toLowerCase()})&&!confirm('Pole '+r.pole.no+' already exists in this project. Save anyway?'))return;if(r.tx){var n=recs.filter(function(x){return x.tx&&x.project===r.project&&x.id!==r.id}).length;if(n>=5&&!confirm('This project already has '+n+' transformers (max 5). Save anyway?'))return}
   var i=recs.findIndex(function(x){return x.id===r.id});
   var HR=HD==null?null:Math.round(HD);if(i>=0){var o1=recs[i];r.flag=o1.flag;r.hdg=o1.hdg!=null?o1.hdg:HR;var ch=chgs(o1,r);r.hist=(o1.hist||[]).concat(ch.length?[{t:r.up,c:ch}]:[]).slice(-20);recs[i]=r}else{r.hdg=HR;r.hist=[];recs.unshift(r)}
-  if(persist()){toast('Saved pole '+r.pole.no);savePh(r,o0);reset();closeSheet();lists();count();M.pend=null;M.sel=null;draw()}
+  if(persist()){toast('Saved pole '+r.pole.no);savePh(r,o0);reset();closeSheet();lists();count();render();M.pend=null;M.sel=null;draw()}
 };
 function lists(){var pj={};recs.forEach(function(r){if(r.project)pj[r.project]=1});$('projL').innerHTML=Object.keys(pj).map(function(v){return '<option value="'+esc(v)+'">'}).join('');
   ['pri','sec'].forEach(function(k){
@@ -491,15 +491,15 @@ var F={q:'',m:'all'},SEL={};
 function hasPh(r){return !!(r.pole.ph||(r.tx&&r.tx.ph))}
 function match(r){var m=F.m,q=F.q.toLowerCase();if(m==='tx'&&!r.tx)return 0;if(m==='plain'&&r.tx)return 0;if(m==='nogps'&&r.pos)return 0;if(m==='photo'&&!hasPh(r))return 0;if(m==='nophoto'&&hasPh(r))return 0;if(m==='flag'&&!r.flag)return 0;
   return !q||[r.pole.no,r.pole.primary,r.pole.secondary,r.pole.material,r.pole.remarks,r.pole.voltage,r.tx&&r.tx.remarks,r.tx&&r.tx.type,r.tx&&r.tx.rating].join(' ').toLowerCase().indexOf(q)>=0}
-function bkInfo(){if(!recs.length)return '';var b=0,c=0;try{b=+localStorage.getItem(KEY+'.bk')||0;c=+localStorage.getItem(KEY+'.chg')||0}catch(e){}
-  var d=b?Math.floor((Date.now()-b)/864e5):0,old=!b||d>=7||c>=25;return (b?'Last backup '+(d===0?'today':d+' day'+(d>1?'s':'')+' ago'):'No backup yet')+' · '+c+' change'+(c===1?'':'s')+' since'+(old?' — please tap Backup JSON in the menu':'');}
+function bkInfo(){if(!recs.length)return{t:'',w:0};var b=0,c=0;try{b=+localStorage.getItem(KEY+'.bk')||0;c=+localStorage.getItem(KEY+'.chg')||0}catch(e){}
+  var d=b?Math.floor((Date.now()-b)/864e5):0,old=!b||d>=7||c>=25;return{t:(b?'Last backup '+(d===0?'today':d+' day'+(d>1?'s':'')+' ago'):'No backup yet')+' · '+c+' change'+(c===1?'':'s')+' since'+(old?' — please tap Backup JSON in the menu':''),w:old?1:0}}
 function toastU(m,fn){var t=$('toast');t.textContent=m+' ';var b=document.createElement('button');b.className='undo';b.textContent='Undo';b.onclick=function(){fn();t.className=''};t.appendChild(b);t.className='show u';clearTimeout(toast.h);toast.h=setTimeout(function(){t.className=''},7000)}
 function delRecs(ids){var gone=recs.filter(function(x){return ids.indexOf(x.id)>=0});if(!gone.length)return;recs=recs.filter(function(x){return ids.indexOf(x.id)<0});ids.forEach(function(i){delete SEL[i]});persist();render();count();lists();draw();
   var undone=0,tm=setTimeout(function(){if(!undone)gone.forEach(function(rd){hMark(rd.id,upOf(rd),rd.project||'');phDel(rd.id)})},7000);
   toastU(gone.length+(gone.length>1?' poles':' pole')+' deleted',function(){undone=1;clearTimeout(tm);recs=gone.concat(recs);persist();render();count();lists();draw()})}
-function render(){var all=vis(),list=all.filter(match),byId={},n=0;all.forEach(function(r){byId[r.id]=r});Object.keys(SEL).forEach(function(k){if(!byId[k])delete SEL[k]});n=Object.keys(SEL).length;
-  $('bk').textContent=bkInfo();
-  $('bulk').hidden=!n||viewMode;if(n&&!viewMode)$('bulk').innerHTML='<b>'+n+' selected</b><button class="btn" data-b="all">Select all shown</button><button class="btn" data-b="flag">Flag</button><button class="btn" data-b="move">Move to project…</button><button class="btn d" data-b="del">Delete</button><button class="btn" data-b="none">Clear</button>';
+function bulkBar(){var n=Object.keys(SEL).length;$('bulk').hidden=!n||viewMode;if(n&&!viewMode)$('bulk').innerHTML='<b>'+n+' selected</b><button class="btn" data-b="all">Select all shown</button><button class="btn" data-b="flag">Flag</button><button class="btn" data-b="move">Move to project…</button><button class="btn d" data-b="del">Delete</button><button class="btn" data-b="none">Clear</button>'}
+function render(){var all=vis(),list=all.filter(match),byId={};all.forEach(function(r){byId[r.id]=r});Object.keys(SEL).forEach(function(k){if(!byId[k])delete SEL[k]});
+  var bi=bkInfo();$('bk').textContent=bi.t;$('bk').classList.toggle('w',!!bi.w);bulkBar();
   var h=list.map(function(r){
     var t=r.tx,a=r.from&&byId[r.from],sp=a&&a.pos&&r.pos?Math.round(hav(a.pos,r.pos)):null,l='<div class="rec'+(t?' tx':'')+(r.flag?' fl':'')+'">'+(viewMode?'':'<label class="sel"><input type="checkbox" data-s="'+r.id+'"'+(SEL[r.id]?' checked':'')+' aria-label="Select pole '+esc(r.pole.no)+'"></label>')+'<h3>'+(r.flag?'⚑ ':'')+'Pole '+esc(r.pole.no)+(r.pole.material?' · '+esc(r.pole.material):'')+(gradeMap().p[r.id]?' <span class="tag '+gradeMap().p[r.id]+'">'+gl(gradeMap().p[r.id])+'</span>':'')+'</h3>'
      +'<p>'+esc(r.project||'No project')+' | Primary '+esc(r.pole.primary||'-')+' | Secondary '+esc(r.pole.secondary||'-')+(r.pole.voltage!==''?' | '+r.pole.voltage+' V':'')+'</p>';
@@ -518,7 +518,7 @@ $('recs').onclick=function(e){
   if(b.dataset.f){var q=recs.find(function(x){return x.id===b.dataset.f});if(q){q.flag=q.flag?0:1;q.up=new Date().toISOString();persist();render();draw()}}
   if(b.dataset.d)delRecs([b.dataset.d])
 };
-$('recs').onchange=function(e){var c=e.target;if(c.dataset&&c.dataset.s){if(c.checked)SEL[c.dataset.s]=1;else delete SEL[c.dataset.s];render()}};
+$('recs').onchange=function(e){var c=e.target;if(c.dataset&&c.dataset.s){if(c.checked)SEL[c.dataset.s]=1;else delete SEL[c.dataset.s];bulkBar()}};
 $('bulk').onclick=function(e){var b=e.target.closest('button');if(!b)return;var k=b.dataset.b,ids=Object.keys(SEL);
   if(k==='all'){vis().filter(match).forEach(function(r){SEL[r.id]=1})}
   else if(k==='none'){SEL={}}
@@ -530,7 +530,7 @@ $('fq').oninput=function(){F.q=this.value.trim();render();draw()};$('fm').onchan
 
 
 // export
-function dlFile(name,text,type){if(/backup|handoff/.test(name)){try{localStorage.setItem(KEY+'.bk',Date.now());localStorage.setItem(KEY+'.chg',0)}catch(e){}setTimeout(render,0)}var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
+function dlFile(name,text,type){if(/backup/.test(name)){try{localStorage.setItem(KEY+'.bk',Date.now());localStorage.setItem(KEY+'.chg',0)}catch(e){}setTimeout(render,0)}var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
 function stamp(){return new Date().toISOString().slice(0,10)}
 function q(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
 $('xCsv').onclick=function(){var recs=vis();
@@ -909,7 +909,7 @@ $('offBadge').onclick=function(){if($('dlSheet').hidden)openDl()};
 document.querySelectorAll('#drTabs button').forEach(function(b){b.addEventListener('click',offUI)});
 loadOffIdx();
 
-// calculations (230 V nominal, single phase)
+// calculations — VN is the nominal voltage, kept in step with AS.vb by asSave()
 var VN=230;
 function calc(kva,amps,v){var o={};
   if(kva!==''&&kva!=null&&amps!==''&&amps!=null&&+kva>0){o.kva=VN*amps/1000;o.pct=o.kva/kva*100}
@@ -940,7 +940,8 @@ var CNAME={res:'Residential (evening peak)',com:'Commercial (daytime peak)',mix:
 var CON0={'2':{n:'#2 ACSR',r:.944,x:.42},'1':{n:'#1 ACSR',r:.748,x:.41},'1/0':{n:'#1/0 ACSR',r:.593,x:.40},'2/0':{n:'#2/0 ACSR',r:.471,x:.39}};
 var AS={curve:'res',custom:'',vb:230,vlo:208,vhi:253,warn:3,act:5,con:{}},AO={};
 try{var avs=JSON.parse(localStorage.getItem(KEY+'.ana')||'null');if(avs)for(var k0 in avs)AS[k0]=avs[k0]}catch(e){}
-function asSave(){GC=null;try{localStorage.setItem(KEY+'.ana',JSON.stringify(AS))}catch(e){}}
+function asSave(){VN=+AS.vb>0?+AS.vb:230;GC=null;try{localStorage.setItem(KEY+'.ana',JSON.stringify(AS))}catch(e){}}
+asSave();
 function setCurve(){var a=CURVES[AS.curve];if(AS.curve==='custom'){var v=String(AS.custom).split(/[\s,;]+/).filter(Boolean).map(Number);a=v.length===24&&v.every(function(x){return isFinite(x)&&x>=0})&&Math.max.apply(0,v)>0?norm(v):null}
   GC=null;ANACUR=a||CURVES.res;ANAPK=ANACUR.indexOf(Math.max.apply(0,ANACUR));return !!a}
 setCurve();
@@ -1028,7 +1029,8 @@ asetRender();
 var GRK={'v-ok':0,'v-warn':1,'v-bad':2},GL={'v-ok':'OK','v-warn':'WATCH','v-bad':'ACTION'};
 function gWorst(a,b){if(!a)return b||null;if(!b)return a;return GRK[a]>=GRK[b]?a:b}
 function gl(g){return GL[g]||''}
-function gcol(g){return g==='v-ok'?'#22c55e':g==='v-warn'?'#f59e0b':'#ef4444'}
+var GCLR=null;
+function gcol(g){if(!GCLR)GCLR={'v-ok':anaVr('--ok'),'v-warn':anaVr('--warn'),'v-bad':anaVr('--off')};return GCLR[g]||GCLR['v-bad']}
 function anaVg(v){if(v===''||v==null||isNaN(+v))return null;v=+v;var lo=+AS.vlo,hi=+AS.vhi;return v<lo||v>hi?'v-bad':(v<lo+5||v>hi-5)?'v-warn':'v-ok'}
 function gradeMap(){if(GC&&GCk===lastProj)return GC;var m={p:{},l:{}};anaRows().forEach(function(a){m.p[a.id]=anaGrade(a)});
   vis().forEach(function(r){if(m.p[r.id])return;var g=anaVg(r.pole.voltage);if(g)m.p[r.id]=g});anaLines().forEach(function(l){m.l[l.id]=l.g});GC=m;GCk=lastProj;return m}
@@ -1213,8 +1215,9 @@ function secStd(r){var p=r.pole;if(!p)return false;var pr=String(p.secondary||''
   return m!==m0||l!==l0}
 function pinLabel(r){var t=[r.tx&&r.tx.rating?r.tx.rating+' kVA':'',r.pole.no?'Pole # '+r.pole.no:'',r.pole.material,[r.pole.primary,r.pole.secondary].filter(Boolean).join(' / ')].filter(Boolean).join(', ');return t+(r.pole.voltage!==''&&r.pole.voltage!=null?'; '+r.pole.voltage+' V':'')}
 function isDark(){return document.documentElement.dataset.theme!=='light'}
-$('thm').textContent=isDark()?'Light theme':'Dark theme';
-$('thm').onclick=function(){var l=isDark();document.documentElement.dataset.theme=l?'light':'dark';try{localStorage.setItem(KEY+'.theme',l?'light':'dark')}catch(e){}$('thm').textContent=l?'Dark theme':'Light theme';draw()};
+function themeMeta(){var m=document.querySelector('meta[name=theme-color]');if(m)m.content=anaVr('--bg')}
+$('thm').textContent=isDark()?'Light theme':'Dark theme';themeMeta();
+$('thm').onclick=function(){var l=isDark();document.documentElement.dataset.theme=l?'light':'dark';try{localStorage.setItem(KEY+'.theme',l?'light':'dark')}catch(e){}$('thm').textContent=l?'Dark theme':'Light theme';GCLR=null;themeMeta();draw()};
 // hamburger drawer: everything that is not the map, the list or the analysis
 var dr=0,drFrom=null,drW=matchMedia('(min-width:900px)');
 function drSet(on){on=!!on;if(on===dr)return;dr=on;
@@ -1291,7 +1294,8 @@ $('xPrint').onclick=function(){var a=vis();if(!a.length)return toast('Nothing to
 // keyboard map controls
 $('cv').addEventListener('keydown',function(e){var k=e.key,st=60,h=1;if(k==='+'||k==='=')zoom(ZS_BTN);else if(k==='-'||k==='_')zoom(-ZS_BTN);else if(k==='ArrowLeft')M.cx-=st;else if(k==='ArrowRight')M.cx+=st;else if(k==='ArrowUp')M.cy-=st;else if(k==='ArrowDown')M.cy+=st;else h=0;if(h){e.preventDefault();M.anchor=null;draw()}});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
-kvGet('recs').then(function(v){if(Array.isArray(v))recs=v;else{load();if(recs.length)persist()}boot()},function(){load();boot()});
+// whichever store has the most records wins: a browser can evict IndexedDB (or localStorage) on its own
+kvGet('recs').then(function(v){load();if(Array.isArray(v)&&v.length>=recs.length)recs=v;boot()},function(){load();boot()});
 function boot(){var secChg=0;recs.forEach(function(r){if(!r.project)r.project=lastProj||'Project 1';if(!r.pole)return;if(secStd(r))secChg=1});
 // the Drive sync feature is gone; drop the bookkeeping and any token it left behind
 try{[KEY+'.sy',KEY+'.gtok',KEY+'.gdev',KEY+'.projbar'].forEach(function(k){localStorage.removeItem(k)})}catch(e){}
