@@ -220,6 +220,25 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .atab i{border-radius:9px;background:var(--field);padding:4px 7px}
 .atab i.hi{background:var(--acc);border-color:var(--acc)}
 .twrap{border-radius:12px}.tbl{font-variant-numeric:tabular-nums}
+.sysbox{padding:12px 14px}
+.sysbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+.sysbar h3{margin:0;font-size:1rem;font-weight:650}
+.sysw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.stbl{margin:0;min-width:100%}
+.stbl th,.stbl td{white-space:nowrap}
+.stbl td small{display:block;font-weight:400;color:var(--mute);font-size:.68rem;letter-spacing:0}
+.stbl td.bas{text-align:left;color:var(--mute);font-size:.72rem;white-space:normal;min-width:70px}
+.stbl td.bas small{color:var(--warn)}
+.stbl td.v-ok{color:var(--ok);font-weight:650}
+.stbl td.v-warn{color:var(--warn);font-weight:650}
+.stbl td.v-bad{color:var(--off);font-weight:650}
+.stbl tr.cur td{background:var(--acc-soft)}
+.stbl tr.s-v-ok td:first-child{box-shadow:inset 4px 0 0 var(--ok)}
+.stbl tr.s-v-warn td:first-child{box-shadow:inset 4px 0 0 var(--warn)}
+.stbl tr.s-v-bad td:first-child{box-shadow:inset 4px 0 0 var(--off)}
+.stbl tfoot td{border-top:2px solid var(--line);border-bottom:0;background:var(--field);font-weight:700}
+.stbl tfoot td small{font-weight:400}
+.wn{color:var(--warn);font-size:.8rem;margin:8px 0 0}
 .tbl tr.meas td{background:var(--acc-soft)}
 .calc{background:var(--acc-soft);border:1px solid color-mix(in srgb,var(--acc) 28%,transparent);border-radius:12px;padding:10px 12px}
 .thumbs img,.th img{border-radius:12px;border:1px solid var(--line);box-shadow:var(--sh)}
@@ -415,9 +434,9 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <div><label for="anaSel">Order by</label><select id="anaSel"><option value="pct">Projected peak loading</option><option value="pole">Pole number</option></select></div>
   </div>
   <details id="aset" class="anasum"></details>
+  <div class="anasum sysbox"><div class="sysbar"><h3>System roll-up</h3><select id="sysSel" aria-label="Order transformers by"><option value="proj">Project, then loading</option><option value="pct">Loading %</option><option value="drop">Voltage drop %</option><option value="loss">Loss kW</option><option value="tx">Transformer</option></select></div><div id="anaSys"></div></div>
   <div id="anaSum"></div>
-  <div id="anaList"></div>
-  <div id="anaLines"></div>
+  <details class="curve" id="anaDet"><summary>Per-transformer and per-span detail &mdash; open project only</summary><div id="anaList"></div><div id="anaLines"></div></details>
   <details class="curve"><summary>Residential load curve used</summary><div id="curveTab"></div></details>
 </section>
 </main>
@@ -1079,6 +1098,104 @@ function anaSum(a){
     +acell('Peak '+anaHH(ANAPK),cap?(pk/cap*100).toFixed(0)+'%':'—',pk.toFixed(1)+' A · '+(VN*pk/1000*anaPF()).toFixed(2)+' kW',cap&&pk/cap*100>100?'v-bad':'')
     +acell('Over at peak',over+' of '+a.length,over?'need reconfig':'all within rating',over?'v-bad':'v-ok')+'</div>'
     +'<p class="verdict '+(worst.pk.pct>100?'v-bad':worst.pk.pct>80?'v-warn':'v-ok')+'">Worst case is Pole '+esc(worst.no||'—')+' at '+worst.pk.pct.toFixed(1)+'% of its '+worst.fla.toFixed(1)+' A full-load current ('+worst.pk.i.toFixed(1)+' A, '+worst.pk.kVA.toFixed(2)+' kVA) at '+PKL()+'.</p></div>'}
+// system roll-up: one row per transformer, covering only the poles that unit supplies
+function sysKids(id,pj){return recs.filter(function(r){return r.from===id&&r.project===pj})}
+function sysAnc(a,q){for(var x=q&&q.pa;x;x=x.pa)if(x===a)return 1;return 0}
+function sysNet(tx){var out=[],seen={};seen[tx.id]=1;
+  (function walk(p,n,pa){sysKids(p.id,tx.project).forEach(function(c){if(seen[c.id])return;seen[c.id]=1;var e={p:p,c:c,n:n,pa:pa};out.push(e);walk(c,n+1,e)})})(tx,1,null);
+  return out}
+// a span with no clamp reading gets the mean of the readings either side of it (uniform pick-up along the run),
+// or half the last measured reading for every span beyond it
+function sysCur(out,seed){
+  out.forEach(function(e){var v=Number(e.c.pole.lineA);e.meas=isFinite(v)&&v>0;e.i=e.meas?v:null});
+  out.forEach(function(e){if(e.meas)return;var up,dn=null;
+    for(up=e.pa;up&&!up.meas;up=up.pa);
+    out.forEach(function(q){if(!q.meas||q.n<=e.n||!sysAnc(e,q))return;if(!dn||q.n<dn.n)dn=q});
+    if(!up&&seed)up={i:seed,n:0};
+    if(up&&dn){if(dn.i>up.i+.05)e.bad='carries more current further out ('+dn.i+' A beyond '+up.i+' A)';e.i=up.i+(dn.i-up.i)*(e.n-up.n)/(dn.n-up.n)}
+    else if(up)e.i=up.i/Math.pow(2,e.n-up.n);
+    else if(dn)e.i=dn.i;
+    if(e.i!=null){e.der=1;if(e.i<0)e.i=0}});
+  out.forEach(function(p){var s=0,n=0;out.forEach(function(q){if(q.pa===p&&q.i!=null){s+=q.i;n++}});
+    if(n>1&&p.i!=null&&s>p.i*1.05+.5)p.bad='+'+n+' branches draw '+s.toFixed(1)+' A against '+p.i.toFixed(1)+' A in'});
+  out.forEach(function(e){if(!e.meas)return;
+    for(var x=e.pa;x;x=x.pa)if(x.meas){if(e.i>x.i+.05)e.bad='reads '+e.i+' A against '+x.i+' A closer to the transformer';break}});
+  return out}
+function sysOne(tx){
+  var net=sysCur(sysNet(tx),(function(){var v=Number(tx.tx.line==null?tx.tx.i1:tx.tx.line);return isFinite(v)&&v>0?v:null})()),P=anaPF();
+  var rating=Number(tx.tx.rating),fla=rating>0?rating*1000/VN:null;
+  var ai=Number(tx.tx.line==null?tx.tx.i1:tx.tx.line),A=isFinite(ai)&&ai>0?ai:null;
+  var kVA=A==null?null:VN*A/1000,pct=A==null||!fla?null:A/fla*100;
+  var vt=anaVol(tx),w=null,nv=0;
+  net.forEach(function(e){var v=anaVol(e.c);if(v==null)return;nv++;if(!w||v<w.v)w={v:v,no:e.c.pole.no||'—'}});
+  var dp=vt&&w&&vt>0?(vt-w.v)/vt*100:null,lkw=0,kwh=0,del=0,nm=0,nd=0,nn=0,ng=0,cs=0,i;
+  for(i=0;i<24;i++)cs+=ANACUR[i]*ANACUR[i];
+  net.forEach(function(e){if(e.i==null){nn++;return}
+    if(!e.p.pos||!e.c.pos){ng++;return}
+    var km=hav(e.p.pos,e.c.pos)/1000;if(!(km>0)){ng++;return}
+    var c=lineCalc(e.i,km,CON0[e.c.cond]?e.c.cond:'2/0');lkw+=c.loss;del+=c.load;kwh+=c.loss*cs;
+    if(e.meas)nm++;else nd++});
+  var g=null;
+  // % loss is measured against what this transformer actually exports; only the spans it feeds are counted
+  var out=kVA==null?null:kVA*P;
+  if(pct!=null)g=gWorst(g,anaPg(pct));
+  if(dp!=null)g=gWorst(g,dp>+AS.act?'v-bad':dp>+AS.warn?'v-warn':'v-ok');
+  if(w)g=gWorst(g,anaVg(w.v));
+  return{r:tx,no:tx.pole.no||'—',rating:isFinite(rating)&&rating>0?rating:null,fla:fla,A:A,kVA:kVA,pct:pct,vt:vt,w:w,dp:dp,
+    lkw:lkw,kwh:kwh,out:out,del:del,lp:out>0?lkw/out*100:(del>0?lkw/del*100:null),tsp:net.length,nm:nm,nd:nd,nn:nn,ng:ng,nv:nv,g:g,
+    warn:net.filter(function(e){return e.bad})}}
+function anaSysRows(){var o=[];recs.forEach(function(r){if(r.tx)o.push(sysOne(r))});return o}
+function sysFmt(v,d){return v==null||!isFinite(+v)?'—':(+v).toFixed(d)}
+function sysSort(o){var s=$('sysSel').value;return o.sort(function(p,q){
+  if(s==='drop')return (q.dp==null?-1e9:+q.dp)-(p.dp==null?-1e9:+p.dp);
+  if(s==='loss')return q.lkw-p.lkw;
+  if(s==='pct')return (q.pct==null?-1:+q.pct)-(p.pct==null?-1:+p.pct);
+  if(s==='tx')return String(p.no).localeCompare(String(q.no),void 0,{numeric:true});
+  return String(p.r.project||'').localeCompare(String(q.r.project||''),void 0,{numeric:true})||((q.pct==null?-1:+q.pct)-(p.pct==null?-1:+p.pct))})}
+function sysTr(x){var bas=x.tsp?(x.nm+x.nd)+'/'+x.tsp+' span'+(x.tsp>1?'s':'')+' · '+x.nv+'/'+x.tsp+' V':'no poles linked';
+  return'<tr class="'+(x.r.project===lastProj?'cur ':'')+(x.g?'s-'+x.g:'')+'">'
+   +'<td>'+esc(x.r.project||'—')+'</td>'
+   +'<td>Pole '+esc(x.no)+(x.rating?'<small>'+x.rating+' kVA · '+x.fla.toFixed(1)+' A FLC</small>':'<small>rating not recorded</small>')+'</td>'
+   +'<td class="'+(x.pct==null?'':anaPg(x.pct))+'">'+sysFmt(x.pct,1)+'</td>'
+   +'<td>'+sysFmt(x.kVA==null?null:x.kVA*anaPF(),2)+(x.kVA==null?'':'<small>'+sysFmt(x.kVA,2)+' kVA</small>')+'</td>'
+   +'<td>'+sysFmt(x.A,1)+'</td>'
+   +'<td>'+sysFmt(x.vt,0)+'</td>'
+   +'<td class="'+(x.w?anaVg(x.w.v):'')+'">'+sysFmt(x.w?x.w.v:null,0)+(x.w?'<small>Pole '+esc(x.w.no)+'</small>':(x.tsp?'<small>none read</small>':''))+'</td>'
+   +'<td class="'+(x.dp==null?'':+x.dp>+AS.act?'v-bad':+x.dp>+AS.warn?'v-warn':'v-ok')+'">'+sysFmt(x.dp,2)+'</td>'
+   +'<td>'+sysFmt(x.lkw,3)+(x.nd?'<small>'+x.nd+' derived</small>':(x.nn+x.ng?'<small>partial</small>':''))+'</td>'
+   +'<td>'+sysFmt(x.kwh,2)+'</td>'
+   +'<td>'+sysFmt(x.lp,2)+'</td>'
+   +'<td class="bas">'+bas+(x.warn.length?'<small class="wn">'+x.warn.length+' current check</small>':'')+'</td></tr>'}
+function sysFoot(o){var t={tx:0,rd:0,A:0,kVA:0,cap:0,lkw:0,kwh:0,del:0,out:0,sp:0,nm:0,nd:0,wv:null,wd:null},i;
+  o.forEach(function(x){t.tx++;if(x.A!=null&&x.rating){t.rd++;t.A+=x.A;t.kVA+=x.kVA;t.cap+=x.rating}
+    t.lkw+=x.lkw;t.kwh+=x.kwh;t.del+=x.del;t.out+=x.out||0;t.sp+=x.tsp;t.nm+=x.nm;t.nd+=x.nd;
+    if(x.w&&(!t.wv||x.w.v<t.wv.v))t.wv=x.w;
+    if(x.dp!=null&&(t.wd==null||x.dp>t.wd))t.wd=x.dp});
+  var lp=t.out>0?t.lkw/t.out*100:(t.del>0?t.lkw/t.del*100:null),pc=t.cap>0?t.kVA/t.cap*100:null;
+  return'<tfoot><tr><td>SYSTEM</td><td>'+t.tx+' transformer'+(t.tx>1?'s':'')+'<small>'+t.rd+' with a current reading</small></td>'
+   +'<td class="'+(pc==null?'':pc>100?'v-bad':pc>80?'v-warn':'v-ok')+'">'+sysFmt(pc,1)+'</td>'
+   +'<td>'+sysFmt(t.rd?t.kVA*anaPF():null,2)+(t.rd?'<small>'+sysFmt(t.kVA,2)+' kVA</small>':'')+'</td>'
+   +'<td>'+sysFmt(t.rd?t.A:null,1)+'</td><td>—</td>'
+   +'<td class="'+(t.wv?anaVg(t.wv.v):'')+'">'+(t.wv?sysFmt(t.wv.v,0)+'<small>Pole '+esc(t.wv.no)+'</small>':'—')+'</td>'
+   +'<td class="'+(t.wd==null?'':+t.wd>+AS.act?'v-bad':+t.wd>+AS.warn?'v-warn':'v-ok')+'">'+sysFmt(t.wd,2)+'</td>'
+   +'<td>'+sysFmt(t.lkw,3)+'</td><td>'+sysFmt(t.kwh,2)+'</td>'
+   +'<td>'+sysFmt(lp,2)+'</td><td class="bas">'+(t.sp?(t.nm+t.nd)+'/'+t.sp+' spans · '+t.nd+' derived':'—')+'</td></tr></tfoot>'}
+function anaSys(){var o=sysSort(anaSysRows());
+  if(!o.length)return'<p class="ameta">No transformers surveyed yet. Record a pole with a transformer, its rating and its secondary current and the roll-up builds itself.</p>';
+  var pj={},i,np=0,o2=0,nn=0,wn=[];
+  o.forEach(function(x){pj[x.r.project||'—']=1;o2+=x.nn+x.ng;nn+=x.tsp;
+    x.warn.forEach(function(e){wn.push(esc(x.r.project||'—')+' · Pole '+esc(x.no)+': span to Pole '+esc(e.c.pole.no||'—')+' '+e.bad)})});
+  for(i in pj)np++;
+  return'<div class="sysw"><table class="tbl stbl"><thead><tr><th>Project</th><th>Transformer</th><th>% loading</th><th>Demand kW</th><th>Amps</th><th>V at TX</th><th>Worst V</th><th>Drop %</th><th>Loss kW</th><th>kWh/day</th><th>Loss %</th><th>Basis</th></tr></thead><tbody>'
+   +o.map(sysTr).join('')+'</tbody>'+sysFoot(o)+'</table></div>'
+   +'<p class="ameta">'+o.length+' transformers across '+np+' project'+(np>1?'s':'')+'. Each row covers only the poles linked downstream of that unit, so a span belongs to exactly one transformer. '
+   +'Loading, demand and amps are as surveyed, against '+VN+' V full-load current; the '+PKL()+' projection stays on the per-transformer cards below. '
+   +'Losses are secondary-conductor I²R on the spans surveyed, as a share of what the transformer exports — '+(o2?o2+' of '+nn+' spans have no current or no position and are excluded, ':'all '+nn+' spans carry a current and a distance, ')
+   +(o.filter(function(x){return x.nd}).length?'derived currents are marked. ':'every span current was read with a clamp. ')
+   +'Transformer losses are not included: they need test data the survey does not capture.</p>'
+   +(wn.length?'<p class="wn">'+wn.map(function(s){return'⚠ '+s}).join('<br>')+'</p>':'')}
+function renderSys(){var s=$('anaSys');if(s)s.innerHTML=anaSys()}
+$('sysSel').onchange=renderSys;
 function curveHtml(){
   return'<p class="ameta">Curve: '+CNAME[AS.curve]+'. Per-unit demand against the '+PKL()+' maximum. Each transformer\'s measured amps are divided by its own hour value to find the implied peak current, then the curve is applied hour by hour. Loading is expressed against full-load current at '+VN+' V (nameplate kVA × 1000 ÷ '+VN+'), so 100% is the rated amps. Voltage is reported exactly as surveyed and is never projected.</p><div class="atab">'
     +ANACUR.map(function(v,i){return'<i'+(i===ANAPK?' class="hi"':(i===anaHour({time:new Date().toISOString()})?' class="now"':''))+'><b>'+anaHH(i)+'</b>'+Math.round(v*100)+'%</i>'}).join('')+'</div>'}
@@ -1107,6 +1224,7 @@ function anaChart(cv,a){
   c.textAlign='right';c.fillText(PKL()+' PEAK',X(ANAPK)-5,T+5);
   [0,3,6,9,12,15,18,21].forEach(function(i){c.fillText(i,X(i),H-B/2+1)});
   c.fillStyle=anaVr('--ink');a.reads.forEach(function(q,n){var yy=Y(q.i/a.fla*100);c.beginPath();c.arc(X(q.h),yy,3.5,0,6.3);c.fill();if(n===0){c.textAlign=q.h>19?'right':'left';c.fillText('read '+anaHH(q.h),X(q.h)+(q.h>19?-6:6),yy-9)}})}
+var anaLast=[];
 function anaDraw(list){
   document.querySelectorAll('#anaList canvas').forEach(function(cv){
     var a=list.filter(function(x){return x.id===cv.dataset.i})[0];if(a)anaChart(cv,a)})}
@@ -1115,10 +1233,13 @@ function renderAna(){
   var ord=$('anaSel').value,list=anaRows().slice().sort(function(p,q){
     if(ord==='pole')return String(p.no).localeCompare(String(q.no),undefined,{numeric:true});
     return q.pk.pct-p.pk.pct});
+  anaLast=list;
   $('anaSum').innerHTML=anaSum(list);
   $('anaList').innerHTML=list.map(anaCard).join('');var LN=anaLines().sort(function(p,q){return q.pk.pct-p.pk.pct});$('anaLines').innerHTML=anaLineSum(LN)+LN.map(lineCard).join('');
   $('curveTab').innerHTML=curveHtml();
+  renderSys();
   setTimeout(function(){anaDraw(list)},0)}
+$('anaDet').ontoggle=function(){if($('anaDet').open)setTimeout(function(){anaDraw(anaLast)},0)};
 $('pf').addEventListener('input',renderAna);$('pf').addEventListener('change',renderAna);
 $('anaSel').onchange=renderAna;
 var anaRT;addEventListener('resize',function(){clearTimeout(anaRT);anaRT=setTimeout(function(){if(!$('ana').hidden)anaDraw(anaRows())},150)});
