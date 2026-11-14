@@ -410,8 +410,10 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <div><label for="pf">Assumed power factor</label><input type="number" id="pf" value="0.95" step="0.01" min="0.5" max="1" inputmode="decimal"></div>
     <div><label for="anaSel">Order by</label><select id="anaSel"><option value="pct">Projected peak loading</option><option value="pole">Pole number</option></select></div>
   </div>
+  <details id="aset" class="anasum"></details>
   <div id="anaSum"></div>
   <div id="anaList"></div>
+  <div id="anaLines"></div>
   <details class="curve"><summary>Residential load curve used</summary><div id="curveTab"></div></details>
 </section>
 </main>
@@ -744,14 +746,15 @@ cv.onwheel=function(e){e.preventDefault();var b=cv.getBoundingClientRect(),x=e.c
   M.anchor={lat:A.lat,lon:A.lon,x:e.clientX,y:e.clientY};M.zt=z;zoomRun()};
 function lineHit(x,y,b){var X=M.cx-b.width/2+x,Y=M.cy-b.height/2+y,by={},best=null,bd=14;vis().forEach(function(r){by[r.id]=r});
   vis().forEach(function(r){var a=r.from&&by[r.from];if(!a||!a.pos||!r.pos)return;var p=px(a.pos.lat,a.pos.lon,M.z),q=px(r.pos.lat,r.pos.lon,M.z),dx=q.x-p.x,dy=q.y-p.y,L=dx*dx+dy*dy,t=L?Math.max(0,Math.min(1,((X-p.x)*dx+(Y-p.y)*dy)/L)):0,d=Math.hypot(X-(p.x+t*dx),Y-(p.y+t*dy));if(d<bd){bd=d;best=r}});return best}
-function showLine(r){var a=recs.find(function(q){return q.id===r.from}),cur=r.pole.lineA==null?'':r.pole.lineA,pop=$('pop');pop.hidden=false;
-  pop.innerHTML='<b>Line: Pole '+esc(a.pole.no)+' → Pole '+esc(r.pole.no)+'</b><br>Span '+Math.round(hav(a.pos,r.pos))+' m'+(viewMode?'<br>Current: '+(cur===''?'not recorded':cur+' A'):'<div class="unit" style="margin:8px 0"><input type="number" id="lcur" inputmode="decimal" step="any" min="0" placeholder="Current on this line" aria-label="Line current in amps" value="'+esc(cur)+'"><b>A</b></div>')
-   +'<div class="row" style="margin-top:8px">'+(viewMode?'':'<button class="btn p" id="lsv">Save current</button>')+'<button class="btn" id="lcl">Close</button></div>';
+function showLine(r){var a=recs.find(function(q){return q.id===r.from}),cur=r.pole.lineA==null?'':r.pole.lineA,pop=$('pop'),k=CON0[r.cond]?r.cond:'2/0';pop.hidden=false;
+  pop.innerHTML='<b>Line: Pole '+esc(a.pole.no)+' → Pole '+esc(r.pole.no)+'</b><br>Span '+Math.round(hav(a.pos,r.pos))+' m'+(viewMode?'<br>Current: '+(cur===''?'not recorded':cur+' A')+'<br>Conductor: '+CON0[k].n:'<div class="unit" style="margin:8px 0"><input type="number" id="lcur" inputmode="decimal" step="any" min="0" placeholder="Current on this line" aria-label="Line current in amps" value="'+esc(cur)+'"><b>A</b></div><label for="lcon">Conductor</label><select id="lcon">'+conOpts(k)+'</select>')
+   +'<div class="row" style="margin-top:8px">'+(viewMode?'':'<button class="btn p" id="lsv">Save</button>')+'<button class="btn" id="lcl">Close</button></div>';
   $('lcl').onclick=function(){pop.hidden=true;M.selL=null;draw()};
   if(!viewMode){var inp=$('lcur');inp.onkeydown=function(e){if(e.key==='Enter')$('lsv').click()};
-    $('lsv').onclick=function(){var v=inp.value.trim();if(v!==''&&(isNaN(v)||+v<0||+v>10000))return toast('Current must be between 0 and 10000 A');var nv=v===''?'':+v;
-      if(String(nv)!==String(cur)){var t=new Date().toISOString();r.hist=(r.hist||[]).concat([{t:t,c:['Line A: '+(cur===''?'-':cur)+' → '+(nv===''?'-':nv)]}]).slice(-20);r.pole.lineA=nv;r.up=t;persist()}
-      pop.hidden=true;M.selL=null;render();draw();toast(nv===''?'Line current cleared':'Line current saved: '+nv+' A')}}}
+    $('lsv').onclick=function(){var v=inp.value.trim();if(v!==''&&(isNaN(v)||+v<0||+v>10000))return toast('Current must be between 0 and 10000 A');var nv=v===''?'':+v,nc=$('lcon').value,ch=[];
+      if(String(nv)!==String(cur))ch.push('Line A: '+(cur===''?'-':cur)+' → '+(nv===''?'-':nv));if(nc!==k)ch.push('Conductor: '+CON0[k].n+' → '+CON0[nc].n);
+      if(ch.length){var t=new Date().toISOString();r.hist=(r.hist||[]).concat([{t:t,c:ch}]).slice(-20);r.pole.lineA=nv;r.cond=nc;r.up=t;persist()}
+      pop.hidden=true;M.selL=null;render();draw();toast('Line saved')}}}
 function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,best=null,bd=26;
   M.hits.forEach(function(h){var d=Math.hypot(h.x-x,h.y-y);if(d<bd){bd=d;best=h.id}});
   M.sel=best;M.pend=null;M.selL=null;$('pop').hidden=true;
@@ -923,56 +926,126 @@ function liveCalc(){var i=$('i1').value,v=$('vp').value,c=calc($('kva').value,i=
 // analysis: project today's reading onto a residential 6 PM peak
 var ANACUR=[.45,.40,.36,.34,.35,.40,.52,.65,.70,.68,.66,.68,.72,.70,.68,.70,.76,.86,1,.97,.90,.80,.68,.55];
 var ANAPK=18;
-function anaHH(h){return(h<10?'0':'')+h+':00'}
-function anaPF(){var v=Number($('pf').value);return(v>0&&v<=1)?v:.95}
-function anaVr(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888'}
-function anaHour(r){var d=new Date(r.time);return isNaN(d.getTime())?ANAPK:d.getHours()}
-function anaVol(r){var v=r.pole.voltage;return(v===''||v==null||isNaN(Number(v)))?null:Number(v)}
+
+var CURVES={res:ANACUR.slice(),com:[.28,.27,.26,.26,.27,.30,.36,.50,.70,.85,.92,.94,.90,.95,1,.97,.92,.82,.70,.58,.48,.40,.34,.30],rur:[.40,.36,.34,.35,.40,.55,.70,.65,.50,.42,.40,.42,.44,.42,.42,.46,.58,.80,1,.95,.85,.70,.55,.46]};
+function norm(a){var m=Math.max.apply(0,a);return a.map(function(v){return v/m})}
+CURVES.mix=norm(CURVES.res.map(function(v,i){return v+CURVES.com[i]}));
+var CNAME={res:'Residential (evening peak)',com:'Commercial (daytime peak)',mix:'Mixed residential + commercial',rur:'Rural / agricultural',custom:'Custom (your own 24 values)'};
+// typical ACSR 6/1 at 50 C, ohm per km (resistance, reactance at ~1 m spacing); editable in Analysis settings
+var CON0={'2':{n:'#2 ACSR',r:.944,x:.42},'1':{n:'#1 ACSR',r:.748,x:.41},'1/0':{n:'#1/0 ACSR',r:.593,x:.40},'2/0':{n:'#2/0 ACSR',r:.471,x:.39}};
+var AS={curve:'res',custom:'',sys:'1p2w',vb:230,warn:3,act:5,con:{}},AO={};
+try{var sv=JSON.parse(localStorage.getItem(KEY+'.ana')||'null');if(sv)for(var k0 in sv)AS[k0]=sv[k0]}catch(e){}
+function asSave(){try{localStorage.setItem(KEY+'.ana',JSON.stringify(AS))}catch(e){}}
+function setCurve(){var a=CURVES[AS.curve];if(AS.curve==='custom'){var v=String(AS.custom).split(/[\s,;]+/).filter(Boolean).map(Number);a=v.length===24&&v.every(function(x){return isFinite(x)&&x>=0})&&Math.max.apply(0,v)>0?norm(v):null}
+  ANACUR=a||CURVES.res;ANAPK=ANACUR.indexOf(Math.max.apply(0,ANACUR));return !!a}
+setCurve();
+function PKL(){var h=ANAPK;return (h%12||12)+(h<12?' AM':' PM')}
+function conV(k){var c=CON0[k],o=(AS.con||{})[k]||{};return{n:c.n,r:o.r!=null?o.r:c.r,x:o.x!=null?o.x:c.x}}
+function conOpts(k){return Object.keys(CON0).map(function(q){return '<option value="'+q+'"'+(q===k?' selected':'')+'>'+CON0[q].n+(q==='2/0'?' (default)':'')+'</option>'}).join('')}
+function hrOpts(h){for(var i=0,o='';i<24;i++)o+='<option value="'+i+'"'+(i===h?' selected':'')+'>'+anaHH(i)+'</option>';return o}
+// confidence in a projection: how close to the peak the best reading was taken
+function anaConf(p){if(p.best>=.9)return{c:'High',cls:'v-ok',t:'a reading was taken near the peak.'};
+  if(p.best>=.6)return{c:'Medium',cls:'v-warn',t:'readings are '+Math.round((1-p.best)*100)+'% below peak demand, so the projection scales them up ×'+(1/p.best).toFixed(1)+'.'};
+  return{c:'Low',cls:'v-bad',t:'every reading was taken at light load (scaled up ×'+(1/p.best).toFixed(1)+'). Measure again near '+anaHH(ANAPK)+' or add another reading.'}}
+function anaProj(reads){var w=0,s=0,ips=[];reads.forEach(function(q){var f=Math.max(ANACUR[q.h]||1,.05);q.f=f;q.ip=q.i/f;w+=f*f;s+=q.ip*f*f;ips.push(q.ip)});
+  var ip=s/w,mn=Math.min.apply(0,ips),mx=Math.max.apply(0,ips);return{ip:ip,spread:ips.length>1?(mx-mn)/ip*100:0,best:Math.max.apply(0,reads.map(function(q){return q.f}))}}
 function anaRows(){
   var P=anaPF(),out=[];
   vis().forEach(function(r){
     var t=r.tx;if(!t)return;
     var rating=Number(t.rating),ln=(t.line==null?t.i1:t.line),i0=Number(ln);
     if(!(rating>0)||ln==null||ln===''||!isFinite(i0))return;
-    var h=anaHour(r),f=ANACUR[h]||1,ip=i0/f,fla=rating*1000/VN,rows=[];
-    for(var x=0;x<24;x++){
-      var i=ip*ANACUR[x],kVA=VN*i/1000;
-      rows.push({h:x,pu:ANACUR[x],pct:i/fla*100,kVA:kVA,kW:kVA*P,i:i,meas:x===h});
-    }
-    out.push({r:r,id:r.id,no:r.pole.no,rating:rating,type:t.type||'',h:h,i0:i0,fla:fla,v:anaVol(r),P:P,rows:rows,now:rows[h],pk:rows[ANAPK]});
+    var h=anaHour(r),reads=[{h:h,i:i0,own:1}];(t.reads||[]).forEach(function(q,k){reads.push({h:+q.h,i:+q.i,k:k})});
+    var pj=anaProj(reads),ip=pj.ip,fla=rating*1000/VN,rows=[];
+    for(var x=0;x<24;x++){var i=ip*ANACUR[x],kVA=VN*i/1000;rows.push({h:x,pu:ANACUR[x],pct:i/fla*100,kVA:kVA,kW:kVA*P,i:i,meas:reads.some(function(q){return q.h===x})})}
+    var now={pct:i0/fla*100,kVA:VN*i0/1000,kW:VN*i0/1000*P,i:i0,pu:ANACUR[h]};
+    out.push({r:r,id:r.id,no:r.pole.no,rating:rating,type:t.type||'',h:h,i0:i0,fla:fla,v:anaVol(r),P:P,rows:rows,now:now,pk:rows[ANAPK],reads:reads,pj:pj,cf:anaConf(pj)});
   });
   return out}
+function lineCalc(I,km,k){var c=conV(k),pf=anaPF(),sn=Math.sqrt(1-pf*pf),vb=+AS.vb||230,
+  dv=I*(c.r*pf+c.x*sn)*km,loss=I*I*c.r*km/1000,load=vb*I*pf/1000; // single-phase, line to neutral: one phase conductor, neutral/earth return not counted
+ return{dv:dv,pct:dv/vb*100,loss:loss,lp:load>0?loss/load*100:0,load:load}}
+function anaLines(){var by={},out=[];vis().forEach(function(r){by[r.id]=r});
+  vis().forEach(function(r){var a=r.from&&by[r.from],c=r.pole.lineA;if(!a||!a.pos||!r.pos||c===''||c==null||!(+c>0))return;
+    var h=anaHour(r),f=Math.max(ANACUR[h]||1,.05),ip=+c/f,km=hav(a.pos,r.pos)/1000,k=CON0[r.cond]?r.cond:'2/0',pk=lineCalc(ip,km,k),day=0;
+    for(var x=0;x<24;x++)day+=lineCalc(ip*ANACUR[x],km,k).loss;
+    out.push({r:r,a:a,id:r.id,m:km*1000,k:k,h:h,i0:+c,ip:ip,pk:pk,day:day,g:pk.pct>AS.act?'v-bad':pk.pct>AS.warn?'v-warn':'v-ok',cf:anaConf({best:f})})});
+  return out}
+function lineVerdict(l){var c=conV(l.k),o=[];
+  o.push('Over '+Math.round(l.m)+' m of '+c.n+', the projected '+l.ip.toFixed(1)+' A at '+PKL()+' drops '+l.pk.dv.toFixed(1)+' V ('+l.pk.pct.toFixed(2)+'% of '+(+AS.vb||230)+' V) and wastes '+(l.pk.loss*1000).toFixed(0)+' W ('+l.pk.lp.toFixed(1)+'% of the power carried).');
+  o.push(l.g==='v-bad'?'ACTION — drop is above the '+AS.act+'% limit. Use a larger conductor, shorten the run, or add a transformer nearer the load.':l.g==='v-warn'?'WATCH — drop is above '+AS.warn+'%; extra load on this line will likely breach '+AS.act+'%.':'OK — drop is within '+AS.warn+'%.');
+  if(l.cf.c==='Low')o.push('Low confidence: '+l.cf.t);return o.join(' ')}
+function lineCard(l){var lb={'v-ok':'OK','v-warn':'WATCH','v-bad':'ACTION'}[l.g];
+  return '<div class="rec"><h3>Line: Pole '+esc(l.a.pole.no)+' → Pole '+esc(l.r.pole.no)+'<span class="tag '+l.g+'">'+lb+'</span></h3><p class="ameta">'+esc(l.r.project||'')+' · '+Math.round(l.m)+' m span · current read at '+anaHH(l.h)+' · confidence <span class="tag '+l.cf.cls+'">'+l.cf.c+'</span></p><div class="ag">'
+   +acell('Voltage drop at peak',l.pk.pct.toFixed(2)+'%',l.pk.dv.toFixed(1)+' V of '+(+AS.vb||230)+' V',l.g)
+   +acell('Loss at peak',(l.pk.loss*1000).toFixed(0)+' W',l.pk.lp.toFixed(1)+'% of '+l.pk.load.toFixed(2)+' kW')
+   +acell('Loss per day',l.day.toFixed(2)+' kWh','following the demand curve')
+   +acell('Current',l.i0.toFixed(1)+' A read',l.ip.toFixed(1)+' A projected at '+anaHH(ANAPK))+'</div>'
+   +'<p class="verdict '+l.g+'">'+lineVerdict(l)+'</p><div class="row" style="margin-top:8px"><div><label>Conductor</label><select data-lc="'+esc(l.id)+'">'+conOpts(l.k)+'</select></div><div><label>Current read at</label><select data-rh="'+esc(l.id)+'">'+hrOpts(l.h)+'</select></div></div></div>'}
+function anaLineSum(L){if(!L.length)return '<div class="anasum"><h3>No line currents yet</h3><p>Tap a line on the map and enter its current. This tab then works out the voltage drop and losses for every span.</p></div>';
+  var m=0,day=0,w=L[0],bad=0;L.forEach(function(l){m+=l.m;day+=l.day;if(l.g==='v-bad')bad++;if(l.pk.pct>w.pk.pct)w=l});
+  return '<div class="anasum"><h3>'+L.length+' line'+(L.length>1?'s':'')+' in '+esc(lastProj)+'</h3><div class="ag">'+acell('Total length',(m/1000).toFixed(2)+' km',L.length+' span'+(L.length>1?'s':''))
+   +acell('Losses per day',day.toFixed(1)+' kWh','all lines together')+acell('Worst drop',w.pk.pct.toFixed(2)+'%','Pole '+esc(w.a.pole.no)+' → '+esc(w.r.pole.no),w.g)+acell('Over limit',bad+' of '+L.length,'above '+AS.act+'% drop',bad?'v-bad':'v-ok')+'</div></div>'}
+function anaCard(a){
+  var g=anaGrade(a),lbl={'v-ok':'OK','v-warn':'WATCH','v-bad':'ACTION'}[g];
+  return'<div class="rec tx"><h3>Pole '+esc(a.no||'—')+(a.type?' · '+esc(a.type):'')+'<span class="tag '+g+'">'+lbl+'</span></h3>'
+    +'<p class="ameta">'+esc(a.r.project||'')+' · reading taken '+anaHH(a.h)+', when a feeder on this curve carries '+Math.round(a.now.pu*100)+'% of its '+PKL()+' peak · confidence <span class="tag '+a.cf.cls+'">'+a.cf.c+'</span></p>'
+    +'<div class="ag">'+anaCells(a)+'</div>'
+    +'<p class="verdict '+g+'">'+anaVerdict(a)+'</p>'
+    +(a.cf.c==='High'?'':'<p class="ameta">Confidence '+a.cf.c.toLowerCase()+': '+a.cf.t+'</p>')
+    +'<canvas class="anacv" data-i="'+esc(a.id)+'" width="600" height="200" role="img" aria-label="Projected current by hour, as a percentage of the full-load current rating"></canvas>'
+    +'<details><summary>Hour by hour</summary><div class="twrap"><table class="tbl">'+anaTable(a)+'</table></div></details>'
+    +'<details'+(AO[a.id]?' open':'')+'><summary>Readings ('+a.reads.length+')</summary>'+a.reads.map(function(q){return '<p>'+anaHH(q.h)+' — '+q.i.toFixed(1)+' A'+(q.own?' (survey record)':' <button class="btn" data-ad="'+esc(a.id)+'|'+q.k+'" aria-label="Delete this reading">Remove</button>')+'</p>'}).join('')
+    +'<div class="row arf" style="margin-top:6px"><select aria-label="Reading hour">'+hrOpts(ANAPK)+'</select><input type="number" inputmode="decimal" step="any" min="0" placeholder="Amps" aria-label="Reading in amps"><button class="btn p" data-ar="'+esc(a.id)+'">Add reading</button></div>'
+    +'<div style="margin-top:8px"><label>Survey reading was taken at</label><select data-rh="'+esc(a.id)+'">'+hrOpts(a.h)+'</select></div></details></div>'}
+$('ana').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var d=b.dataset,r;
+  if(d.ar){r=recs.find(function(x){return x.id===d.ar});var bx=b.closest('.arf'),h=+bx.querySelector('select').value,v=bx.querySelector('input').value.trim();
+    if(!r||!r.tx||v===''||isNaN(v)||+v<0||+v>10000)return toast('Enter a current between 0 and 10000 A');r.tx.reads=(r.tx.reads||[]).concat([{h:h,i:+v}]).slice(-24);r.up=new Date().toISOString();AO[d.ar]=1;persist();renderAna();toast('Reading added')}
+  if(d.ad){var q=d.ad.split('|');r=recs.find(function(x){return x.id===q[0]});if(r&&r.tx&&r.tx.reads){r.tx.reads.splice(+q[1],1);r.up=new Date().toISOString();AO[q[0]]=1;persist();renderAna()}}});
+$('ana').addEventListener('change',function(e){var t=e.target,d=t.dataset,r;
+  if(d.rh){r=recs.find(function(x){return x.id===d.rh});if(r){r.rh=+t.value;r.up=new Date().toISOString();AO[d.rh]=1;persist();renderAna()}}
+  if(d.lc){r=recs.find(function(x){return x.id===d.lc});if(r){r.cond=t.value;r.up=new Date().toISOString();persist();renderAna()}}});
+function asetRender(){var o=function(m,c){return Object.keys(m).map(function(k){return '<option value="'+k+'"'+(k===c?' selected':'')+'>'+m[k]+'</option>'}).join('')};
+  $('aset').innerHTML='<summary>Analysis settings</summary><div class="grid" style="margin-top:10px"><div><label>Demand curve</label><select data-as="curve">'+o(CNAME,AS.curve)+'</select></div>'
+   +'<div><label>Line-to-neutral voltage (V)</label><input type="number" data-as="vb" value="'+AS.vb+'"></div>'
+   +'<div><label>Drop: watch above (%)</label><input type="number" step="0.1" data-as="warn" value="'+AS.warn+'"></div><div><label>Drop: action above (%)</label><input type="number" step="0.1" data-as="act" value="'+AS.act+'"></div></div>'
+   +(AS.curve==='custom'?'<label style="margin-top:8px">Custom curve: 24 hourly values from 00:00 to 23:00, any scale</label><textarea data-as="custom" rows="3">'+esc(AS.custom)+'</textarea>':'')
+   +'<p class="ameta" style="margin-top:10px">Conductor resistance and reactance in ohms per km (typical ACSR at 50 °C, adjust to your catalogue)</p>'
+   +Object.keys(CON0).map(function(k){var c=conV(k);return '<div class="row" style="align-items:center;margin-bottom:6px"><b style="flex:0 0 6.5em">'+CON0[k].n+'</b><input type="number" step="any" data-ac="'+k+':r" value="'+c.r+'" aria-label="'+CON0[k].n+' resistance"><input type="number" step="any" data-ac="'+k+':x" value="'+c.x+'" aria-label="'+CON0[k].n+' reactance"></div>'}).join('')}
+$('aset').addEventListener('change',function(e){var t=e.target,d=t.dataset;
+  if(d.as){var v=t.value;if(['vb','warn','act'].indexOf(d.as)>=0){v=+v;if(!(v>0)){toast('Enter a positive number');return asetRender()}}AS[d.as]=v;if(d.as==='curve'||d.as==='custom'){if(!setCurve())toast('Custom curve needs 24 numbers, using residential for now');asetRender()}}
+  if(d.ac){var p=d.ac.split(':'),n=+t.value;if(!(n>0))return asetRender();(AS.con[p[0]]=AS.con[p[0]]||{})[p[1]]=n}
+  asSave();renderAna()});
+asetRender();
+function anaHH(h){return(h<10?'0':'')+h+':00'}
+function anaPF(){var v=Number($('pf').value);return(v>0&&v<=1)?v:.95}
+function anaVr(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888'}
+function anaHour(r){if(r.rh!=null&&r.rh!==''&&isFinite(r.rh))return +r.rh;var d=new Date(r.time);return isNaN(d.getTime())?ANAPK:d.getHours()}
+function anaVol(r){var v=r.pole.voltage;return(v===''||v==null||isNaN(Number(v)))?null:Number(v)}
 function anaPg(p){return p>100?'v-bad':p>80?'v-warn':'v-ok'}
 function anaDev(v){return(v-VN)/VN*100}
 function anaGrade(a){return anaPg(a.pk.pct)}
 function anaVerdict(a){
   var o=[],p=a.pk.pct;
   o.push('Now ('+anaHH(a.h)+'): '+a.i0.toFixed(1)+' A against '+a.fla.toFixed(1)+' A full-load current for the '+a.rating+' kVA nameplate at '+VN+' V ('+a.now.pct.toFixed(1)+'% loaded, '+a.now.kVA.toFixed(2)+' kVA).');
-  o.push('Projected 6 PM peak: '+a.pk.i.toFixed(1)+' A ('+p.toFixed(1)+'% of full-load current, '+a.pk.kVA.toFixed(2)+' kVA, '+a.pk.kW.toFixed(2)+' kW at power factor '+a.P+').');
+  o.push('Projected '+PKL()+' peak: '+a.pk.i.toFixed(1)+' A ('+p.toFixed(1)+'% of full-load current, '+a.pk.kVA.toFixed(2)+' kVA, '+a.pk.kW.toFixed(2)+' kW at power factor '+a.P+').');
   if(p>100)o.push('ACTION — peak demand is '+(a.pk.i-a.fla).toFixed(1)+' A above the '+a.fla.toFixed(1)+' A full-load rating. Step up the kVA size or move some services to another transformer.');
   else if(p>80)o.push('WATCH — only '+(a.fla-a.pk.i).toFixed(1)+' A of headroom left at peak ('+(100-p).toFixed(1)+'%); additional services will likely push it over.');
   else o.push('OK — '+(a.fla-a.pk.i).toFixed(1)+' A of headroom at peak ('+(100-p).toFixed(1)+'%).');
   o.push(a.v==null?'No voltage recorded on this pole.':'Voltage as recorded: '+a.v.toFixed(0)+' V ('+sg(anaDev(a.v))+' vs '+VN+' V) — reported as measured, not projected across the day.');
+  if(a.reads.length>1)o.push('Projection uses '+a.reads.length+' readings'+(a.pj.spread>25?' that disagree by '+a.pj.spread.toFixed(0)+'%, so double-check the measurements':'')+'.');
   return o.join(' ')}
 function acell(l,b,s,cls){return'<div class="ac'+(cls?' '+cls:'')+'"><label>'+l+'</label><b>'+b+'</b><span>'+s+'</span></div>'}
 function anaCells(a){
   return acell('Load now',a.now.pct.toFixed(0)+'%',a.i0.toFixed(1)+' A of '+a.fla.toFixed(1)+' A · '+a.now.kW.toFixed(2)+' kW',anaPg(a.now.pct))
-    +acell('Peak 18:00',a.pk.pct.toFixed(0)+'%',a.pk.i.toFixed(1)+' A of '+a.fla.toFixed(1)+' A · '+a.pk.kW.toFixed(2)+' kW',anaPg(a.pk.pct))
+    +acell('Peak '+anaHH(ANAPK),a.pk.pct.toFixed(0)+'%',a.pk.i.toFixed(1)+' A of '+a.fla.toFixed(1)+' A · '+a.pk.kW.toFixed(2)+' kW',anaPg(a.pk.pct))
     +(a.v==null?'':acell('Voltage',a.v.toFixed(0)+' V',sg(anaDev(a.v))+' vs '+VN+' V, as read',Math.abs(anaDev(a.v))>10?'v-bad':Math.abs(anaDev(a.v))>7?'v-warn':'v-ok'))}
 function anaTable(a){
   return'<thead><tr><th>Hour</th><th>% of peak</th><th>% of FLC</th><th>Amps</th><th>kVA</th><th>kW</th></tr></thead><tbody>'+
     a.rows.map(function(x){return'<tr'+(x.meas?' class="meas"':'')+'><td>'+anaHH(x.h)+'</td><td>'+Math.round(x.pu*100)+'%</td><td>'+x.pct.toFixed(1)+'%</td><td>'+
       x.i.toFixed(1)+'</td><td>'+x.kVA.toFixed(2)+'</td><td>'+x.kW.toFixed(2)+'</td></tr>'}).join('')+'</tbody>'}
-function anaCard(a){
-  var g=anaGrade(a),lbl={'v-ok':'OK','v-warn':'WATCH','v-bad':'ACTION'}[g];
-  return'<div class="rec tx"><h3>Pole '+esc(a.no||'—')+(a.type?' · '+esc(a.type):'')+'<span class="tag '+g+'">'+lbl+'</span></h3>'
-    +'<p class="ameta">'+esc(a.r.project||'')+' · reading taken '+anaHH(a.h)+', when a residential feeder carries '+Math.round(a.now.pu*100)+'% of its 6 PM peak</p>'
-    +'<div class="ag">'+anaCells(a)+'</div>'
-    +'<p class="verdict '+g+'">'+anaVerdict(a)+'</p>'
-    +'<canvas class="anacv" data-i="'+esc(a.id)+'" width="600" height="200" role="img" aria-label="Projected current by hour, as a percentage of the full-load current rating"></canvas>'
-    +'<details><summary>Hour by hour</summary><div class="twrap"><table class="tbl">'+anaTable(a)+'</table></div></details></div>'}
 function anaSum(a){
-  if(!a.length)return'<div class="anasum"><h3>No transformers yet</h3><p>Add a transformer record with a kVA rating and line current and this tab projects the 6 PM peak for every unit.</p></div>';
+  if(!a.length)return'<div class="anasum"><h3>No transformers yet</h3><p>Add a transformer record with a kVA rating and line current and this tab projects the '+PKL()+' peak for every unit.</p></div>';
   var inst=0,cap=0,now=0,pk=0,over=0,worst=a[0];
   a.forEach(function(x){inst+=x.rating;cap+=x.fla;now+=x.now.i;pk+=x.pk.i;
     if(x.pk.pct>100)over++;
@@ -980,11 +1053,11 @@ function anaSum(a){
   return'<div class="anasum"><h3>'+a.length+' transformer'+(a.length>1?'s':'')+' in '+esc(lastProj)+'</h3>'
     +'<div class="ag">'+acell('Capacity',cap.toFixed(1)+' A','full-load current at '+VN+' V ('+inst.toFixed(0)+' kVA)')
     +acell('Drawing now',cap?(now/cap*100).toFixed(0)+'%':'—',now.toFixed(1)+' A of '+cap.toFixed(1)+' A')
-    +acell('Peak 18:00',cap?(pk/cap*100).toFixed(0)+'%':'—',pk.toFixed(1)+' A · '+(VN*pk/1000*anaPF()).toFixed(2)+' kW',cap&&pk/cap*100>100?'v-bad':'')
+    +acell('Peak '+anaHH(ANAPK),cap?(pk/cap*100).toFixed(0)+'%':'—',pk.toFixed(1)+' A · '+(VN*pk/1000*anaPF()).toFixed(2)+' kW',cap&&pk/cap*100>100?'v-bad':'')
     +acell('Over at peak',over+' of '+a.length,over?'need reconfig':'all within rating',over?'v-bad':'v-ok')+'</div>'
-    +'<p class="verdict '+(worst.pk.pct>100?'v-bad':worst.pk.pct>80?'v-warn':'v-ok')+'">Worst case is Pole '+esc(worst.no||'—')+' at '+worst.pk.pct.toFixed(1)+'% of its '+worst.fla.toFixed(1)+' A full-load current ('+worst.pk.i.toFixed(1)+' A, '+worst.pk.kVA.toFixed(2)+' kVA) at 6 PM.</p></div>'}
+    +'<p class="verdict '+(worst.pk.pct>100?'v-bad':worst.pk.pct>80?'v-warn':'v-ok')+'">Worst case is Pole '+esc(worst.no||'—')+' at '+worst.pk.pct.toFixed(1)+'% of its '+worst.fla.toFixed(1)+' A full-load current ('+worst.pk.i.toFixed(1)+' A, '+worst.pk.kVA.toFixed(2)+' kVA) at '+PKL()+'.</p></div>'}
 function curveHtml(){
-  return'<p class="ameta">Per-unit demand against the 6 PM maximum. Each transformer\'s measured amps are divided by its own hour value to find the implied peak current, then the curve is applied hour by hour. Loading is expressed against full-load current at '+VN+' V (nameplate kVA × 1000 ÷ '+VN+'), so 100% is the rated amps. Voltage is reported exactly as surveyed and is never projected.</p><div class="atab">'
+  return'<p class="ameta">Curve: '+CNAME[AS.curve]+'. Per-unit demand against the '+PKL()+' maximum. Each transformer\'s measured amps are divided by its own hour value to find the implied peak current, then the curve is applied hour by hour. Loading is expressed against full-load current at '+VN+' V (nameplate kVA × 1000 ÷ '+VN+'), so 100% is the rated amps. Voltage is reported exactly as surveyed and is never projected.</p><div class="atab">'
     +ANACUR.map(function(v,i){return'<i'+(i===ANAPK?' class="hi"':(i===anaHour({time:new Date().toISOString()})?' class="now"':''))+'><b>'+anaHH(i)+'</b>'+Math.round(v*100)+'%</i>'}).join('')+'</div>'}
 function anaChart(cv,a){
   var dpr=window.devicePixelRatio||1,W=cv.clientWidth||600,H=cv.clientHeight||200;
@@ -1008,11 +1081,9 @@ function anaChart(cv,a){
   c.beginPath();c.moveTo(X(0),Y(a.rows[0].pct));for(i=1;i<24;i++)c.lineTo(X(i),Y(a.rows[i].pct));
   c.strokeStyle=anaVr('--acc');c.lineWidth=2.5;c.lineJoin='round';c.stroke();
   c.fillStyle=anaVr('--mute');c.textAlign='center';
-  c.textAlign='right';c.fillText('6 PM PEAK',X(ANAPK)-5,T+5);
+  c.textAlign='right';c.fillText(PKL()+' PEAK',X(ANAPK)-5,T+5);
   [0,3,6,9,12,15,18,21].forEach(function(i){c.fillText(i,X(i),H-B/2+1)});
-  c.fillStyle=anaVr('--ink');c.beginPath();c.arc(X(a.h),Y(a.rows[a.h].pct),3.5,0,6.3);c.fill();
-  c.textAlign=a.h>19?'right':'left';
-  c.fillText('read '+anaHH(a.h),X(a.h)+(a.h>19?-6:6),Y(a.rows[a.h].pct)-9)}
+  c.fillStyle=anaVr('--ink');a.reads.forEach(function(q,n){var yy=Y(q.i/a.fla*100);c.beginPath();c.arc(X(q.h),yy,3.5,0,6.3);c.fill();if(n===0){c.textAlign=q.h>19?'right':'left';c.fillText('read '+anaHH(q.h),X(q.h)+(q.h>19?-6:6),yy-9)}})}
 function anaDraw(list){
   document.querySelectorAll('#anaList canvas').forEach(function(cv){
     var a=list.filter(function(x){return x.id===cv.dataset.i})[0];if(a)anaChart(cv,a)})}
@@ -1022,7 +1093,7 @@ function renderAna(){
     if(ord==='pole')return String(p.no).localeCompare(String(q.no),undefined,{numeric:true});
     return q.pk.pct-p.pk.pct});
   $('anaSum').innerHTML=anaSum(list);
-  $('anaList').innerHTML=list.map(anaCard).join('');
+  $('anaList').innerHTML=list.map(anaCard).join('');var LN=anaLines().sort(function(p,q){return q.pk.pct-p.pk.pct});$('anaLines').innerHTML=anaLineSum(LN)+LN.map(lineCard).join('');
   $('curveTab').innerHTML=curveHtml();
   setTimeout(function(){anaDraw(list)},0)}
 $('pf').addEventListener('input',renderAna);$('pf').addEventListener('change',renderAna);
