@@ -698,9 +698,9 @@ function draw(){
   M.hits=[];g.font='bold 12px system-ui,sans-serif';g.textBaseline='middle';
   var byId={};vis().forEach(function(r){byId[r.id]=r});
   vis().forEach(function(r){var a=r.from&&byId[r.from];if(!a||!a.pos||!r.pos)return;var p1=px(a.pos.lat,a.pos.lon,z),p2=px(r.pos.lat,r.pos.lon,z);
-    g.beginPath();g.moveTo(p1.x-x0,p1.y-y0);g.lineTo(p2.x-x0,p2.y-y0);g.lineWidth=6;g.strokeStyle=dk?'#000':'#fff';g.stroke();g.lineWidth=3;g.strokeStyle=dk?'#e8e8e8':'#111';g.stroke();
+    g.beginPath();g.moveTo(p1.x-x0,p1.y-y0);g.lineTo(p2.x-x0,p2.y-y0);var sl=M.selL===r.id;g.lineWidth=sl?10:6;g.strokeStyle=dk?'#000':'#fff';g.stroke();g.lineWidth=sl?5:3;g.strokeStyle=sl?'#ffd400':(dk?'#e8e8e8':'#111');g.stroke();
     if(r.pole.lineA!==''&&r.pole.lineA!=null&&z>=15){var tt=r.pole.lineA+' A',mx=(p1.x+p2.x)/2-x0,my=(p1.y+p2.y)/2-y0;g.textAlign='center';g.lineWidth=4;g.strokeStyle=dk?'#000':'#fff';g.strokeText(tt,mx,my-10);g.fillStyle=dk?'#6cc0ff':'#0a3dbd';g.fillText(tt,mx,my-10);g.textAlign='left'}
-    if(z>=16){var d2=Math.round(hav(a.pos,r.pos))+' m',mx2=(p1.x+p2.x)/2-x0,my2=(p1.y+p2.y)/2-y0;g.textAlign='center';g.lineWidth=4;g.strokeStyle=dk?'#000':'#fff';g.strokeText(d2,mx2,my2+12);g.fillStyle=dk?'#ffd166':'#7a4b00';g.fillText(d2,mx2,my2+12);g.textAlign='left'}});
+    if(z>=16){var d2=Math.round(hav(a.pos,r.pos))+' m'+((r.pole.lineA===''||r.pole.lineA==null)?' · no A yet':''),mx2=(p1.x+p2.x)/2-x0,my2=(p1.y+p2.y)/2-y0;g.textAlign='center';g.lineWidth=4;g.strokeStyle=dk?'#000':'#fff';g.strokeText(d2,mx2,my2+12);g.fillStyle=dk?'#ffd166':'#7a4b00';g.fillText(d2,mx2,my2+12);g.textAlign='left'}});
   vis().forEach(function(r){if(!r.pos)return;var p=px(r.pos.lat,r.pos.lon,z),X=p.x-x0,Y=p.y-y0;if(X<-40||Y<-40||X>w+40||Y>h+40)return;
     var t=!!r.tx,sel=M.sel===r.id;M.hits.push({id:r.id,x:X,y:Y});g.globalAlpha=match(r)?1:.25;
     g.beginPath();
@@ -742,9 +742,20 @@ cv.onwheel=function(e){e.preventDefault();var b=cv.getBoundingClientRect(),x=e.c
   var base=M.zt==null?M.z:M.zt,d=-e.deltaY*(e.deltaMode===1?0.4:0.006)*ZS_WHEEL;d=Math.max(-2,Math.min(2,d));
   var z=clampZ(base+d);if(Math.abs(z-base)<0.0001)return;
   M.anchor={lat:A.lat,lon:A.lon,x:e.clientX,y:e.clientY};M.zt=z;zoomRun()};
+function lineHit(x,y,b){var X=M.cx-b.width/2+x,Y=M.cy-b.height/2+y,by={},best=null,bd=14;vis().forEach(function(r){by[r.id]=r});
+  vis().forEach(function(r){var a=r.from&&by[r.from];if(!a||!a.pos||!r.pos)return;var p=px(a.pos.lat,a.pos.lon,M.z),q=px(r.pos.lat,r.pos.lon,M.z),dx=q.x-p.x,dy=q.y-p.y,L=dx*dx+dy*dy,t=L?Math.max(0,Math.min(1,((X-p.x)*dx+(Y-p.y)*dy)/L)):0,d=Math.hypot(X-(p.x+t*dx),Y-(p.y+t*dy));if(d<bd){bd=d;best=r}});return best}
+function showLine(r){var a=recs.find(function(q){return q.id===r.from}),cur=r.pole.lineA==null?'':r.pole.lineA,pop=$('pop');pop.hidden=false;
+  pop.innerHTML='<b>Line: Pole '+esc(a.pole.no)+' → Pole '+esc(r.pole.no)+'</b><br>Span '+Math.round(hav(a.pos,r.pos))+' m'+(viewMode?'<br>Current: '+(cur===''?'not recorded':cur+' A'):'<div class="unit" style="margin:8px 0"><input type="number" id="lcur" inputmode="decimal" step="any" min="0" placeholder="Current on this line" aria-label="Line current in amps" value="'+esc(cur)+'"><b>A</b></div>')
+   +'<div class="row" style="margin-top:8px">'+(viewMode?'':'<button class="btn p" id="lsv">Save current</button>')+'<button class="btn" id="lcl">Close</button></div>';
+  $('lcl').onclick=function(){pop.hidden=true;M.selL=null;draw()};
+  if(!viewMode){var inp=$('lcur');inp.onkeydown=function(e){if(e.key==='Enter')$('lsv').click()};
+    $('lsv').onclick=function(){var v=inp.value.trim();if(v!==''&&(isNaN(v)||+v<0||+v>10000))return toast('Current must be between 0 and 10000 A');var nv=v===''?'':+v;
+      if(String(nv)!==String(cur)){var t=new Date().toISOString();r.hist=(r.hist||[]).concat([{t:t,c:['Line A: '+(cur===''?'-':cur)+' → '+(nv===''?'-':nv)]}]).slice(-20);r.pole.lineA=nv;r.up=t;persist()}
+      pop.hidden=true;M.selL=null;render();draw();toast(nv===''?'Line current cleared':'Line current saved: '+nv+' A')}}}
 function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top,best=null,bd=26;
   M.hits.forEach(function(h){var d=Math.hypot(h.x-x,h.y-y);if(d<bd){bd=d;best=h.id}});
-  M.sel=best;M.pend=null;$('pop').hidden=true;
+  M.sel=best;M.pend=null;M.selL=null;$('pop').hidden=true;
+  if(!best){var lh=lineHit(x,y,b);if(lh){M.selL=lh.id;showLine(lh);draw();return}}
   if(!best&&!viewMode){var c0=ll(M.cx-b.width/2+x,M.cy-b.height/2+y,M.z);M.pend={lat:c0.lat,lon:c0.lon};$('pop').hidden=false;$('pop').innerHTML='<b>New pole here</b><br>'+c0.lat.toFixed(6)+', '+c0.lon.toFixed(6)+'<div class="row" style="margin-top:8px"><button class="btn p" id="pn">Save as pole</button><button class="btn" id="pc">Cancel</button></div>';$('pn').onclick=function(){openSheet()};$('pc').onclick=function(){M.pend=null;$('pop').hidden=true;draw()}}
   if(best){var r=recs.find(function(q){return q.id===best}),t=r.tx,p=r.pole,hasPh=p.ph||(t&&t.ph);
     $('pop').hidden=false;$('pop').innerHTML='<b>Pole '+esc(p.no)+'</b> ('+esc(r.project||'')+')<br>'+esc(p.primary||'-')+' / '+esc(p.secondary||'-')+(p.voltage!==''?', '+p.voltage+' V':'')
