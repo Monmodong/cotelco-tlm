@@ -225,7 +225,7 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .thumbs img,.th img{border-radius:12px;border:1px solid var(--line);box-shadow:var(--sh)}
 .phc button.x{backdrop-filter:blur(6px)}
 /* map */
-#map{border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh);height:calc(100vh - 92px)}
+#map{border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh);height:calc(100vh - 105px)}
 .mb{right:12px;top:12px;gap:8px}
 .mb button{width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--hdr);color:var(--ink);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:var(--sh)}
 .mb button:hover{color:var(--acc);filter:none;border-color:var(--acc)}
@@ -939,7 +939,7 @@ var CNAME={res:'Residential (evening peak)',com:'Commercial (daytime peak)',mix:
 // typical ACSR 6/1 at 50 C, ohm per km (resistance, reactance at ~1 m spacing); editable in Analysis settings
 var CON0={'2':{n:'#2 ACSR',r:.944,x:.42},'1':{n:'#1 ACSR',r:.748,x:.41},'1/0':{n:'#1/0 ACSR',r:.593,x:.40},'2/0':{n:'#2/0 ACSR',r:.471,x:.39}};
 var AS={curve:'res',custom:'',vb:230,vlo:208,vhi:253,warn:3,act:5,con:{}},AO={};
-try{var sv=JSON.parse(localStorage.getItem(KEY+'.ana')||'null');if(sv)for(var k0 in sv)AS[k0]=sv[k0]}catch(e){}
+try{var avs=JSON.parse(localStorage.getItem(KEY+'.ana')||'null');if(avs)for(var k0 in avs)AS[k0]=avs[k0]}catch(e){}
 function asSave(){GC=null;try{localStorage.setItem(KEY+'.ana',JSON.stringify(AS))}catch(e){}}
 function setCurve(){var a=CURVES[AS.curve];if(AS.curve==='custom'){var v=String(AS.custom).split(/[\s,;]+/).filter(Boolean).map(Number);a=v.length===24&&v.every(function(x){return isFinite(x)&&x>=0})&&Math.max.apply(0,v)>0?norm(v):null}
   GC=null;ANACUR=a||CURVES.res;ANAPK=ANACUR.indexOf(Math.max.apply(0,ANACUR));return !!a}
