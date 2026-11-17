@@ -412,14 +412,14 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 <section id="dlSheet" hidden><div class="bar"><b id="dlT">Offline map</b><button type="button" class="btn" id="dlX">Close</button></div><div style="max-width:720px;margin:0 auto;padding:14px">
 <fieldset><legend>Download area</legend>
 <p style="margin:0 0 10px;font-size:.9rem;color:var(--mute)">Moves the map to cover this area. Everything you see on the map right now is inside it.</p>
-<div class="row"><button type="button" class="btn" id="dlZoom">Zoom out one level</button><button type="button" class="btn" id="dlFit">Cover all my poles</button></div>
+<div class="row"><button type="button" class="btn" id="dlMind">Whole island: Mindanao</button><button type="button" class="btn" id="dlZoom">Zoom out one level</button><button type="button" class="btn" id="dlFit">Cover all my poles</button></div>
 <div class="full" style="margin-top:12px"><label for="dlZmin">Detail levels to store</label><div class="grid3"><select id="dlZmin"></select><select id="dlZmax"></select></div></div>
 <div id="dlEst" class="calc full" style="margin-top:10px"></div>
 <div id="dlProg" style="margin-top:10px"><i></i></div>
 <div id="dlStat" style="font-size:.85rem;color:var(--mute);margin-top:6px"></div>
 <div class="row" style="margin-top:10px"><button type="button" class="btn p" id="dlGo">Download</button><button type="button" class="btn d" id="dlCancel" hidden>Cancel</button><button type="button" class="btn d" id="dlClear" hidden>Clear offline map</button></div>
 </fieldset>
-<fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly.<br><br><b>Use OpenStreetMap for offline maps.</b> Google Satellite blocks the requests this download needs, so Google tiles usually cannot be saved. The offline area is shared by both base maps only if you download each of them. Please download modestly — heavy tile traffic gets the OpenStreetMap server to refuse your phone for a while.</p></fieldset>
+<fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly. <b>Whole island: Mindanao</b> stores the entire island group at z11–12 (about 8,000 tiles / 142 MB) — towns, roads and your feeder layout, but not street detail, so still download the area you work in at higher zoom. Past whatever you stored the map enlarges the nearest level you have instead of going blank.<br><br><b>Use OpenStreetMap for offline maps.</b> Google Satellite blocks the requests this download needs, so Google tiles usually cannot be saved. The offline area is shared by both base maps only if you download each of them. Please download modestly — heavy tile traffic gets the OpenStreetMap server to refuse your phone for a while.</p></fieldset>
 </div></section>
 <section id="list" hidden>
   <div id="fbar"><input type="search" id="fq" placeholder="Search pole no., line, remarks…" aria-label="Search saved poles"><select id="fm" aria-label="Filter poles"><option value="all">All</option><option value="tx">With transformer</option><option value="plain">Plain poles</option><option value="flag">Flagged</option><option value="nogps">No GPS</option><option value="photo">Has photo</option><option value="nophoto">No photo</option></select></div>
@@ -712,13 +712,10 @@ function draw(){
   var z=M.z,x0=M.cx-w/2,y0=M.cy-h/2,n=Math.pow(2,z);
   var tz=Math.min(Math.round(z),B.mz||19),ts=256*Math.pow(2,z-tz),nT=Math.pow(2,tz);
   for(var tx=Math.floor(x0/ts);tx<=Math.floor((x0+w)/ts);tx++)for(var ty=Math.floor(y0/ts);ty<=Math.floor((y0+h)/ts);ty++){
-    var U=tileUrl(M.base,tz,tx,ty);if(!U||ty<0||ty>=nT)continue;var wx=((tx%nT)+nT)%nT,k=M.base+'/'+tz+'/'+wx+'/'+ty,im=M.t[k],X=tx*ts-x0,Y=ty*ts-y0;
-    if(!im){im=M.t[k]=new Image();im.onload=function(){M.err=0;draw()};(function(k,im){im.onerror=function(){M.err++;draw();setTimeout(function(){delete M.t[k]},15000)}})(k,im);
-      if(offIdx[k])getOff(M.base,tz,wx,ty).then(function(r){if(!r){delete offIdx[k];im.src=U;return}
-        r.blob().then(function(bl){var u=URL.createObjectURL(bl);im._sz=bl.size;im.onload=function(){URL.revokeObjectURL(u);M.err=0;draw()};im.src=u})});
-      else im.src=U}
+    var U=tileUrl(M.base,tz,tx,ty);if(!U||ty<0||ty>=nT)continue;var wx=wInd(tx,nT);U=tileUrl(M.base,tz,wx,ty);var k=M.base+'/'+tz+'/'+wx+'/'+ty,im=M.t[k],X=tx*ts-x0,Y=ty*ts-y0;
+    if(!im)im=M.t[k]=tileGet(tz,wx,ty,U);
     if(im.complete&&im.naturalWidth)g.drawImage(im,X,Y,ts,ts);
-    else if(tz>0){var pi=M.t[M.base+'/'+(tz-1)+'/'+(wx>>1)+'/'+(ty>>1)];if(pi&&pi.complete&&pi.naturalWidth)g.drawImage(pi,X-(wx&1)*ts,Y-(ty&1)*ts,ts*2,ts*2)}}
+    else offFill(g,X,Y,ts,tz,wx,ty)}
   if(iv){g.filter='none';if(!fl){g.globalCompositeOperation='difference';g.fillStyle='#fff';g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over'}}
   M.hits=[];g.font='bold 12px system-ui,sans-serif';g.textBaseline='middle';
   var byId={};vis().forEach(function(r){byId[r.id]=r});
@@ -743,7 +740,7 @@ function draw(){
     g.font='bold 12px system-ui,sans-serif';g.textAlign='center';g.lineWidth=3;g.strokeStyle=dk?'#000':'#fff';g.strokeText('offline area',rx+rw/2,ry-8);g.fillStyle=wr;g.fillText('offline area',rx+rw/2,ry-8);g.textAlign='left'}
   var lat=ll(M.cx,M.cy,z).lat,mp=156543.03*Math.cos(lat*Math.PI/180)/n,raw=mp*100,pw=Math.pow(10,Math.floor(Math.log10(raw))),nice=[1,2,5,10].map(function(f){return f*pw}).filter(function(v){return v<=raw}).pop(),bw=nice/mp;
   g.fillStyle=ink;g.fillRect(12,h-18,bw,3);g.textBaseline='bottom';g.fillText(nice>=1000?nice/1000+' km':nice+' m',12,h-22);
-  var on=offIdxCount()?' (offline: cached map)':' (offline: poles only)';
+  var ob=offBest(tz),on=!offIdxCount()?' (offline: poles only)':LV[tz]?' (offline: cached map)':ob>=0?' (offline: enlarged from z'+ob+')':offLow()>=0?' (offline: drawn from z'+offLow()+' detail)':' (offline: poles only)';
   $('mnote').textContent=BASES[M.base].a+(!navigator.onLine?on:M.err>3?' (tiles not loading? try another base map)':'');var gs=$('gstat');$('gmsg').textContent=M.gps||'';$('greq').hidden=!M.gpsBtn;gs.hidden=!(M.gps&&!M.me);
   var zt=M.zt==null?M.z:M.zt,zi=$('zi'),zo=$('zo');if(zi)zi.disabled=zt>=ZMAX-0.001;if(zo)zo.disabled=zt<=ZMIN+0.001}
 // zoom sensitivity: raise these for faster zooming, lower for finer control
@@ -833,20 +830,62 @@ function offKeyFor(url){
 function loadOffIdx(){
   if(!window.caches)return;
   openOff().then(function(c){if(!c)return null;return c.keys()}).then(function(l){
-    offIdx={};if(l)l.forEach(function(r){var k=offKeyFor(r.url);if(k)offIdx[k]=1});offUI();draw()}).catch(function(){})}
+    offIdx={};if(l)l.forEach(function(r){var k=offKeyFor(r.url);if(k)offIdx[k]=1});offReset();offUI();draw()}).catch(function(){})}
 function getOff(b,z,x,y){var u=kurl(b+'/'+z+'/'+x+'/'+y);if(!u||!window.caches)return Promise.resolve(null);
   return openOff().then(function(c){return c?c.match(u):null}).catch(function(){return null})}
 function cacheTile(u,bl){return openOff().then(function(c){if(c)c.put(u,new Response(bl,{headers:{'content-type':bl.type||'image/png'}}))})}
 function offIdxCount(){var n=0;for(var k in offIdx)n++;return n}
 function offBytes(){var t=0;for(var k in offIdx){var e=M.t[k];if(e&&e._sz)t+=e._sz}return t}
+function wInd(v,n){return((v%n)+n)%n}
+function offLoad(k,b,z,x,y){var im=M.t[k];if(im&&!im._gap)return im;im=M.t[k]=new Image();im._q=1;
+  im.onload=function(){M.err=0;draw()};im.onerror=function(){M.err++;draw();setTimeout(function(){if(M.t[k]===im)delete M.t[k]},15000)};
+  getOff(b,z,x,y).then(function(r){if(!r){delete offIdx[k];var u=tileUrl(b,z,x,y);if(u&&navigator.onLine)im.src=u;return}
+    r.blob().then(function(bl){var u=URL.createObjectURL(bl);im._sz=bl.size;im.onload=function(){URL.revokeObjectURL(u);M.err=0;draw()};im.src=u})});
+  return im}
+var LV=[];// per-zoom hint: >0 = something drawable exists at that level (cached, or fetched online this session)
+function lvBump(z){LV[z]=(LV[z]||0)+1}
+function offReset(){LV=[];for(var k in offIdx)lvBump(+k.split('/')[1])}
+function offAdd(k){if(offIdx[k])return;offIdx[k]=1;lvBump(+k.split('/')[1])}
+// the tile for this exact zoom: cache first, network only when there is network
+function tileGet(z,x,y,U){var k=M.base+'/'+z+'/'+x+'/'+y,im=M.t[k];if(im)return im;
+  if(offIdx[k])return offLoad(k,M.base,z,x,y);
+  im=M.t[k]=new Image();
+  if(!U||!navigator.onLine){im._gap=1;return im}
+  im.onload=function(){M.err=0;lvBump(z);draw()};
+  im.onerror=function(){M.err++;im._gap=1;draw();setTimeout(function(){if(M.t[k]===im)delete M.t[k]},15000)};
+  im.src=U;return im}
+// organic maps behaviour: clamp the zoom to the deepest level you actually hold and blit its
+// sub-rect into the cell, so the map never goes blank however far you pinch in
+function offNear(z,x,y){var m,L,k;
+  for(m=1,L=z-1;L>=0;L--,m++){if(!LV[L])continue;k=M.base+'/'+L+'/'+wInd(x>>m,Math.pow(2,L))+'/'+(y>>m);
+    if(offIdx[k]||M.t[k]&&M.t[k].naturalWidth)return{m:-m,L:L,x:wInd(x>>m,Math.pow(2,L)),y:y>>m}}
+  for(m=1;m<=2;m++){L=z+m;var n2=Math.pow(2,L),q=1<<m,hit=0;
+    for(var i=0;i<q&&!hit;i++)for(var j=0;j<q;j++)if(offIdx[M.base+'/'+L+'/'+wInd(x*q+i,n2)+'/'+(y*q+j)]){hit=1;break}
+    if(hit)return{m:m,L:L,x:x,y:y}}
+  return null}
+function offFill(g,X,Y,ts,z,x,y){var f=offNear(z,x,y);if(!f)return;
+  if(f.m<0){var m=-f.m,s=1<<m,im=offLoad(M.base+'/'+f.L+'/'+f.x+'/'+f.y,M.base,f.L,f.x,f.y);
+    if(im.complete&&im.naturalWidth){var q=im.naturalWidth/s;
+      g.drawImage(im,(x&(s-1))*q,(y&(s-1))*q,q,q,X,Y,ts,ts)}return}
+  var q=1<<f.m,n2=Math.pow(2,f.L),t=ts/q;
+  for(var i=0;i<q;i++)for(var j=0;j<q;j++){var cx=wInd(x*q+i,n2),cy=y*q+j,ck=M.base+'/'+f.L+'/'+cx+'/'+cy;
+    if(!offIdx[ck])continue;var ci=offLoad(ck,M.base,f.L,cx,cy);
+    if(ci.complete&&ci.naturalWidth)g.drawImage(ci,X+i*t,Y+j*t,t,t)}}
+function offBest(z){for(var L=z-1;L>=0;L--)if(LV[L])return L;return -1}
+function offLow(){for(var z=0;z<LV.length;z++)if(LV[z])return z;return -1}
+function offSpan(){var n=99,x=-1;for(var k in offIdx){var z=+k.split('/')[1];if(z<n)n=z;if(z>x)x=z}return x<0?'':n+'–'+x}
+addEventListener('online',function(){for(var k in M.t)if(M.t[k]._gap)delete M.t[k];draw()});
 function fmtMB(b){return b>1048576?(b/1048576).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB'}
+var regOv=null;// set by the whole-island preset: downloads that box instead of the poles/view
 function viewBounds(padF){
   var w=$('cv').clientWidth,h=$('cv').clientHeight,pad=Math.round(w*(padF||.4)),z=Math.round(M.z);
   var a=ll(M.cx-(w/2-pad),M.cy-h/2,z),b=ll(M.cx+(w/2-pad),M.cy+h/2,z);
   return{x0:Math.floor(a.x/256),x1:Math.floor(b.x/256),y0:Math.floor(a.y/256),y1:Math.floor(b.y/256),z:z}}
 function regionTiles(z){
-  var a=vis().filter(function(r){return r.pos}),x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
-  if(a.length)a.forEach(function(r){var p=px(r.pos.lat,r.pos.lon,z);x0=Math.min(x0,Math.floor(p.x/256));x1=Math.max(x1,Math.floor(p.x/256));y0=Math.min(y0,Math.floor(p.y/256));y1=Math.max(y1,Math.floor(p.y/256))});
+  if(regOv){var a=px(regOv.lat1,regOv.lon0,z),b=px(regOv.lat0,regOv.lon1,z);
+    return{x0:Math.floor(a.x/256),x1:Math.floor(b.x/256),y0:Math.floor(a.y/256),y1:Math.floor(b.y/256)}}
+  var av=vis().filter(function(r){return r.pos}),x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  if(av.length)av.forEach(function(r){var p=px(r.pos.lat,r.pos.lon,z);x0=Math.min(x0,Math.floor(p.x/256));x1=Math.max(x1,Math.floor(p.x/256));y0=Math.min(y0,Math.floor(p.y/256));y1=Math.max(y1,Math.floor(p.y/256))});
   else{var v=viewBounds(.4);x0=v.x0;x1=v.x1;y0=v.y0;y1=v.y1}
   var g=Math.max(1,Math.round((z-11)*1.5));return{x0:x0-g,x1:x1+g,y0:y0-g,y1:y1+g}}
 function yClamp(z,y0,y1){var m=Math.pow(2,z)-1;return[Math.max(0,Math.min(m,y0)),Math.max(0,Math.min(m,y1))]}
@@ -861,13 +900,13 @@ function dlEst(){
     +(tot>25000?'<br><span class="bad">That is a lot of tiles. Use "Zoom out one level" or narrow the detail range.</span>':'')
     +(mb>200?'<br><span class="bad">Large download — a whole province at this detail can exceed what a phone will keep.</span>':'');
   $('dlGo').disabled=!tot||tot>60000;
+  $('dlEst').innerHTML+=regOv?'<br><span style="color:var(--mute)">Area: '+esc(regOv.nm)+'</span>':'<br><span style="color:var(--mute)">Area: your poles / the map as you see it now</span>';
   if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(function(e){
     var f=$('dlFree');if(!f)return;
     var free=(e.quota||0)-(e.usage||0);
     f.innerHTML=' &middot; free on this device: '+(free/1048576).toFixed(0)+' MB'
       +(free&&mb*1048576>free*.6?'<br><span class="bad">This may not fit. Download a smaller area.</span>':'')}).catch(function(){})}
-function dlBox(z,r){var a=px(0,0,z);
-  return{lat1:ll(a.x+r.x0*256,a.y+r.y0*256,z).lat,lat0:ll(a.x+r.x0*256,a.y+(r.y1+1)*256,z).lat,lon0:ll(a.x+r.x0*256,a.y,z).lon,lon1:ll(a.x+(r.x1+1)*256,a.y,z).lon}}
+function dlBox(z,r){return{lat1:ll(r.x0*256,r.y0*256,z).lat,lat0:ll(r.x0*256,(r.y1+1)*256,z).lat,lon0:ll(r.x0*256,r.y0*256,z).lon,lon1:ll((r.x1+1)*256,r.y0*256,z).lon}}
 function dlList(z0,z1){var q=[];for(var z=z0;z<=z1;z++){var g=regionTiles(z),s=Math.pow(2,z),y=yClamp(z,g.y0,g.y1);
   for(var x=g.x0;x<=g.x1;x++)for(var yy=y[0];yy<=y[1];yy++)q.push(M.base+'/'+z+'/'+(((x%s)+s)%s)+'/'+yy)}return q}
 function dlStop(){if(dl&&dl.on)dl.on=0;$('dlGo').disabled=false;$('dlGo').textContent='Download';$('dlCancel').hidden=true;
@@ -884,14 +923,14 @@ function dlStart(){
     if(!dl||!dl.on||dl.i>=dl.q.length){fin();return}
     var k=dl.q[dl.i++],u=kurl(k);
     if(!u){fin();return}
-    offIdx[k]=1;
+    offAdd(k);
     fetch(u).then(function(res){
       if(!res.ok)throw 0;
       return res.blob().then(function(bl){
         if(!dl||!dl.on)return;
         if(!bl||!bl.size)throw 0;
         dl.ok++;dl.bytes+=bl.size;
-        return cacheTile(u,bl)})
+        return cacheTile(u,bl).then(function(){offAdd(k)})})
     }).catch(function(){if(dl&&dl.on){dl.bad++;delete offIdx[k]}}).then(fin)}
   function fin(){if(!dl)return;if(!dl.on||dl.i>=dl.q.length){if(--dl.w<=0)dlDone()}else{dlP();worker()}}
   for(var i=0;i<dl.w;i++)worker()}
@@ -907,23 +946,28 @@ function dlDone(){
   $('dlStat').textContent='Stored '+d.ok+' of '+d.q.length+' tiles ('+fmtMB(d.bytes)+')'+(d.bad?', '+d.bad+' failed':'')+'. Zoom in anywhere in that area with no internet.';
   if(d.q.length&&d.bad/d.q.length>.5)$('dlStat').textContent+=' Most tiles failed — this base map blocks offline saving. Switch to OpenStreetMap and download again.';
   toast('Offline map ready');M.t={};M.err=0;offUI();draw()}
-function offUI(){var n=offIdxCount();$('dlClear').hidden=!n;$('offBadge').hidden=!n;
-  $('offBadge').textContent=n?n+' offline tiles':'';dlEst()}
+function offUI(){var n=offIdxCount(),s=offSpan();$('dlClear').hidden=!n;$('offBadge').hidden=!n;
+  $('offBadge').textContent=n?n+' offline tiles'+(s?' · z'+s:''):'';dlEst()}
 function openDl(){
   $('dlSheet').hidden=false;$('dlSheet').scrollTop=0;document.body.style.overflow='hidden';
-  rangeOpts();var v=viewBounds(.4);$('dlZmin').value=Math.max(11,Math.min(18,v.z));$('dlZmax').value=Math.max(11,Math.min(18,v.z+2));
+  rangeOpts();if(regOv){$('dlZmin').value=regOv.z0;$('dlZmax').value=regOv.z1}else{var v=viewBounds(.4);$('dlZmin').value=Math.max(11,Math.min(18,v.z-1));$('dlZmax').value=Math.max(11,Math.min(18,v.z+2))}
   offUI();$('dlProg').querySelector('i').style.width='0%';
   var n=offIdxCount(),b=offBytes();
   $('dlStat').textContent=n?n+' tiles stored on this device'+(b?' ('+fmtMB(b)+' cached this session)':'')+'.':'Nothing stored yet.'}
 function closeDl(){$('dlSheet').hidden=true;document.body.style.overflow=''}
 $('dl').onclick=openDl;$('dlX').onclick=closeDl;
-$('dlZoom').onclick=function(){var b=dlBox(+$('dlZmin').value,regionTiles(+$('dlZmin').value));ctr((b.lat0+b.lat1)/2,(b.lon0+b.lon1)/2,M.z);dlEst()};
-$('dlFit').onclick=function(){if(!vis().some(function(r){return r.pos}))return toast('No poles with a location');var b=dlBox(+$('dlZmin').value,regionTiles(+$('dlZmin').value));ctr((b.lat0+b.lat1)/2,(b.lon0+b.lon1)/2,Math.min(+$('dlZmin').value,14));dlEst()};
+$('dlMind').onclick=function(){
+  regOv={nm:'Mindanao, whole island group',lat0:4.3,lon0:119.3,lat1:10.5,lon1:127,z0:11,z1:12};
+  $('dlZmin').value=11;$('dlZmax').value=12;
+  var b=dlBox(11,regionTiles(11));ctr((b.lat0+b.lat1)/2,(b.lon0+b.lon1)/2,11);
+  offUI();toast('Mindanao at z11–12 is about 8,000 tiles / 142 MB')};
+$('dlZoom').onclick=function(){regOv=null;var b=dlBox(+$('dlZmin').value,regionTiles(+$('dlZmin').value));ctr((b.lat0+b.lat1)/2,(b.lon0+b.lon1)/2,M.z);dlEst()};
+$('dlFit').onclick=function(){regOv=null;if(!vis().some(function(r){return r.pos}))return toast('No poles with a location');var b=dlBox(+$('dlZmin').value,regionTiles(+$('dlZmin').value));ctr((b.lat0+b.lat1)/2,(b.lon0+b.lon1)/2,Math.min(+$('dlZmin').value,14));dlEst()};
 $('dlZmin').onchange=$('dlZmax').onchange=dlEst;
 $('dlGo').onclick=dlStart;$('dlCancel').onclick=dlStop;
 $('dlClear').onclick=function(){
   if(!confirm('Delete all offline map tiles from this device?'))return;
-  if(window.caches)caches.delete(OFFC);offIdx={};M.t={};M.err=0;offUI();$('dlStat').textContent='Offline map cleared.';draw();toast('Offline map cleared')};
+  if(window.caches)caches.delete(OFFC);offIdx={};LV=[];M.t={};M.err=0;offUI();$('dlStat').textContent='Offline map cleared.';draw();toast('Offline map cleared')};
 $('offBadge').onclick=function(){if($('dlSheet').hidden)openDl()};
 document.querySelectorAll('#drTabs button').forEach(function(b){b.addEventListener('click',offUI)});
 loadOffIdx();
