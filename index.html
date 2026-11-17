@@ -289,6 +289,8 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 /* ===== v3 additions ===== */
 #glg{position:absolute;left:12px;bottom:12px;z-index:1;padding:5px 11px;border:1px solid var(--line);border-radius:99px;background:var(--hdr);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);font-size:.72rem;font-weight:600;color:var(--ink)}
 #gcol[aria-pressed=false]{opacity:.55}
+#loc[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+#drawer .grp select,#drawer .grp #labC{margin-bottom:8px}
 #rpt h2{font-size:14px;margin:14px 0 4px}#rpt .gk{font-weight:700}#rpt{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #rpt .pp{page-break-inside:avoid;margin:8px 0}#rpt .ph{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}#rpt figure{margin:0;width:31%}#rpt figure img{width:100%;height:140px;object-fit:cover;border:1px solid #999}#rpt figcaption{font-size:10px}
 #fbar{display:flex;gap:8px;margin-bottom:10px;position:sticky;top:0;z-index:5}
@@ -345,6 +347,10 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
   </div>
   <div class="grp"><b>Map</b>
     <button class="btn" id="dlBtn" type="button">Offline map tiles</button>
+    <label for="labSel">Pole labels</label>
+    <select id="labSel"><option value="short">Short &mdash; #1234 / C / A1 / J5-J8</option><option value="full">Full &mdash; Pole # 1234, Concrete</option><option value="custom">Custom format</option><option value="off">Off</option></select>
+    <div id="labC" hidden><label for="labFmt">Label format</label><input type="text" id="labFmt" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <p class="note">Pole no. / material / primary / secondary, where material is C=Concrete, S=Steel, W=Wood. In a custom format: <b>{no}</b> pole no., <b>{m}</b> that letter, <b>{mat}</b> material, <b>{tx}</b> T if it carries a transformer, <b>{kva}</b> rating, <b>{pri}</b> and <b>{sec}</b> line structure, <b>{v}</b> volts. Labels that would sit on top of another are dropped instead, most important pin first.</p>
   </div>
   <div class="grp"><b>App</b>
     <button class="btn" id="vM" type="button" aria-pressed="false">View mode</button>
@@ -405,7 +411,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 
 <section id="mapSec">
   <div id="map"><canvas id="cv" tabindex="0" role="img" aria-label="Survey map. Use plus and minus to zoom, arrow keys to pan."></canvas><div id="mnote"></div><div id="gstat" hidden><span id="gmsg"></span><button type="button" class="btn" id="greq">Enable location</button></div><select id="baseSel" aria-label="Base map"></select><button id="offBadge" type="button" hidden title="Offline map"></button>
-    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="gcol" aria-label="Color poles and lines by grade" aria-pressed="true" title="Color by OK / WATCH / ACTION"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="7" cy="8" r="3.4" style="fill:var(--ok)"/><circle cx="17" cy="8" r="3.4" style="fill:var(--warn)"/><circle cx="12" cy="17" r="3.4" style="fill:var(--off)"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Go to my location" title="Go to my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button></div>
+    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="gcol" aria-label="Color poles and lines by grade" aria-pressed="true" title="Color by OK / WATCH / ACTION"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="7" cy="8" r="3.4" style="fill:var(--ok)"/><circle cx="17" cy="8" r="3.4" style="fill:var(--warn)"/><circle cx="12" cy="17" r="3.4" style="fill:var(--off)"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Follow my location" title="Follow my location — stays on and keeps the map centred on you" aria-pressed="false"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button><button id="mp" aria-label="New pole at my location" title="New pole at my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.2s6.7-6 6.7-10.7a6.7 6.7 0 1 0-13.4 0C5.3 15.2 12 21.2 12 21.2Z"/><path d="M12 7.9v5M9.5 10.4h5"/></svg></button></div>
     <div id="glg" hidden><span style="color:var(--ok)">●</span> OK &nbsp;<span style="color:var(--warn)">●</span> WATCH &nbsp;<span style="color:var(--off)">●</span> ACTION</div><div id="pop" hidden></div></div>
 </section>
 
@@ -685,7 +691,8 @@ function startGPS(){
   if(!navigator.geolocation||M.watch!=null)return;
   M.gps=M.me?'':'Getting GPS position...';M.gpsBtn=0;
   function ok(lo){return function(p){M.gps='';M.gpsBtn=0;if(lo&&M.me&&!M.me.lo)return;M.me={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,lo:lo};
-    if(!M.cen&&!vis().some(function(r){return r.pos})){M.cen=1;ctr(M.me.lat,M.me.lon,18)}draw()}}
+    if(!M.cen&&!vis().some(function(r){return r.pos})){M.cen=1;ctr(M.me.lat,M.me.lon,18)}
+    if(follow)ctrMe();if(M.pendGps)pendGps();draw()}}
   function bad(e){if(e&&e.code===1)gpsStop();if(M.me)return;M.gps=gpsErr(e);M.gpsBtn=1;draw()}
   M.watch2=navigator.geolocation.watchPosition(ok(1),bad,{enableHighAccuracy:false,timeout:15000,maximumAge:60000});
   M.watch=navigator.geolocation.watchPosition(ok(0),bad,{enableHighAccuracy:true,timeout:30000,maximumAge:5000})}
@@ -696,10 +703,71 @@ function gpsAsk(){
   try{navigator.geolocation.getCurrentPosition(function(p){
       M.gps='';M.gpsBtn=0;M.me={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,lo:0};
       if(!M.cen&&!vis().some(function(r){return r.pos})){M.cen=1;ctr(M.me.lat,M.me.lon,18)}
+      if(follow)ctrMe();if(M.pendGps)pendGps();
       draw();gpsStart()},
     function(e){if(e&&e.code===1)gpsStop();M.gps=gpsErr(e);M.gpsBtn=1;draw()},
     {enableHighAccuracy:true,timeout:25000,maximumAge:0})
   }catch(e){M.gps=gpsErr({code:1});M.gpsBtn=1;draw()}}
+// follow mode: while on, every GPS fix keeps the map centred on you. Dragging or pinching stops it.
+var follow=0;
+function followSet(on){follow=on;$('loc').setAttribute('aria-pressed',on?'true':'false')}
+function followOff(){if(follow)followSet(0)}
+function ctrMe(){if(!M.me)return;ctr(M.me.lat,M.me.lon,M.zt==null?M.z:M.zt)}
+function pendGps(){M.pendGps=0;if(!M.me||viewMode)return;
+  if(!$('sheet').hidden||!$('dlSheet').hidden)return toast('Close the open form first');
+  M.pend={lat:M.me.lat,lon:M.me.lon,acc:M.me.acc,src:'gps'};$('pop').hidden=true;openSheet();draw()}
+$('loc').onclick=function(){
+  if(follow){followOff();toast('Following is off');return}
+  if(!navigator.geolocation){toast('This browser has no GPS support');return}
+  followSet(1);
+  if(M.me){ctrMe();draw();toast('Following you — drag the map to stop')}
+  else{toast('Following you, waiting for a GPS fix…');gpsAsk()}};
+$('mp').onclick=function(){
+  if(viewMode)return toast('View mode is on — turn it off in the menu to edit');
+  if(M.me){pendGps();return}
+  if(!navigator.geolocation)return toast('This browser has no GPS support');
+  M.pendGps=1;toast('The new pole form opens as soon as GPS finds you');gpsAsk()};
+// map labels: the naming convention you asked for (#1234/C) and placement that never stacks
+// two labels on top of each other
+var LAB_DF='{no} / {m} / {pri} / {sec}',LAB={m:'short',f:LAB_DF};
+// LAB_F0: formats shipped by earlier builds — a stored copy of one is replaced by the current default
+var LAB_F0=/^\{no\}\/\{m\}( \{pri\}\/\{sec\})?$/;
+try{var lb0=localStorage.getItem(KEY+'.lab');if(lb0){var lsp=String(lb0).split('~');LAB.m=/^(short|full|custom|off)$/.test(lsp[0])?lsp[0]:'short';if(lsp[1]){var f0=decodeURIComponent(lsp[1]);if(f0&&!LAB_F0.test(f0))LAB.f=f0}}}catch(e){}
+function labSave(){try{localStorage.setItem(KEY+'.lab',LAB.m+'~'+encodeURIComponent(LAB.f))}catch(e){}}
+function matLtr(m){var s=String(m||'').trim().toLowerCase();return s==='wood'?'W':s==='steel'?'S':s==='concrete'||s==='cement'?'C':s?s.charAt(0).toUpperCase():''}
+function labTok(r){var p=r.pole||{};return{no:p.no||'',m:matLtr(p.material),mat:p.material||'',tx:r.tx?'T':'',kva:r.tx&&r.tx.rating!=null&&r.tx.rating!==''?String(r.tx.rating):'',pri:p.primary||'',sec:p.secondary||'',v:p.voltage===''||p.voltage==null?'':String(p.voltage)}}
+function labStr(p){return[p.primary,p.secondary].filter(Boolean).join(' / ')}
+function labText(r){
+  if(LAB.m==='full')return pinLabel(r);
+  if(LAB.m==='short'){var st=labStr(r.pole);return '#'+(r.pole.no||'?')+' / '+(matLtr(r.pole.material)||'?')+(st?' / '+st:'')}
+  var t=labTok(r);return LAB.f.replace(/\{(\w+)\}/g,function(m0,k){return t[k]==null?'':String(t[k])}).replace(/\s+/g,' ').trim()}
+function inRect(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+var LPUT=[[13,0],[-13,0],[0,-19],[0,7],[13,-18],[13,6],[-13,-18],[-13,6]];
+// every map label comes through here: the first slot around the pin that clears what is already
+// drawn wins, and a label with nowhere clear left is dropped rather than piled on top of another
+function labPass(g,q,w,h,dk,blk){
+  if(LAB.m==='off')return;
+  var box=(blk||[]).slice();
+  q=q.filter(function(it){return it.s});
+  q.sort(function(a,b){return b.p-a.p||a.d-b.d});
+  q.forEach(function(it){
+    if(box.length>240)return;
+    g.font='bold 12px system-ui,sans-serif';
+    var tw=Math.ceil(g.measureText(it.s).width),th=14,fits=[],i;
+    if(it.c)fits=[{x:Math.round(it.x-tw/2),y:Math.round(it.y-th/2),w:tw,h:th}];
+    else for(i=0;i<LPUT.length;i++){var R={x:Math.round(it.x+LPUT[i][0]+(LPUT[i][0]<0?-tw:0)),y:Math.round(it.y+LPUT[i][1]-th/2),w:tw,h:th};
+      if(R.x<2||R.y<2||R.x+R.w>w-2||R.y+R.h>h-2)continue;fits.push(R)}
+    if(!fits.length)return;
+    if(it.sel){box.push(fits[0]);labInk(g,it,fits[0],dk);return}
+    for(i=0;i<fits.length;i++){var c=0,k;
+      for(k=0;k<box.length&&!c;k++)if(inRect(fits[i],box[k]))c=1;
+      if(c)continue;
+      box.push(fits[i]);labInk(g,it,fits[i],dk);return}})}
+function labInk(g,it,R,dk){g.textAlign='left';g.lineWidth=it.lw||3;g.strokeStyle=it.halo||(dk?'#000':'#fff');g.strokeText(it.s,R.x,R.y+R.h/2);g.fillStyle=it.ink||(dk?'#f1f1f1':'#111');g.fillText(it.s,R.x,R.y+R.h/2)}
+function labSync(){var s=$('labSel');if(!s)return;s.value=LAB.m;$('labC').hidden=LAB.m!=='custom';$('labFmt').value=LAB.f}
+$('labSel').onchange=function(){LAB.m=this.value;labSave();labSync();draw()};
+$('labFmt').oninput=function(){LAB.f=this.value.trim()||LAB_DF;labSave();draw()};
+labSync();
 function draw(){
   if($('mapSec').hidden)return;
   var c=$('cv'),w=c.clientWidth,h=c.clientHeight,d=window.devicePixelRatio||1;
@@ -717,23 +785,27 @@ function draw(){
     if(im.complete&&im.naturalWidth)g.drawImage(im,X,Y,ts,ts);
     else offFill(g,X,Y,ts,tz,wx,ty)}
   if(iv){g.filter='none';if(!fl){g.globalCompositeOperation='difference';g.fillStyle='#fff';g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over'}}
-  M.hits=[];g.font='bold 12px system-ui,sans-serif';g.textBaseline='middle';
+  M.hits=[];var LBQ=[],meR=null;g.font='bold 12px system-ui,sans-serif';g.textBaseline='middle';
   var byId={};vis().forEach(function(r){byId[r.id]=r});
   vis().forEach(function(r){var a=r.from&&byId[r.from];if(!a||!a.pos||!r.pos)return;var p1=px(a.pos.lat,a.pos.lon,z),p2=px(r.pos.lat,r.pos.lon,z);
     g.beginPath();g.moveTo(p1.x-x0,p1.y-y0);g.lineTo(p2.x-x0,p2.y-y0);var sl=M.selL===r.id;g.lineWidth=sl?10:6;g.strokeStyle=dk?'#000':'#fff';g.stroke();var lg=gcOn?gradeMap().l[r.id]:null;g.lineWidth=sl?5:(lg?4.5:3);g.strokeStyle=sl?'#ffd400':(lg?gcol(lg):(dk?'#e8e8e8':'#111'));g.stroke();
-    if(r.pole.lineA!==''&&r.pole.lineA!=null&&z>=15){var tt=r.pole.lineA+' A',mx=(p1.x+p2.x)/2-x0,my=(p1.y+p2.y)/2-y0;g.textAlign='center';g.lineWidth=4;g.strokeStyle=dk?'#000':'#fff';g.strokeText(tt,mx,my-10);g.fillStyle=dk?'#6cc0ff':'#0a3dbd';g.fillText(tt,mx,my-10);g.textAlign='left'}
-    if(z>=16){var d2=Math.round(hav(a.pos,r.pos))+' m'+((r.pole.lineA===''||r.pole.lineA==null)?' · no A yet':''),mx2=(p1.x+p2.x)/2-x0,my2=(p1.y+p2.y)/2-y0;g.textAlign='center';g.lineWidth=4;g.strokeStyle=dk?'#000':'#fff';g.strokeText(d2,mx2,my2+12);g.fillStyle=dk?'#ffd166':'#7a4b00';g.fillText(d2,mx2,my2+12);g.textAlign='left'}});
+    var lmx=(p1.x+p2.x)/2-x0,lmy=(p1.y+p2.y)/2-y0,ld=Math.abs(lmx-w/2)+Math.abs(lmy-h/2);
+    if(r.pole.lineA!==''&&r.pole.lineA!=null&&z>=15)LBQ.push({s:r.pole.lineA+' A',x:lmx,y:lmy-10,c:1,p:16,lw:4,ink:dk?'#6cc0ff':'#0a3dbd',d:ld});
+    if(z>=16)LBQ.push({s:Math.round(hav(a.pos,r.pos))+' m'+((r.pole.lineA===''||r.pole.lineA==null)?' · no A yet':''),x:lmx,y:lmy+12,c:1,p:14,lw:4,ink:dk?'#ffd166':'#7a4b00',d:ld})});
   vis().forEach(function(r){if(!r.pos)return;var p=px(r.pos.lat,r.pos.lon,z),X=p.x-x0,Y=p.y-y0;if(X<-40||Y<-40||X>w+40||Y>h+40)return;
     var t=!!r.tx,sel=M.sel===r.id;M.hits.push({id:r.id,x:X,y:Y});g.globalAlpha=match(r)?1:.25;
     g.beginPath();
     if(t){g.moveTo(X,Y-11);g.lineTo(X+10,Y+8);g.lineTo(X-10,Y+8);g.closePath()}
     else g.arc(X,Y,7,0,7);
     var gg=gcOn?gradeMap().p[r.id]:null;g.fillStyle=gg?gcol(gg):(t?off:acc);g.fill();g.lineWidth=sel||r.flag?4:2;g.strokeStyle=sel?'#ffd400':(r.flag?wr:'#fff');g.stroke();
-    if(z>=15||sel){var lb=pinLabel(r);g.lineWidth=3;g.strokeStyle=dk?'#000':'#fff';g.strokeText(lb,X+13,Y);g.fillStyle=dk?'#f1f1f1':'#111';g.fillText(lb,X+13,Y)}g.globalAlpha=1});
+    if(LAB.m!=='off'&&(z>=13||sel))LBQ.push({s:labText(r),x:X,y:Y,sel:sel,p:(sel?40:20)+(r.flag?8:0)+(gg==='v-bad'?6:gg==='v-warn'?4:0)+(r.tx?2:0),d:Math.abs(X-w/2)+Math.abs(Y-h/2)});
+    g.globalAlpha=1});
   if(M.pend){var q=px(M.pend.lat,M.pend.lon,z);g.beginPath();g.arc(q.x-x0,q.y-y0,11,0,7);g.lineWidth=3;g.strokeStyle=wr;g.stroke();g.beginPath();g.arc(q.x-x0,q.y-y0,3,0,7);g.fillStyle=wr;g.fill()}
   if(M.me){var m=px(M.me.lat,M.me.lon,z),X=m.x-x0,Y=m.y-y0,mpp=156543.03*Math.cos(M.me.lat*Math.PI/180)/n,ar=M.me.acc/mpp;
+    meR={x:X-11,y:Y-11,w:22,h:22};
     if(ar>8){g.beginPath();g.arc(X,Y,ar,0,7);g.fillStyle='rgba(30,110,230,.15)';g.fill()}
     g.beginPath();g.arc(X,Y,7,0,7);g.fillStyle='#1e6ee6';g.fill();g.lineWidth=3;g.strokeStyle='#fff';g.stroke()}
+  labPass(g,LBQ,w,h,dk,meR?[meR]:[]);
   if(!$('dlSheet').hidden){var rg=regionTiles(+$('dlZmin').value||13),c0=px(0,0,z);
     var rx=c0.x+rg.x0*256-x0,ry=c0.y+rg.y0*256-y0,rw=(rg.x1-rg.x0+1)*256,rf=(rg.y1-rg.y0+1)*256;
     g.save();g.strokeStyle=wr;g.lineWidth=2.5;g.setLineDash([9,7]);g.strokeRect(rx,ry,rw,rf);g.restore();
@@ -757,6 +829,7 @@ cv.onpointermove=function(e){var o=P[e.pointerId];if(!o)return;var n=Object.keys
   if(n===2&&pinch){mv=99;var m=pMid(),d=pinchD();
     M.anchor={lat:pinch.ll.lat,lon:pinch.ll.lon,x:m.x,y:m.y};
     M.zt=clampZ(pinch.z0+ZS_PINCH*Math.log2(Math.max(d,.001)/pinch.d0));zoomRun()}
+  if(mv>10)followOff();
   draw()};
 cv.onpointerup=cv.onpointercancel=function(e){if(P[e.pointerId]&&Object.keys(P).length===1&&mv<8)tap(e);
   delete P[e.pointerId];if(Object.keys(P).length<2){pinch=null;M.anchor=null}};
@@ -790,7 +863,7 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
     if(hasPh)loadThumbs()}
   draw()}
 $('zi').onclick=function(){zoom(ZS_BTN)};$('zo').onclick=function(){zoom(-ZS_BTN)};
-$('loc').onclick=gpsAsk;$('greq').onclick=gpsAsk;
+$('greq').onclick=gpsAsk;
 // view-only mode: browse and inspect, never edit
 var viewMode=0;
 function setView(on,quiet){viewMode=!!on;document.body.classList.toggle('view',viewMode);
@@ -1293,7 +1366,7 @@ function closeSheet(){$('sheet').hidden=true;document.body.style.overflow=''}
 function cancelSheet(){reset();closeSheet();M.pend=null;draw()}
 function openSheet(r){if(viewMode){toast('View mode is on — turn it off in the menu to edit');return}reset();ph={P:[],T:[]};phD={P:0,T:0};buildConn(r?r.id:'');
   if(r){editId=r.id;fill(r);['P','T'].forEach(function(w){Promise.all(phAll(r.id).filter(function(x){return x[0]===w}).map(function(x){return pget(x[2])})).then(function(a){if(phD[w])return;var f=a.filter(function(v){return v});if(!f.length)return;ph[w]=f;showPh()})});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
-  else{$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:0,src:'map'};showPos()}connNear()}
+  else{$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:M.pend.acc||0,src:M.pend.src||'map'};showPos()}connNear()}
   $('pop').hidden=true;liveCalc();showPh();$('sheet').hidden=false;$('sheet').scrollTop=0;document.body.style.overflow='hidden';
   if(!r)setTimeout(function(){$('pno').focus()},60)}
 $('sx').onclick=cancelSheet;
