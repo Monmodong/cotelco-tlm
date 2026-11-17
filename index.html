@@ -287,13 +287,12 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 
 /* ===== v3 additions ===== */
-#glg{position:absolute;left:12px;bottom:12px;z-index:1;padding:5px 11px;border:1px solid var(--line);border-radius:99px;background:var(--hdr);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);font-size:.72rem;font-weight:600;color:var(--ink)}
 #gcol[aria-pressed=false]{opacity:.55}
 #loc[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
 #drawer .grp select,#drawer .grp #labC{margin-bottom:8px}
 #rpt h2{font-size:14px;margin:14px 0 4px}#rpt .gk{font-weight:700}#rpt{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #rpt .pp{page-break-inside:avoid;margin:8px 0}#rpt .ph{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}#rpt figure{margin:0;width:23%}#rpt figure img{width:100%;height:250px;object-fit:cover;border:1px solid #999}#rpt figcaption{font-size:10px}
-#rpt img.txp{width:62px;height:84px;object-fit:cover;border:1px solid #999;display:block;margin:1px 0}
+#rpt .mapbox{page-break-inside:avoid;margin:10px 0}
 #fbar{display:flex;gap:8px;margin-bottom:10px;position:sticky;top:0;z-index:5}
 #fbar input{flex:1;min-width:0}#fbar select{width:auto;max-width:44%}
 .bkn{font-size:.8rem;color:var(--mute);margin:0 2px 10px}.bkn.w{color:var(--warn);font-weight:600}
@@ -345,6 +344,8 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <button class="btn" id="xGeo" type="button">Export GeoJSON</button>
     <button class="btn" id="xKml" type="button">Export KML (Google Earth)</button>
     <button class="btn" id="xPrint" type="button">Print / save PDF report</button>
+    <button class="btn" id="xWord" type="button">Export Word report (.docx)</button>
+    <p class="note">Both reports hold the same thing: the map of the line, the transformer load table, the pole table and the photos. <b>Print</b> goes through the browser, so choose &ldquo;Save as PDF&rdquo; there and untick <i>Headers and footers</i> to drop the date the browser stamps above the title. <b>Word</b> gives you an editable <i>.docx</i>; the satellite map inside it comes from the tiles cached on this device, so download the area first if you want it there.</p>
   </div>
   <div class="grp"><b>Map</b>
     <button class="btn" id="dlBtn" type="button">Offline map tiles</button>
@@ -390,7 +391,6 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
   <div class="full"><label>Secondary line current</label></div>
   <div><label for="i1">Line *</label><div class="unit"><input type="number" id="i1" inputmode="decimal" step="any"><b>A</b></div></div>
   <div><label for="in">Neutral (optional)</label><div class="unit"><input type="number" id="in" inputmode="decimal" step="any"><b>A</b></div></div>
-  <div class="full"><button type="button" class="btn" id="phT">Take transformer photo</button><div id="thT" class="thumbs"></div></div>
   <div id="calc" class="calc full"></div><div class="full"><label for="trem">Transformer remarks</label><textarea id="trem"></textarea></div>
 </div>
 </div>
@@ -413,7 +413,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 <section id="mapSec">
   <div id="map"><canvas id="cv" tabindex="0" role="img" aria-label="Survey map. Use plus and minus to zoom, arrow keys to pan."></canvas><div id="mnote"></div><div id="gstat" hidden><span id="gmsg"></span><button type="button" class="btn" id="greq">Enable location</button></div><select id="baseSel" aria-label="Base map"></select><button id="offBadge" type="button" hidden title="Offline map"></button>
     <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="gcol" aria-label="Color poles and lines by grade" aria-pressed="true" title="Color by OK / WATCH / ACTION"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="7" cy="8" r="3.4" style="fill:var(--ok)"/><circle cx="17" cy="8" r="3.4" style="fill:var(--warn)"/><circle cx="12" cy="17" r="3.4" style="fill:var(--off)"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Follow my location" title="Follow my location — stays on and keeps the map centred on you" aria-pressed="false"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button><button id="mp" aria-label="New pole at my location" title="New pole at my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.2s6.7-6 6.7-10.7a6.7 6.7 0 1 0-13.4 0C5.3 15.2 12 21.2 12 21.2Z"/><path d="M12 7.9v5M9.5 10.4h5"/></svg></button></div>
-    <div id="glg" hidden><span style="color:var(--ok)">●</span> OK &nbsp;<span style="color:var(--warn)">●</span> WATCH &nbsp;<span style="color:var(--off)">●</span> ACTION</div><div id="pop" hidden></div></div>
+    <div id="pop" hidden></div></div>
 </section>
 
 <section id="dlSheet" hidden><div class="bar"><b id="dlT">Offline map</b><button type="button" class="btn" id="dlX">Close</button></div><div style="max-width:720px;margin:0 auto;padding:14px">
@@ -500,10 +500,10 @@ function fill(r){
 function reset(){$('f').reset();$('txBox').hidden=true;pos=null;editId=null;showPos();$('saveBtn').textContent='Save record'}
 $('clr').onclick=cancelSheet;
 $('f').onsubmit=function(e){
-  e.preventDefault();var r=collect();var o0=recs.find(function(x){return x.id===r.id})||{pole:{}};r.pole.ph=phD.P?!!ph.P.length:!!o0.pole.ph;if(r.tx)r.tx.ph=phD.T?!!ph.T.length:!!(o0.tx&&o0.tx.ph);var miss=[];if(!r.pole.s.m)miss.push('Secondary structure');if(!r.pole.material)miss.push('Material');if(r.tx){if(r.tx.rating==='')miss.push('Transformer rating');if(!r.tx.type)miss.push('Transformer type');if(r.tx.line===''||r.tx.line==null)miss.push('Line current')}if(miss.length){toast('Required: '+miss.join(', '));return}if(!pos){toast('No location: tap the map to place the pole');return}var bn=badNum(r);if(bn){toast(bn);return}var nb=recs.find(function(x){return x.id!==r.id&&x.project===r.project&&x.pos&&hav(x.pos,pos)<3});if(nb&&!confirm('Pole '+nb.pole.no+' is only '+Math.round(hav(nb.pos,pos))+' m away. Save anyway?'))return;if(r.pole.no&&recs.some(function(x){return x.id!==r.id&&x.project===r.project&&String(x.pole.no).toLowerCase()===r.pole.no.toLowerCase()})&&!confirm('Pole '+r.pole.no+' already exists in this project. Save anyway?'))return;if(r.tx){var n=recs.filter(function(x){return x.tx&&x.project===r.project&&x.id!==r.id}).length;if(n>=5&&!confirm('This project already has '+n+' transformers (max 5). Save anyway?'))return}
+  e.preventDefault();var r=collect();var o0=recs.find(function(x){return x.id===r.id})||{pole:{}};r.pole.ph=phD?!!ph.length:!!o0.pole.ph;var miss=[];if(!r.pole.s.m)miss.push('Secondary structure');if(!r.pole.material)miss.push('Material');if(r.tx){if(r.tx.rating==='')miss.push('Transformer rating');if(!r.tx.type)miss.push('Transformer type');if(r.tx.line===''||r.tx.line==null)miss.push('Line current')}if(miss.length){toast('Required: '+miss.join(', '));return}if(!pos){toast('No location: tap the map to place the pole');return}var bn=badNum(r);if(bn){toast(bn);return}var nb=recs.find(function(x){return x.id!==r.id&&x.project===r.project&&x.pos&&hav(x.pos,pos)<3});if(nb&&!confirm('Pole '+nb.pole.no+' is only '+Math.round(hav(nb.pos,pos))+' m away. Save anyway?'))return;if(r.pole.no&&recs.some(function(x){return x.id!==r.id&&x.project===r.project&&String(x.pole.no).toLowerCase()===r.pole.no.toLowerCase()})&&!confirm('Pole '+r.pole.no+' already exists in this project. Save anyway?'))return;if(r.tx){var n=recs.filter(function(x){return x.tx&&x.project===r.project&&x.id!==r.id}).length;if(n>=5&&!confirm('This project already has '+n+' transformers (max 5). Save anyway?'))return}
   var i=recs.findIndex(function(x){return x.id===r.id});
   var HR=HD==null?null:Math.round(HD);if(i>=0){var o1=recs[i];r.flag=o1.flag;r.hdg=o1.hdg!=null?o1.hdg:HR;var ch=chgs(o1,r);r.hist=(o1.hist||[]).concat(ch.length?[{t:r.up,c:ch}]:[]).slice(-20);recs[i]=r}else{r.hdg=HR;r.hist=[];recs.unshift(r)}
-  if(persist()){toast('Saved pole '+r.pole.no);savePh(r,o0);reset();closeSheet();lists();count();render();M.pend=null;M.sel=null;draw()}
+  if(persist()){toast('Saved pole '+r.pole.no);savePh(r);reset();closeSheet();lists();count();render();M.pend=null;M.sel=null;draw()}
 };
 function lists(){var pj={};recs.forEach(function(r){if(r.project)pj[r.project]=1});$('projL').innerHTML=Object.keys(pj).map(function(v){return '<option value="'+esc(v)+'">'}).join('');
   ['pri','sec'].forEach(function(k){
@@ -514,7 +514,7 @@ function count(){$('tabList').textContent='Saved ('+vis().length+')'}
 // list
 function hav(a,b){var R=6371000,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r,x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)*Math.sin(dn/2);return 2*R*Math.asin(Math.min(1,Math.sqrt(x)))}
 var F={q:'',m:'all'},SEL={};
-function hasPh(r){return !!(r.pole.ph||(r.tx&&r.tx.ph))}
+function hasPh(r){return !!r.pole.ph}
 function match(r){var m=F.m,q=F.q.toLowerCase();if(m==='tx'&&!r.tx)return 0;if(m==='plain'&&r.tx)return 0;if(m==='nogps'&&r.pos)return 0;if(m==='photo'&&!hasPh(r))return 0;if(m==='nophoto'&&hasPh(r))return 0;if(m==='flag'&&!r.flag)return 0;
   return !q||[r.pole.no,r.pole.primary,r.pole.secondary,r.pole.material,r.pole.remarks,r.pole.voltage,r.tx&&r.tx.remarks,r.tx&&r.tx.type,r.tx&&r.tx.rating].join(' ').toLowerCase().indexOf(q)>=0}
 function bkInfo(){if(!recs.length)return{t:'',w:0};var b=0,c=0;try{b=+localStorage.getItem(KEY+'.bk')||0;c=+localStorage.getItem(KEY+'.chg')||0}catch(e){}
@@ -579,7 +579,7 @@ $('file').onchange=function(){
   var f=this.files[0];if(!f)return;var rd=new FileReader();
   rd.onload=function(){try{var D=JSON.parse(rd.result),d=Array.isArray(D)?D:D.recs;if(!Array.isArray(d))throw 0;if(D.projects)D.projects.forEach(function(p){if(projects.indexOf(p)<0)projects.push(p)});
     var ids={};recs.forEach(function(r){ids[r.id]=1});var n=0;
-    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;phAll(r.id).forEach(function(x){var v=D.photos&&D.photos[x[2]];if(v)pput(x[2],asBlob(v))})}});
+    d.forEach(function(r){if(r&&r.id&&r.pole&&!ids[r.id]){recs.push(r);n++;secStd(r);if(!r.project)r.project=lastProj;phAll(r.id).forEach(function(x){var v=D.photos&&D.photos[x[1]];if(v)pput(x[1],asBlob(v))})}});
     persist();projUI();render();count();lists();toast('Imported '+n+' new record(s)')}catch(e){toast('Not a valid backup file')}};
   rd.readAsText(f);this.value=''};
 
@@ -591,7 +591,7 @@ function hMark(id,up,p){var w=String(up||new Date().toISOString());
   hand.push({id:id,up:w,p:p||''});hSave()}
 function hFile(){return ($('hPh').checked?pallD():Promise.resolve({})).then(function(ph){
   return JSON.stringify({v:3,kind:'cotelco-handoff',projects:projects,recs:recs,deleted:hand,photos:ph||{}})})}
-function hTake(r,D,box){var q=D.photos||{};phAll(r.id).forEach(function(x){var v=q[x[2]];if(v){pput(x[2],asBlob(v));box.p++}})}
+function hTake(r,D,box){var q=D.photos||{};phAll(r.id).forEach(function(x){var v=q[x[1]];if(v){pput(x[1],asBlob(v));box.p++}})}
 function hApply(D){
   var ins={},rdel={};
   (D.recs||[]).forEach(function(r){if(r&&r.id&&r.pole)ins[r.id]=r});
@@ -855,14 +855,14 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
   M.sel=best;M.pend=null;M.selL=null;$('pop').hidden=true;
   if(!best){var lh=lineHit(x,y,b);if(lh){M.selL=lh.id;showLine(lh);draw();return}}
   if(!best&&!viewMode){var c0=ll(M.cx-b.width/2+x,M.cy-b.height/2+y,M.z);M.pend={lat:c0.lat,lon:c0.lon};$('pop').hidden=false;$('pop').innerHTML='<b>New pole here</b><br>'+c0.lat.toFixed(6)+', '+c0.lon.toFixed(6)+'<div class="row" style="margin-top:8px"><button class="btn p" id="pn">Save as pole</button><button class="btn" id="pc">Cancel</button></div>';$('pn').onclick=function(){openSheet()};$('pc').onclick=function(){M.pend=null;$('pop').hidden=true;draw()}}
-  if(best){var r=recs.find(function(q){return q.id===best}),t=r.tx,p=r.pole,hasPh=p.ph||(t&&t.ph);
+  if(best){var r=recs.find(function(q){return q.id===best}),t=r.tx,p=r.pole,hp=hasPh(r);
     $('pop').hidden=false;$('pop').innerHTML='<b>Pole '+esc(p.no)+'</b> ('+esc(r.project||'')+')<br>'+esc(p.primary||'-')+' / '+esc(p.secondary||'-')+(p.voltage!==''?', '+p.voltage+' V':'')
       +(t?'<br>'+esc(t.rating)+' kVA '+esc(t.type)+', tap '+esc(t.tap)+', line '+(t.line===''||t.line==null?'-':t.line)+' A':'')
-      +loadHtml(r)+(hasPh?'<div class="th" data-i="'+r.id+'"></div>':'')
+      +loadHtml(r)+(hp?'<div class="th" data-i="'+r.id+'"></div>':'')
       +'<div class="row" style="margin-top:8px">'+(viewMode?'':'<button class="btn" id="pe">Edit</button>')+'<button class="btn" id="pc">Close</button></div>';
     if(!viewMode)$('pe').onclick=function(){openSheet(r)};
     $('pc').onclick=function(){$('pop').hidden=true;M.sel=null;draw()};
-    if(hasPh)loadThumbs()}
+    if(hp)loadThumbs()}
   draw()}
 $('zi').onclick=function(){zoom(ZS_BTN)};$('zo').onclick=function(){zoom(-ZS_BTN)};
 $('greq').onclick=gpsAsk;
@@ -1176,7 +1176,7 @@ function anaInfo(){var A={},Ln={},G=gradeMap();anaRows().forEach(function(a){A[a
   return function(r){var a=A[r.id],l=Ln[r.id];return{pk:a?a.pk.pct:'',vg:anaVg(r.pole.voltage)||'',g:G.p[r.id]||'',lg:l?l.g:'',dp:l?l.pk.pct:'',dv:l?l.pk.dv:'',lw:l?l.pk.loss*1000:'',ld:l?l.day:'',cd:l?CON0[l.k].n:''}}}
 function n1(v,d){return v===''||v==null?'':(+v).toFixed(d)}
 var gcOn=true;try{gcOn=localStorage.getItem(KEY+'.gcol')!=='0'}catch(e){}
-function gcSync(){$('gcol').setAttribute('aria-pressed',gcOn?'true':'false');$('glg').hidden=!gcOn}
+function gcSync(){$('gcol').setAttribute('aria-pressed',gcOn?'true':'false')}
 $('gcol').onclick=function(){gcOn=!gcOn;try{localStorage.setItem(KEY+'.gcol',gcOn?'1':'0')}catch(e){}gcSync();draw()};gcSync();
 function anaHH(h){return(h<10?'0':'')+h+':00'}
 function anaPF(){var v=Number($('pf').value);return(v>0&&v<=1)?v:.95}
@@ -1366,8 +1366,8 @@ var anaRT;addEventListener('resize',function(){clearTimeout(anaRT);anaRT=setTime
 // entry sheet
 function closeSheet(){$('sheet').hidden=true;document.body.style.overflow=''}
 function cancelSheet(){reset();closeSheet();M.pend=null;draw()}
-function openSheet(r){if(viewMode){toast('View mode is on — turn it off in the menu to edit');return}reset();ph={P:[],T:[]};phD={P:0,T:0};buildConn(r?r.id:'');
-  if(r){editId=r.id;fill(r);['P','T'].forEach(function(w){Promise.all(phAll(r.id).filter(function(x){return x[0]===w}).map(function(x){return pget(x[2])})).then(function(a){if(phD[w])return;var f=a.filter(function(v){return v});if(!f.length)return;ph[w]=f;showPh()})});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
+function openSheet(r){if(viewMode){toast('View mode is on — turn it off in the menu to edit');return}reset();ph=[];phD=0;buildConn(r?r.id:'');
+  if(r){editId=r.id;fill(r);Promise.all(phAll(r.id).map(function(x){return pget(x[1])})).then(function(a){if(phD||ph.length)return;var f=a.filter(function(v){return v});if(!f.length)return;ph=f;showPh()});$('saveBtn').textContent='Update record';$('sheetT').textContent='Edit pole '+r.pole.no}
   else{$('sheetT').textContent='New pole';if(M.pend){pos={lat:M.pend.lat,lon:M.pend.lon,acc:M.pend.acc||0,src:M.pend.src||'map'};showPos()}connNear()}
   $('pop').hidden=true;liveCalc();showPh();$('sheet').hidden=false;$('sheet').scrollTop=0;document.body.style.overflow='hidden';
   if(!r)setTimeout(function(){$('pno').focus()},60)}
@@ -1400,13 +1400,12 @@ function connNear(){var b=null,bd=1e18;
     if(d<bd){bd=d;b=x}});
   $('conn').value=b?b.id:''}
 // photos (stored in IndexedDB as Blobs: a full-size shot is far too big for a base64 string)
-var PHN=4,ph={P:[],T:[]},phD={P:0,T:0},phW='P',db=null,uMap={};
-// slots: photo 1 of a tag keeps the original 'id:P' key, later ones are 'id:P2', 'id:P3'...
-function phKey(id,w,i){return id+':'+w+(i?i+1:'')}
-function phAll(id){var a=[];['P','T'].forEach(function(w){for(var i=0;i<PHN;i++)a.push([w,i,id+':'+w+(i?i+1:'')])});return a}
-function phDel(id){phAll(id).forEach(function(x){pput(x[2],null)})}
-function phCount(){return ph.P.length+ph.T.length}
-function phCap(){return phCount()>=PHN}
+var PHN=4,ph=[],phD=0,db=null,uMap={};
+// slots: the first pole photo keeps the original 'id:P' key, later ones are 'id:P2', 'id:P3'...
+function phKey(id,i){return id+':P'+(i?i+1:'')}
+function phAll(id){var a=[];for(var i=0;i<PHN;i++)a.push([i,phKey(id,i)]);return a}
+function phDel(id){phAll(id).forEach(function(x){pput(x[1],null)})}
+function phCap(){return ph.length>=PHN}
 function idb(){return new Promise(function(res,rej){if(db)return res(db);var q=indexedDB.open('poleSurveyPhotos',1);q.onupgradeneeded=function(){q.result.createObjectStore('p')};q.onsuccess=function(){db=q.result;res(db)};q.onerror=function(){rej(q.error)}})}
 function pget(k){return idb().then(function(d){return new Promise(function(res){var r=d.transaction('p').objectStore('p').get(k);r.onsuccess=function(){res(r.result||null)};r.onerror=function(){res(null)}})}).catch(function(){return null})}
 function pput(k,v){if(!v)uDrop(k);return idb().then(function(d){return new Promise(function(res){var t=d.transaction('p','readwrite'),o=t.objectStore('p');if(v)o.put(v,k);else o.delete(k);t.oncomplete=function(){res(1)};t.onerror=function(){res(0)}})}).catch(function(){toast('Photo storage unavailable');return 0})}
@@ -1421,26 +1420,23 @@ function pallD(){return pall().then(function(p){return Promise.all(Object.keys(p
     if(typeof v==='string')return {k:k,v:v};return bToD(v).then(function(s){return {k:k,v:s}})}))})
   .then(function(a){var out={};a.forEach(function(x){out[x.k]=x.v});return out})}
 function shrink(file){return new Promise(function(res){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,2560/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);if(!c.toBlob)return res(dToB(c.toDataURL('image/jpeg',.92)));c.toBlob(function(b){res(b||null)},'image/jpeg',.92)};im.onerror=function(){res(null)};im.src=u})}
-function showPh(){['P','T'].forEach(function(w){
-  $('th'+w).innerHTML=ph[w].map(function(b,i){return'<span class="phc"><img src="'+uGet('sheet:'+w+i,b)+'" alt="'+(w==='P'?'Pole':'Transformer')+' photo '+(i+1)+'"><button type="button" class="x" data-w="'+w+'" data-i="'+i+'" aria-label="Remove this photo">&#10005;</button></span>'}).join('')
-    +'<b class="cnt">'+phCount()+' of '+PHN+' photos</b>'})}
-function savePh(r,o0){var jobs=[];['P','T'].forEach(function(w){if(!phD[w])return;
-  for(var i=0;i<PHN;i++)jobs.push(pput(phKey(r.id,w,i),(w==='T'&&!r.tx)?null:(ph[w][i]||null)))});
-  if(!r.tx&&o0.tx&&o0.tx.ph)for(var j=0;j<PHN;j++)jobs.push(pput(phKey(r.id,'T',j),null));
-  return Promise.all(jobs).then(function(){loadThumbs()})}
+function showPh(){$('thP').innerHTML=ph.map(function(b,i){return'<span class="phc"><img src="'+uGet('sheet:'+i,b)+'" alt="Pole photo '+(i+1)+'"><button type="button" class="x" data-i="'+i+'" aria-label="Remove this photo">&#10005;</button></span>'}).join('')
+    +'<b class="cnt">'+ph.length+' of '+PHN+' photos</b>'}
+function savePh(r){if(!phD)return Promise.resolve();var jobs=[];
+  for(var i=0;i<PHN;i++)jobs.push(pput(phKey(r.id,i),ph[i]||null));
+  return Promise.all(jobs).then(loadThumbs)}
 function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(el){el.innerHTML='';
   phAll(el.dataset.i).forEach(function(x){var s=document.createElement('span');el.appendChild(s);
-    pget(x[2]).then(function(v){if(v){var i=new Image();i.src=uGet(x[2],v);i.alt=(x[0]==='P'?'Pole':'Transformer')+' photo '+(x[1]+1)+', tap to enlarge';s.appendChild(i)}})})})}
-$('phP').onclick=function(){phTake('P')};$('phT').onclick=function(){phTake('T')};
-function phTake(w){if(phCap())return toast('Four photos per record — remove one first');phW=w;$('phF').click()}
-$('phF').onchange=function(){var fs=[].slice.call(this.files),w=phW;this.value='';if(!fs.length)return;
+    pget(x[1]).then(function(v){if(v){var i=new Image();i.src=uGet(x[1],v);i.alt='Pole photo '+(x[0]+1)+', tap to enlarge';s.appendChild(i)}})})})}
+$('phP').onclick=function(){if(phCap())return toast('Four photos per record — remove one first');$('phF').click()};
+$('phF').onchange=function(){var fs=[].slice.call(this.files);this.value='';if(!fs.length)return;
   Promise.all(fs.map(function(f){return shrink(f)})).then(function(a){var ok=0,bad=0,skip=0;
-    a.forEach(function(d){if(!d){bad++;return}if(phCap()){skip++;return}ph[w].push(d);phD[w]=1;ok++});
+    a.forEach(function(d){if(!d){bad++;return}if(phCap()){skip++;return}ph.push(d);phD=1;ok++});
     showPh();
     if(!ok)toast(bad&&!skip?'Could not read photo':'Four photos per record — remove one first');
     else if(bad||skip)toast('Added '+(ok===1?'a photo':ok+' photos')+' — limit is '+PHN)})};
-$('thP').onclick=$('thT').onclick=function(e){var b=e.target.closest('button.x');if(!b)return;
-  var w=b.dataset.w,i=+b.dataset.i;if(ph[w][i]){ph[w].splice(i,1);phD[w]=1;showPh()}};
+$('thP').onclick=function(e){var b=e.target.closest('button.x');if(!b)return;
+  var i=+b.dataset.i;if(ph[i]){ph.splice(i,1);phD=1;showPh()}};
 // shared helpers: record stamp for handoff, and photo blob <-> data URL conversion
 function upOf(r){return r.up||r.time||''}
 function dToB(d){var i=d.indexOf(','),t=/:(.*?);/.exec(d.slice(0,i)),s=atob(d.slice(i+1)),u=new Uint8Array(s.length);for(var x=0;x<s.length;x++)u[x]=s.charCodeAt(x);return new Blob([u],{type:t?t[1]:'image/jpeg'})}
@@ -1505,7 +1501,10 @@ function rptMap(a,by){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});
   cv.width=W;cv.height=H;cv.style.cssText='width:100%;height:auto;border:1px solid #999';
   var g=cv.getContext('2d');g.fillStyle='#2b3a2b';g.fillRect(0,0,W,H);
   for(var ty=Math.floor(y0/256);ty<=Math.floor((y0+H)/256);ty++)for(var tx=Math.floor(x0/256);tx<=Math.floor((x0+W)/256);tx++){(function(tx,ty){if(ty<0||ty>=n)return;var xx=((tx%n)+n)%n;
-    jobs.push(new Promise(function(res){var im=new Image(),t=setTimeout(res,9000);im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);res()};im.onerror=function(){clearTimeout(t);res()};im.src=tileUrl('gsat',z,xx,ty)}))})(tx,ty)}
+    // cached tiles come from local blobs, so the canvas stays readable and the map can go inside a Word file
+    jobs.push(getOff('gsat',z,xx,ty).then(function(r){return r?r.blob():null}).then(function(bl){var u=bl?URL.createObjectURL(bl):null;
+      return new Promise(function(res){var im=new Image(),t=setTimeout(function(){if(u)URL.revokeObjectURL(u);res()},9000),fr=function(){if(u)URL.revokeObjectURL(u)};
+        im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);fr();res()};im.onerror=function(){clearTimeout(t);fr();res()};im.src=u||tileUrl('gsat',z,xx,ty)})}))})(tx,ty)}
   return Promise.all(jobs).then(function(){
     var P=function(r){var p=px(r.pos.lat,r.pos.lon,z);return{x:p.x-x0,y:p.y-y0}};
     g.lineCap='round';g.font='bold 15px system-ui,sans-serif';g.textBaseline='middle';
@@ -1515,27 +1514,170 @@ function rptMap(a,by){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});
       g.fillStyle=t?'#ff4d4f':'#3b82f6';g.fill();g.lineWidth=r.flag?5:2.5;g.strokeStyle=r.flag?'#ff9f1a':'#fff';g.stroke();
       var lb=String(r.pole.no||'');g.lineWidth=4;g.strokeStyle='#000';g.strokeText(lb,p.x+15,p.y);g.fillStyle='#fff';g.fillText(lb,p.x+15,p.y)});
     return{cv:cv,ok:ok}})}
-$('xPrint').onclick=function(){var a=vis();if(!a.length)return toast('Nothing to print');var by={};a.forEach(function(r){by[r.id]=r});
+function rptBuild(){var a=vis();if(!a.length)return null;var by={};a.forEach(function(r){by[r.id]=r});
   var G=gradeMap(),TX={};anaRows().forEach(function(x){TX[x.id]=x});
   function gt(g){return g?'<span class="gk" style="color:'+gcol(g)+'">'+gl(g)+'</span>':''}
   function yn(v){return v?'Y':'N'}
   var d=document.createElement('div');d.id='rpt';
-  d.innerHTML='<h1>'+esc(lastProj)+' - TLM Inspection Report</h1><div>'+new Date().toLocaleDateString()+'</div>'
-   +'<h2>Poles</h2><table><tr><th>Pole</th><th>Material</th><th>Primary</th><th>Secondary</th><th>Voltage</th><th>Span</th><th>GPS</th><th>Remarks</th></tr>'
-   +a.map(function(r){var f=r.from&&by[r.from];return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no)+'</td><td>'+esc(r.pole.material)+'</td><td>'+esc(r.pole.primary)+'</td><td>'+esc(r.pole.secondary)+'</td><td>'+(r.pole.voltage!==''?esc(r.pole.voltage)+' V':'')+'</td><td>'+(f&&f.pos&&r.pos?Math.round(hav(f.pos,r.pos))+' m':'')+'</td><td>'+(r.pos?r.pos.lat.toFixed(5)+', '+r.pos.lon.toFixed(5):'')+'</td><td>'+esc(r.pole.remarks||'')+'</td></tr>'}).join('')+'</table>'
+  d.innerHTML='<h1>'+esc(lastProj)+' - TLM Inspection Report</h1>'
    +(function(txs){if(!txs.length)return '';
-    return '<h2>Transformers &mdash; data and load at the '+PKL()+' peak</h2><table><tr><th>Pole</th><th>Transformer</th><th>C&middot;H&middot;G&middot;P</th><th>Line &middot; neutral (A)</th><th>Peak (A)</th><th>Load</th><th>kVA &middot; kW</th><th>Remarks</th><th>Photo</th></tr>'
-     +txs.map(function(r){var t=r.tx,x=TX[r.id],ln=t.line==null?t.i1:t.line;return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no||'—')+'</td><td>'+esc([t.rating+' kVA',t.type,t.tap?'tap '+t.tap:''].filter(Boolean).join(' · '))+'</td><td>'+[yn(t.cutout),yn(t.hanger),yn(t.grounding),yn(t.pmount)].join('·')+'</td><td>'+(ln===''||ln==null?'—':esc(ln)+(t.neutral===''||t.neutral==null?'':esc(' · '+t.neutral)))+'</td><td>'+(x?x.pk.i.toFixed(1):'—')+'</td><td>'+(x?'<span class="gk" style="color:'+gcol(anaGrade(x))+'">'+x.pk.pct.toFixed(0)+'%</span>':'')+'</td><td>'+(x?esc(n1(x.pk.kVA,1)+' · '+n1(x.pk.kW,1)):'')+'</td><td>'+esc(t.remarks||'')+'</td><td data-txph="'+esc(r.id)+'"></td></tr>'}).join('')+'</table>'
-     +'<div style="font-size:11px;margin-top:4px">C&middot;H&middot;G&middot;P = cutout, hanger, grounding, pole mounting. Line and neutral are the amps as read; Peak is the current projected for '+PKL()+', Load the share of the transformer&rsquo;s full-load current at that peak and kVA &middot; kW the power it carries. A dash or blank means no current was recorded.</div>'})(a.filter(function(r){return r.tx}));
-  var jobs=[];a.forEach(function(r){phAll(r.id).forEach(function(x){jobs.push(pget(x[2]).then(function(v){return v?{r:r,w:x[0],n:x[1]+1,src:uGet(x[2],v)}:null}))})});
-  toast('Preparing report…');
-  Promise.all([rptMap(a,by),Promise.all(jobs)]).then(function(res){var m=res[0],ph=res[1].filter(Boolean);
-    var tp={};ph.forEach(function(q){if(q.w==='T')(tp[q.r.id]=tp[q.r.id]||[]).push(q.src)});
-    [].slice.call(d.querySelectorAll('[data-txph]')).forEach(function(td){var s=tp[td.getAttribute('data-txph')];if(s)td.innerHTML=s.map(function(u){return '<img class="txp" src="'+u+'" alt="">'}).join('')});
-    if(m){var w=document.createElement('div');w.style.cssText='page-break-inside:avoid;margin:10px 0';w.appendChild(m.cv);var lg=document.createElement('div');lg.style.cssText='font-size:11px;margin-top:3px';lg.textContent='Yellow line = surveyed span · ● pole  ▲ transformer · orange ring = flagged'+(m.ok?' · Imagery © Google':' · Satellite imagery could not load (offline?)');w.appendChild(lg);d.insertBefore(w,d.querySelector('h2'))}
-    if(ph.length){var h='<h2>Photos</h2>',cur=null;a.forEach(function(r){var mine=ph.filter(function(q){return q.r===r});if(!mine.length)return;h+='<div class="pp"><b>'+poleTitle(r)+'</b> '+gt(G.p[r.id])+'<div class="ph">'+mine.map(function(q){return '<figure><img src="'+q.src+'" alt=""><figcaption>'+(q.w==='P'?'Pole':'Transformer')+' photo '+q.n+'</figcaption></figure>'}).join('')+'</div></div>'});var pd=document.createElement('div');pd.innerHTML=h;d.appendChild(pd)}
-    document.body.appendChild(d);var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);
-    Promise.all([].slice.call(d.querySelectorAll('img')).map(function(im){return im.complete?1:new Promise(function(z){im.onload=im.onerror=z;setTimeout(z,6000)})})).then(function(){setTimeout(function(){window.print()},50)})})};
+    return '<h2>Transformers &mdash; data and load at the '+PKL()+' peak</h2><table><tr><th>Pole</th><th>Transformer</th><th>C&middot;H&middot;G&middot;P</th><th>Line &middot; neutral (A)</th><th>Peak (A)</th><th>Load</th><th>kVA &middot; kW</th><th>Remarks</th></tr>'
+     +txs.map(function(r){var t=r.tx,x=TX[r.id],ln=t.line==null?t.i1:t.line;return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no||'—')+'</td><td>'+esc([t.rating+' kVA',t.type,t.tap?'tap '+t.tap:''].filter(Boolean).join(' · '))+'</td><td>'+[yn(t.cutout),yn(t.hanger),yn(t.grounding),yn(t.pmount)].join('·')+'</td><td>'+(ln===''||ln==null?'—':esc(ln)+(t.neutral===''||t.neutral==null?'':esc(' · '+t.neutral)))+'</td><td>'+(x?x.pk.i.toFixed(1):'—')+'</td><td>'+(x?'<span class="gk" style="color:'+gcol(anaGrade(x))+'">'+x.pk.pct.toFixed(0)+'%</span>':'')+'</td><td>'+(x?esc(n1(x.pk.kVA,1)+' · '+n1(x.pk.kW,1)):'')+'</td><td>'+esc(t.remarks||'')+'</td></tr>'}).join('')+'</table>'
+     +'<div class="note">C&middot;H&middot;G&middot;P = cutout, hanger, grounding, pole mounting. Line and neutral are the amps as read; Peak is the current projected for '+PKL()+', Load the share of the transformer&rsquo;s full-load current at that peak and kVA &middot; kW the power it carries. A dash or blank means no current was recorded.</div>'})(a.filter(function(r){return r.tx}))
+   +'<h2>Poles</h2><table><tr><th>Pole</th><th>Material</th><th>Primary</th><th>Secondary</th><th>Voltage</th><th>Span</th><th>GPS</th><th>Remarks</th></tr>'
+   +a.map(function(r){var f=r.from&&by[r.from];return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no)+'</td><td>'+esc(r.pole.material)+'</td><td>'+esc(r.pole.primary)+'</td><td>'+esc(r.pole.secondary)+'</td><td>'+(r.pole.voltage!==''?esc(r.pole.voltage)+' V':'')+'</td><td>'+(f&&f.pos&&r.pos?Math.round(hav(f.pos,r.pos))+' m':'')+'</td><td>'+(r.pos?r.pos.lat.toFixed(5)+', '+r.pos.lon.toFixed(5):'')+'</td><td>'+esc(r.pole.remarks||'')+'</td></tr>'}).join('')+'</table>';
+  var jobs=[];a.forEach(function(r){phAll(r.id).forEach(function(x){jobs.push(pget(x[1]).then(function(v){return v?{r:r,n:x[0]+1,src:uGet(x[1],v)}:null}))})});
+  return Promise.all([rptMap(a,by),Promise.all(jobs)]).then(function(res){var m=res[0],ph=res[1].filter(Boolean);
+    if(m){var w=document.createElement('div');w.className='mapbox';w.appendChild(m.cv);d.insertBefore(w,d.querySelector('h2'))}
+    if(ph.length){var h='<h2>Photos</h2>';a.forEach(function(r){var mine=ph.filter(function(q){return q.r===r});if(!mine.length)return;h+='<div class="pp"><b>'+poleTitle(r)+'</b> '+gt(G.p[r.id])+'<div class="ph">'+mine.map(function(q){return '<figure><img src="'+q.src+'" alt=""><figcaption>Pole photo '+q.n+'</figcaption></figure>'}).join('')+'</div></div>'});var pd=document.createElement('div');pd.innerHTML=h;d.appendChild(pd)}
+    document.body.appendChild(d);
+    return Promise.all([].slice.call(d.querySelectorAll('img')).map(function(im){return im.complete?1:new Promise(function(z){im.onload=im.onerror=z;setTimeout(z,6000)})})).then(function(){return d})})}
+$('xPrint').onclick=function(){var p=rptBuild();if(!p)return toast('Nothing to print');toast('Preparing report…');
+  p.then(function(d){var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(function(){window.print()},50)})};
+// ---------- Word export: the report DOM is re-emitted as WordprocessingML and packed into a .docx ----------
+var WW=9638,MM=36000,WPG={w:'11906',h:'16838',m:'1134'};
+function wEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function wHex(v){var m;if(!v)return '';
+  if((m=/^#([0-9a-f]{3})$/i.exec(v)))return m[1].split('').map(function(c){return c+c}).join('').toUpperCase();
+  if((m=/^#([0-9a-f]{6})$/i.exec(v)))return m[1].toUpperCase();
+  if((m=/^rgba?\(([^)]+)\)/i.exec(v)))return m[1].split(',').slice(0,3).map(function(x){var n=parseInt(x,10)||0;return('0'+n.toString(16)).slice(-2)}).join('').toUpperCase();
+  return ''}
+function wRun(t,o){o=o||{};var c=wEsc(t.replace(/\s+/g,' '));if(!c)return '';
+  var pr=(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'');
+  return '<w:r>'+(pr?'<w:rPr>'+pr+'</w:rPr>':'')+'<w:t xml:space="preserve">'+c+'</w:t></w:r>'}
+function wP(runs,st){st=st?'<w:pPr><w:pStyle w:val="'+st+'"/></w:pPr>':'';return '<w:p>'+st+(runs||[]).join('')+'</w:p>'}
+function wImgP(el,ctx){var mi=ctx[el.__wi];if(!mi)return '';
+  var cv=el.tagName.toLowerCase()==='canvas',maxW=cv?165:45,maxH=cv?195:60;
+  var wmm=mi.w/96*25.4,hmm=mi.h/96*25.4,k=Math.min(1,maxW/wmm,maxH/hmm);
+  if(!isFinite(k)||k<=0)k=1;
+  var cx=Math.round(wmm*k*MM),cy=Math.round(hmm*k*MM),id=mi.i+1;
+  return '<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+cx+'" cy="'+cy+'"/>'
+    +'<wp:docPr id="'+id+'" name="Picture '+id+'"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    +'<pic:pic><pic:nvPicPr><pic:cNvPr id="'+id+'" name="image'+id+'.'+mi.ext+'"/><pic:cNvPicPr/></pic:nvPicPr>'
+    +'<pic:blipFill><a:blip r:embed="rId'+(mi.i+2)+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+    +'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+    +'</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'}
+var WIN=['b','strong','i','em','span','a','small','label','br','u'];
+function wInline(n,o,ctx){o=o||{};var out=[];
+  if(n.nodeType===3){var r=wRun(n.textContent,o);return r?[r]:[]}
+  var tg=n.tagName.toLowerCase();
+  if(tg==='br')return['<w:r><w:br/></w:r>'];
+  if(tg==='img'||tg==='canvas')return[];
+  if(tg==='span'){var m=/color:\s*([^;]+)/i.exec(n.getAttribute('style')||''),c=m?wHex(m[1].trim()):'';if(c)o={b:o.b,color:c}}
+  if(tg==='b'||tg==='strong')o={b:1,color:o.color};
+  [].slice.call(n.childNodes).forEach(function(k){out=out.concat(wInline(k,o,ctx))});
+  return out}
+function wHasBlock(el){return !!el.querySelector('table,canvas,figure,div,h1,h2')}
+function wTbl(t,ctx){var rows=[].slice.call(t.querySelectorAll('tr')),nc=1;
+  rows.forEach(function(r){nc=Math.max(nc,r.children.length)});var cw=Math.floor(WW/nc);
+  var out='<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>';
+  for(var i=0;i<nc;i++)out+='<w:gridCol w:w="'+cw+'"/>';
+  out+='</w:tblGrid>';
+  rows.forEach(function(r){out+='<w:tr>';
+    [].slice.call(r.children).forEach(function(c){var hd=c.tagName.toLowerCase()==='th';
+      out+='<w:tc><w:tcPr><w:tcW w:w="'+cw+'" w:type="dxa"/>'+(hd?'<w:shd w:val="clear" w:color="auto" w:fill="EAF0F7"/>':'')+'</w:tcPr>';
+      if(hd){out+=wP(wInline(c,{b:1},ctx),null)}
+      else out+=wP(wInline(c,{},ctx),null);
+      out+='</w:tc>'});
+    out+='</w:tr>'});
+  return out+'</w:tbl>'+wP([],null)}
+function wFig(f,ctx){var im=f.querySelector('img'),cap=f.querySelector('figcaption');
+  var out=(im?wImgP(im,ctx):wP([],null))+(wP([wRun(cap?cap.textContent:'',{color:'666666'})],'Small'));
+  return out}
+function wPhGrid(el,ctx){var fs=[].slice.call(el.querySelectorAll('figure'));if(!fs.length)return '';
+  var cols=2,cw=Math.floor(WW/cols),out='<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>';
+  for(var i=0;i<cols;i++)out+='<w:gridCol w:w="'+cw+'"/>';
+  out+='</w:tblGrid>';
+  for(var j=0;j<fs.length;j+=cols){out+='<w:tr>';
+    for(var k=0;k<cols;k++)out+='<w:tc><w:tcPr><w:tcW w:w="'+cw+'" w:type="dxa"/></w:tcPr>'+(fs[j+k]?wFig(fs[j+k],ctx):wP([],null))+'</w:tc>';
+    out+='</w:tr>'}
+  return out+'</w:tbl>'+wP([],null)}
+function wBlocks(el,ctx){var out='',buf=[];
+  function flush(){if(buf.length){out+=wP(buf,null);buf=[]}}
+  [].slice.call(el.childNodes).forEach(function(n){
+    if(n.nodeType===3||WIN.indexOf(n.tagName&&n.tagName.toLowerCase())>=0){buf=buf.concat(wInline(n,{},ctx));return}
+    flush();out+=wBlock(n,ctx)});
+  flush();return out}
+function wBlock(n,ctx){if(!n.tagName)return '';var tg=n.tagName.toLowerCase(),cls=' '+n.className+' ';
+  if(tg==='h1')return wP(wInline(n,{},ctx),'Title');
+  if(tg==='h2')return wP(wInline(n,{},ctx),'Heading1');
+  if(tg==='table')return wTbl(n,ctx);
+  if(tg==='figure')return wFig(n,ctx);
+  if(tg==='img')return wImgP(n,ctx);
+  if(tg==='canvas')return wImgP(n,ctx)||wP([wRun('Satellite map not embedded: open the Print report for that, or download the area tiles first.',{color:'C00000'})],null);
+  if(cls.indexOf(' ph ')>=0)return wPhGrid(n,ctx);
+  if(wHasBlock(n))return wBlocks(n,ctx);
+  var r=wInline(n,{},ctx);if(!r.length)return '';
+  return wP(r,cls.indexOf(' note ')>=0?'Small':null)}
+// media parts: every picture in the report DOM has to become a file inside the package
+function wMedia(d,ctx){var els=[].slice.call(d.querySelectorAll('canvas,img')),push=[];
+  els.forEach(function(el){
+    if(el.tagName.toLowerCase()==='canvas'){var u='';try{u=el.toDataURL('image/png')}catch(e){return}
+      el.__wi=ctx.length;ctx.push({i:ctx.length,w:el.width,h:el.height,ext:'png',b64:u.split(',')[1]});return}
+    var w=el.naturalWidth||0,h=el.naturalHeight||0;if(!w||!h)return;
+    push.push(fetch(el.src).then(function(r){return r.blob()}).then(function(b){
+      var ext=/png/.test(b.type)?'png':/gif/.test(b.type)?'gif':'jpg';
+      return b.arrayBuffer().then(function(x){el.__wi=ctx.length;ctx.push({i:ctx.length,w:w,h:h,ext:ext,b64:wB64(new Uint8Array(x))})})}).catch(function(){}))});
+  return Promise.all(push).then(function(){return ctx})}
+function wB64(u){var s='',CH=0x8000;for(var i=0;i<u.length;i+=CH)s+=String.fromCharCode.apply(null,u.subarray(i,i+CH));return btoa(s)}
+var CRC=(function(){var t=[],n,c;for(n=0;n<256;n++){c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function wCrc(u){var c=0xFFFFFFFF;for(var i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+// store-only zip: Word accepts uncompressed parts and it keeps this dependency-free
+function wZip(fl){var en=new TextEncoder(),d=new Date();
+  var dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(),tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  var out=[],cen=[],off=0;
+  fl.forEach(function(f){var nm=en.encode(f.name),u=typeof f.data==='string'?en.encode(f.data):f.data,c=wCrc(u);
+    var lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(8,0,true);lh.setUint16(10,tm,true);lh.setUint16(12,dt,true);
+    lh.setUint32(14,c,true);lh.setUint32(18,u.length,true);lh.setUint32(22,u.length,true);lh.setUint16(26,nm.length,true);
+    out.push(new Uint8Array(lh.buffer),nm,u);
+    var ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(28,nm.length,true);
+    ch.setUint32(16,c,true);ch.setUint32(20,u.length,true);ch.setUint32(24,u.length,true);ch.setUint32(42,off,true);
+    cen.push([new Uint8Array(ch.buffer),nm]);off+=30+nm.length+u.length});
+  var co=0;cen.forEach(function(e){out.push(e[0],e[1]);co+=46+e[1].length});
+  var eo=new DataView(new ArrayBuffer(22));
+  eo.setUint32(0,0x06054b50,true);eo.setUint16(8,cen.length,true);eo.setUint16(10,cen.length,true);
+  eo.setUint32(12,co,true);eo.setUint32(16,off,true);out.push(new Uint8Array(eo.buffer));
+  return new Blob(out,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
+function wU8(b64s){var s=atob(b64s),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
+var WXML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+var WSTY=WXML+'<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+  +'<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="21"/></w:rPr></w:rPrDefault>'
+  +'<w:pPrDefault><w:pPr><w:spacing w:after="80"/></w:pPr></w:pPrDefault></w:docDefaults>'
+  +'<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'
+  +'<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="160"/></w:pPr><w:rPr><w:b/><w:sz w:val="34"/><w:color w:val="1F4E79"/></w:rPr></w:style>'
+  +'<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="200" w:after="80"/></w:pPr><w:rPr><w:b/><w:sz w:val="26"/><w:color w:val="1F4E79"/></w:rPr></w:style>'
+  +'<w:style w:type="paragraph" w:styleId="Small"><w:name w:val="Small"/><w:basedOn w:val="Normal"/><w:rPr><w:sz w:val="17"/><w:color w:val="595959"/></w:rPr></w:style>'
+  +'<w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/><w:tblPr><w:tblBorders>'
+  +'<w:top w:val="single" w:sz="4" w:color="A6A6A6"/><w:left w:val="single" w:sz="4" w:color="A6A6A6"/><w:bottom w:val="single" w:sz="4" w:color="A6A6A6"/><w:right w:val="single" w:sz="4" w:color="A6A6A6"/><w:insideH w:val="single" w:sz="4" w:color="A6A6A6"/><w:insideV w:val="single" w:sz="4" w:color="A6A6A6"/>'
+  +'</w:tblBorders></w:tblPr></w:style></w:styles>';
+function wDocx(d){var ctx=[];
+  return wMedia(d,ctx).then(function(){
+    var body=wBlocks(d,ctx);
+    var exts={};ctx.forEach(function(m){exts[m.ext]=1});
+    var dt='<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>';
+    Object.keys(exts).forEach(function(e){dt+='<Default Extension="'+e+'" ContentType="image/'+(e==='jpg'?'jpeg':e)+'"/>'});
+    var fl=[{name:'[Content_Types].xml',data:WXML+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+dt
+        +'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        +'<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'},
+      {name:'_rels/.rels',data:WXML+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+      {name:'word/_rels/document.xml.rels',data:WXML+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        +ctx.map(function(m){return '<Relationship Id="rId'+(m.i+2)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image'+(m.i+1)+'.'+m.ext+'"/>'}).join('')
+        +'</Relationships>'},
+      {name:'word/styles.xml',data:WSTY},
+      {name:'word/document.xml',data:WXML+'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
+        +' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+        +' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>'+body
+        +'<w:sectPr><w:pgSz w:w="'+WPG.w+'" w:h="'+WPG.h+'"/><w:pgMar w:top="'+WPG.m+'" w:right="'+WPG.m+'" w:bottom="'+WPG.m+'" w:left="'+WPG.m+'" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>'}];
+    ctx.forEach(function(m){fl.push({name:'word/media/image'+(m.i+1)+'.'+m.ext,data:wU8(m.b64)})});
+    return wZip(fl)})}
+$('xWord').onclick=function(){var p=rptBuild();if(!p)return toast('Nothing to report');toast('Building Word report…');
+  p.then(function(d){return wDocx(d).then(function(b){d.remove();dlBlob((lastProj||'TLM')+' report '+stamp()+'.docx',b);toast('Word report saved')})}).catch(function(e){toast('Word export failed: '+(e&&e.message||e))})};
+function dlBlob(name,blob){var a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1000)}
 // keyboard map controls
 $('cv').addEventListener('keydown',function(e){var k=e.key,st=60,h=1;if(k==='+'||k==='=')zoom(ZS_BTN);else if(k==='-'||k==='_')zoom(-ZS_BTN);else if(k==='ArrowLeft')M.cx-=st;else if(k==='ArrowRight')M.cx+=st;else if(k==='ArrowUp')M.cy-=st;else if(k==='ArrowDown')M.cy+=st;else h=0;if(h){e.preventDefault();M.anchor=null;draw()}});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
