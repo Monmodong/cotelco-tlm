@@ -293,6 +293,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 #drawer .grp select,#drawer .grp #labC{margin-bottom:8px}
 #rpt h2{font-size:14px;margin:14px 0 4px}#rpt .gk{font-weight:700}#rpt{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #rpt .pp{page-break-inside:avoid;margin:8px 0}#rpt .ph{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}#rpt figure{margin:0;width:31%}#rpt figure img{width:100%;height:140px;object-fit:cover;border:1px solid #999}#rpt figcaption{font-size:10px}
+#rpt img.txp{width:64px;height:64px;object-fit:cover;border:1px solid #999;display:block;margin:1px 0}
 #fbar{display:flex;gap:8px;margin-bottom:10px;position:sticky;top:0;z-index:5}
 #fbar input{flex:1;min-width:0}#fbar select{width:auto;max-width:44%}
 .bkn{font-size:.8rem;color:var(--mute);margin:0 2px 10px}.bkn.w{color:var(--warn);font-weight:600}
@@ -737,6 +738,7 @@ function labSave(){try{localStorage.setItem(KEY+'.lab',LAB.m+'~'+encodeURICompon
 function matLtr(m){var s=String(m||'').trim().toLowerCase();return s==='wood'?'W':s==='steel'?'S':s==='concrete'||s==='cement'?'C':s?s.charAt(0).toUpperCase():''}
 function labTok(r){var p=r.pole||{};return{no:p.no||'',m:matLtr(p.material),mat:p.material||'',tx:r.tx?'T':'',kva:r.tx&&r.tx.rating!=null&&r.tx.rating!==''?String(r.tx.rating):'',pri:p.primary||'',sec:p.secondary||'',v:p.voltage===''||p.voltage==null?'':String(p.voltage)}}
 function labJoin(a){return a.filter(Boolean).join(' / ')}
+function poleTitle(r){var p=r.pole||{};return labJoin([p.no?'Pole #'+p.no:'Pole (no number)',p.material,p.primary,p.secondary])}
 function labText(r){
   if(LAB.m==='full')return pinLabel(r);
   if(LAB.m==='short'){var p=r.pole||{};return labJoin([p.no?'#'+p.no:'',matLtr(p.material),p.primary,p.secondary])}
@@ -1493,10 +1495,12 @@ try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)$
 // KML + printable report
 $('xKml').onclick=function(){var AI=anaInfo(),a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles');
   dlFile('poles-'+stamp()+'.kml','<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(lastProj)+'</name>'+a.map(function(r){return '<Placemark><name>Pole '+esc(r.pole.no)+'</name><description>'+esc([r.pole.material,r.pole.primary,r.pole.secondary,r.pole.voltage!==''?r.pole.voltage+' V':'',r.tx?r.tx.rating+' kVA '+r.tx.type:'',AI(r).g?'Grade '+gl(AI(r).g):''].filter(Boolean).join(' | '))+'</description><Point><coordinates>'+r.pos.lon+','+r.pos.lat+',0</coordinates></Point></Placemark>'}).join('')+'</Document></kml>','application/vnd.google-earth.kml+xml')};
-function rptMap(a,by){var W=1000,H=640,L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
+function rptMap(a,by){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
   var la=L.map(function(r){return r.pos.lat}),lo=L.map(function(r){return r.pos.lon}),mnA=Math.min.apply(0,la),mxA=Math.max.apply(0,la),mnO=Math.min.apply(0,lo),mxO=Math.max.apply(0,lo),z=19;
-  for(;z>3;z--){var q1=px(mxA,mnO,z),q2=px(mnA,mxO,z);if(q2.x-q1.x<=W-160&&q2.y-q1.y<=H-160)break}
+  // deepest zoom the whole line still fits at, then a canvas cut to the line itself so no frame is wasted around it
+  for(;z>3;z--){var q1=px(mxA,mnO,z),q2=px(mnA,mxO,z);if(Math.max(q2.x-q1.x,q2.y-q1.y)<=TGT)break}
   if(L.length===1)z=Math.min(z,18);
+  var e1=px(mxA,mnO,z),e2=px(mnA,mxO,z),W=Math.min(1400,Math.max(520,Math.round(e2.x-e1.x)+PAD)),H=Math.max(W,Math.min(1400,Math.max(520,Math.round(e2.y-e1.y)+PAD)));
   var c=px((mnA+mxA)/2,(mnO+mxO)/2,z),x0=c.x-W/2,y0=c.y-H/2,cv=document.createElement('canvas'),ok=0,n=Math.pow(2,z),jobs=[];
   cv.width=W;cv.height=H;cv.style.cssText='width:100%;height:auto;border:1px solid #999';
   var g=cv.getContext('2d');g.fillStyle='#2b3a2b';g.fillRect(0,0,W,H);
@@ -1513,20 +1517,25 @@ function rptMap(a,by){var W=1000,H=640,L=a.filter(function(r){return r.pos});if(
       var lb=String(r.pole.no||'');g.lineWidth=4;g.strokeStyle='#000';g.strokeText(lb,p.x+15,p.y);g.fillStyle='#fff';g.fillText(lb,p.x+15,p.y)});
     return{cv:cv,ok:ok}})}
 $('xPrint').onclick=function(){var a=vis();if(!a.length)return toast('Nothing to print');var by={};a.forEach(function(r){by[r.id]=r});
-  var AI=anaInfo(),G=gradeMap(),L=anaLines().sort(function(p,q){return q.pk.pct-p.pk.pct}),cnt={'v-ok':0,'v-warn':0,'v-bad':0};Object.keys(G.p).forEach(function(k){cnt[G.p[k]]++});
+  var G=gradeMap(),TX={},cnt={'v-ok':0,'v-warn':0,'v-bad':0};anaRows().forEach(function(x){TX[x.id]=x});Object.keys(G.p).forEach(function(k){cnt[G.p[k]]++});
   function gt(g){return g?'<span class="gk" style="color:'+gcol(g)+'">'+gl(g)+'</span>':''}
+  function yn(v){return v?'Y':'N'}
   var d=document.createElement('div');d.id='rpt';
   d.innerHTML='<h1>'+esc(lastProj)+' — pole survey report</h1><div>'+new Date().toLocaleString()+' · '+a.length+' poles · '+a.filter(function(r){return r.tx}).length+' transformers · '+a.filter(function(r){return r.flag}).length+' flagged</div>'
    +'<div>Status: <b>'+cnt['v-bad']+'</b> ACTION · <b>'+cnt['v-warn']+'</b> WATCH · <b>'+cnt['v-ok']+'</b> OK · voltage standard '+AS.vlo+'–'+AS.vhi+' V · '+esc(CNAME[AS.curve])+' demand curve, peak '+PKL()+'</div>'
-   +'<h2>Poles</h2><table><tr><th>Pole</th><th>Material</th><th>Primary</th><th>Secondary</th><th>Voltage</th><th>Transformer</th><th>Peak load</th><th>Grade</th><th>Line A</th><th>Span</th><th>GPS</th><th>Remarks</th></tr>'
-   +a.map(function(r){var t=r.tx,f=r.from&&by[r.from],x=AI(r);return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no)+'</td><td>'+esc(r.pole.material)+'</td><td>'+esc(r.pole.primary)+'</td><td>'+esc(r.pole.secondary)+'</td><td>'+(r.pole.voltage!==''?esc(r.pole.voltage)+' V ':'')+gt(x.vg)+'</td><td>'+(t?esc(t.rating+' kVA '+t.type+(t.tap?' tap '+t.tap:'')):'')+'</td><td>'+(x.pk===''?'':n1(x.pk,0)+'%')+'</td><td>'+gt(x.g)+'</td><td>'+esc(t?t.line:r.pole.lineA)+'</td><td>'+(f&&f.pos&&r.pos?Math.round(hav(f.pos,r.pos))+' m':'')+'</td><td>'+(r.pos?r.pos.lat.toFixed(5)+', '+r.pos.lon.toFixed(5):'')+'</td><td>'+esc((r.pole.remarks||'')+(t&&t.remarks?' / '+t.remarks:''))+'</td></tr>'}).join('')+'</table>'
-   +(L.length?'<h2>Lines — voltage drop and losses at the '+PKL()+' peak</h2><table><tr><th>Line</th><th>Span</th><th>Conductor</th><th>Current read → peak</th><th>Drop</th><th>Loss at peak</th><th>Loss per day</th><th>Grade</th></tr>'
-    +L.map(function(l){return '<tr><td>Pole '+esc(l.a.pole.no)+' → '+esc(l.r.pole.no)+'</td><td>'+Math.round(l.m)+' m</td><td>'+esc(CON0[l.k].n)+'</td><td>'+l.i0.toFixed(1)+' → '+l.ip.toFixed(1)+' A</td><td>'+l.pk.pct.toFixed(2)+'% ('+l.pk.dv.toFixed(1)+' V)</td><td>'+(l.pk.loss*1000).toFixed(0)+' W ('+l.pk.lp.toFixed(1)+'%)</td><td>'+l.day.toFixed(2)+' kWh</td><td>'+gt(l.g)+'</td></tr>'}).join('')+'</table>':'');
+   +'<h2>Poles</h2><table><tr><th>Pole</th><th>Material</th><th>Primary</th><th>Secondary</th><th>Voltage</th><th>Span</th><th>GPS</th><th>Remarks</th></tr>'
+   +a.map(function(r){var f=r.from&&by[r.from];return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no)+'</td><td>'+esc(r.pole.material)+'</td><td>'+esc(r.pole.primary)+'</td><td>'+esc(r.pole.secondary)+'</td><td>'+(r.pole.voltage!==''?esc(r.pole.voltage)+' V':'')+'</td><td>'+(f&&f.pos&&r.pos?Math.round(hav(f.pos,r.pos))+' m':'')+'</td><td>'+(r.pos?r.pos.lat.toFixed(5)+', '+r.pos.lon.toFixed(5):'')+'</td><td>'+esc(r.pole.remarks||'')+'</td></tr>'}).join('')+'</table>'
+   +(function(txs){if(!txs.length)return '';
+    return '<h2>Transformers &mdash; data and load at the '+PKL()+' peak</h2><table><tr><th>Pole</th><th>Transformer</th><th>C&middot;H&middot;G</th><th>Line &middot; neutral (A)</th><th>Peak (A)</th><th>Load</th><th>kVA &middot; kW</th><th>Remarks</th><th>Photo</th></tr>'
+     +txs.map(function(r){var t=r.tx,x=TX[r.id],ln=t.line==null?t.i1:t.line;return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no||'—')+'</td><td>'+esc([t.rating+' kVA',t.type,t.tap?'tap '+t.tap:''].filter(Boolean).join(' · '))+'</td><td>'+[yn(t.cutout),yn(t.hanger),yn(t.grounding)].join('·')+'</td><td>'+(ln===''||ln==null?'—':esc(ln)+(t.neutral===''||t.neutral==null?'':esc(' · '+t.neutral)))+'</td><td>'+(x?x.pk.i.toFixed(1):'—')+'</td><td>'+(x?'<span class="gk" style="color:'+gcol(anaGrade(x))+'">'+x.pk.pct.toFixed(0)+'%</span>':'')+'</td><td>'+(x?esc(n1(x.pk.kVA,1)+' · '+n1(x.pk.kW,1)):'')+'</td><td>'+esc(t.remarks||'')+'</td><td data-txph="'+esc(r.id)+'"></td></tr>'}).join('')+'</table>'
+     +'<div style="font-size:11px;margin-top:4px">C&middot;H&middot;G = cutout, hanger, grounding. Line and neutral are the amps as read; Peak is the current projected for '+PKL()+', Load the share of the transformer&rsquo;s full-load current at that peak and kVA &middot; kW the power it carries. A dash or blank means no current was recorded.</div>'})(a.filter(function(r){return r.tx}));
   var jobs=[];a.forEach(function(r){phAll(r.id).forEach(function(x){jobs.push(pget(x[2]).then(function(v){return v?{r:r,w:x[0],n:x[1]+1,src:uGet(x[2],v)}:null}))})});
   toast('Preparing report…');
   Promise.all([rptMap(a,by),Promise.all(jobs)]).then(function(res){var m=res[0],ph=res[1].filter(Boolean);
+    var tp={};ph.forEach(function(q){if(q.w==='T')(tp[q.r.id]=tp[q.r.id]||[]).push(q.src)});
+    [].slice.call(d.querySelectorAll('[data-txph]')).forEach(function(td){var s=tp[td.getAttribute('data-txph')];if(s)td.innerHTML=s.map(function(u){return '<img class="txp" src="'+u+'" alt="">'}).join('')});
     if(m){var w=document.createElement('div');w.style.cssText='page-break-inside:avoid;margin:10px 0';w.appendChild(m.cv);var lg=document.createElement('div');lg.style.cssText='font-size:11px;margin-top:3px';lg.textContent='Pins and lines coloured by grade: green OK, amber WATCH, red ACTION · ● pole  ▲ transformer · orange ring = flagged'+(m.ok?' · Imagery © Google':' · Satellite imagery could not load (offline?)');w.appendChild(lg);d.insertBefore(w,d.querySelector('h2'))}
-    if(ph.length){var h='<h2>Photos</h2>',cur=null;a.forEach(function(r){var mine=ph.filter(function(q){return q.r===r});if(!mine.length)return;h+='<div class="pp"><b>Pole '+esc(r.pole.no)+'</b> '+gt(G.p[r.id])+'<div class="ph">'+mine.map(function(q){return '<figure><img src="'+q.src+'" alt=""><figcaption>'+(q.w==='P'?'Pole':'Transformer')+' photo '+q.n+'</figcaption></figure>'}).join('')+'</div></div>'});var pd=document.createElement('div');pd.innerHTML=h;d.appendChild(pd)}
+    if(ph.length){var h='<h2>Photos</h2>',cur=null;a.forEach(function(r){var mine=ph.filter(function(q){return q.r===r});if(!mine.length)return;h+='<div class="pp"><b>'+poleTitle(r)+'</b> '+gt(G.p[r.id])+'<div class="ph">'+mine.map(function(q){return '<figure><img src="'+q.src+'" alt=""><figcaption>'+(q.w==='P'?'Pole':'Transformer')+' photo '+q.n+'</figcaption></figure>'}).join('')+'</div></div>'});var pd=document.createElement('div');pd.innerHTML=h;d.appendChild(pd)}
     document.body.appendChild(d);var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);
     Promise.all([].slice.call(d.querySelectorAll('img')).map(function(im){return im.complete?1:new Promise(function(z){im.onload=im.onerror=z;setTimeout(z,6000)})})).then(function(){setTimeout(function(){window.print()},50)})})};
 // keyboard map controls
