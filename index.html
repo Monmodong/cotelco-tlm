@@ -350,7 +350,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <label for="labSel">Pole labels</label>
     <select id="labSel"><option value="short">Short &mdash; #1234 / C / A1 / J5-J8</option><option value="full">Full &mdash; Pole # 1234, Concrete</option><option value="custom">Custom format</option><option value="off">Off</option></select>
     <div id="labC" hidden><label for="labFmt">Label format</label><input type="text" id="labFmt" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-    <p class="note">Pole no. / material / primary / secondary, where material is C=Concrete, S=Steel, W=Wood. In a custom format: <b>{no}</b> pole no., <b>{m}</b> that letter, <b>{mat}</b> material, <b>{tx}</b> T if it carries a transformer, <b>{kva}</b> rating, <b>{pri}</b> and <b>{sec}</b> line structure, <b>{v}</b> volts. Labels that would sit on top of another are dropped instead, most important pin first.</p>
+    <p class="note">Pole no. / material / primary / secondary, where material is C=Concrete, S=Steel, W=Wood; whatever is not filled in is left out. In a custom format: <b>{no}</b> pole no., <b>{m}</b> that letter, <b>{mat}</b> material, <b>{tx}</b> T if it carries a transformer, <b>{kva}</b> rating, <b>{pri}</b> and <b>{sec}</b> line structure, <b>{v}</b> volts. Labels that would sit on top of another are dropped instead, most important pin first.</p>
   </div>
   <div class="grp"><b>App</b>
     <button class="btn" id="vM" type="button" aria-pressed="false">View mode</button>
@@ -736,11 +736,11 @@ try{var lb0=localStorage.getItem(KEY+'.lab');if(lb0){var lsp=String(lb0).split('
 function labSave(){try{localStorage.setItem(KEY+'.lab',LAB.m+'~'+encodeURIComponent(LAB.f))}catch(e){}}
 function matLtr(m){var s=String(m||'').trim().toLowerCase();return s==='wood'?'W':s==='steel'?'S':s==='concrete'||s==='cement'?'C':s?s.charAt(0).toUpperCase():''}
 function labTok(r){var p=r.pole||{};return{no:p.no||'',m:matLtr(p.material),mat:p.material||'',tx:r.tx?'T':'',kva:r.tx&&r.tx.rating!=null&&r.tx.rating!==''?String(r.tx.rating):'',pri:p.primary||'',sec:p.secondary||'',v:p.voltage===''||p.voltage==null?'':String(p.voltage)}}
-function labStr(p){return[p.primary,p.secondary].filter(Boolean).join(' / ')}
+function labJoin(a){return a.filter(Boolean).join(' / ')}
 function labText(r){
   if(LAB.m==='full')return pinLabel(r);
-  if(LAB.m==='short'){var st=labStr(r.pole);return '#'+(r.pole.no||'?')+' / '+(matLtr(r.pole.material)||'?')+(st?' / '+st:'')}
-  var t=labTok(r);return LAB.f.replace(/\{(\w+)\}/g,function(m0,k){return t[k]==null?'':String(t[k])}).replace(/\s+/g,' ').trim()}
+  if(LAB.m==='short'){var p=r.pole||{};return labJoin([p.no?'#'+p.no:'',matLtr(p.material),p.primary,p.secondary])}
+  var t=labTok(r);return LAB.f.replace(/\{(\w+)\}/g,function(m0,k){return t[k]==null?'':String(t[k])}).replace(/(\s*\/\s*){2,}/g,' / ').replace(/^\s*\/\s*|\s*\/\s*$/g,'').replace(/\s+/g,' ').trim()}
 function inRect(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 var LPUT=[[13,0],[-13,0],[0,-19],[0,7],[13,-18],[13,6],[-13,-18],[-13,6]];
 // every map label comes through here: the first slot around the pin that clears what is already
