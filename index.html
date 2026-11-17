@@ -292,8 +292,8 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 #loc[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
 #drawer .grp select,#drawer .grp #labC{margin-bottom:8px}
 #rpt h2{font-size:14px;margin:14px 0 4px}#rpt .gk{font-weight:700}#rpt{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-#rpt .pp{page-break-inside:avoid;margin:8px 0}#rpt .ph{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}#rpt figure{margin:0;width:31%}#rpt figure img{width:100%;height:140px;object-fit:cover;border:1px solid #999}#rpt figcaption{font-size:10px}
-#rpt img.txp{width:64px;height:64px;object-fit:cover;border:1px solid #999;display:block;margin:1px 0}
+#rpt .pp{page-break-inside:avoid;margin:8px 0}#rpt .ph{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}#rpt figure{margin:0;width:23%}#rpt figure img{width:100%;height:250px;object-fit:cover;border:1px solid #999}#rpt figcaption{font-size:10px}
+#rpt img.txp{width:62px;height:84px;object-fit:cover;border:1px solid #999;display:block;margin:1px 0}
 #fbar{display:flex;gap:8px;margin-bottom:10px;position:sticky;top:0;z-index:5}
 #fbar input{flex:1;min-width:0}#fbar select{width:auto;max-width:44%}
 .bkn{font-size:.8rem;color:var(--mute);margin:0 2px 10px}.bkn.w{color:var(--warn);font-weight:600}
@@ -386,7 +386,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
   <div class="full"><label>Type *</label>
     <div class="seg"><label><input type="radio" name="ttype" value="CSP"><span>CSP</span></label><label><input type="radio" name="ttype" value="Conventional"><span>Conventional</span></label></div></div>
   <div class="full"><label>Accessories present</label>
-    <div class="seg"><label><input type="checkbox" id="acut"><span>Cutout</span></label><label><input type="checkbox" id="ahan"><span>Hanger</span></label><label><input type="checkbox" id="agnd"><span>Grounding</span></label></div></div>
+    <div class="seg"><label><input type="checkbox" id="acut"><span>Cutout</span></label><label><input type="checkbox" id="ahan"><span>Hanger</span></label><label><input type="checkbox" id="agnd"><span>Grounding</span></label><label><input type="checkbox" id="apm"><span>Pole Mounting</span></label></div></div>
   <div class="full"><label>Secondary line current</label></div>
   <div><label for="i1">Line *</label><div class="unit"><input type="number" id="i1" inputmode="decimal" step="any"><b>A</b></div></div>
   <div><label for="in">Neutral (optional)</label><div class="unit"><input type="number" id="in" inputmode="decimal" step="any"><b>A</b></div></div>
@@ -486,14 +486,14 @@ function collect(){
   var tx=$('hasTx').checked;
   return {id:editId||('r'+Date.now()),time:new Date().toISOString(),up:new Date().toISOString(),pos:pos,project:(editId&&(recs.find(function(x){return x.id===editId})||{}).project)||lastProj,from:$('conn').value,
     pole:{no:$('pno').value.trim(),primary:priStr(),secondary:secStr(),p:{m:$('pri').value,l:$('pril').value},s:{m:$('sec').value,l:$('secl').value},material:radio('mat'),voltage:num('vp'),lineA:num('lc'),remarks:$('prem').value.trim()},
-    tx:tx?{rating:$('kva').value,type:radio('ttype'),tap:$('tap').value,cutout:$('acut').checked,hanger:$('ahan').checked,grounding:$('agnd').checked,line:num('i1'),neutral:num('in'),remarks:$('trem').value.trim()}:null};
+    tx:tx?{rating:$('kva').value,type:radio('ttype'),tap:$('tap').value,cutout:$('acut').checked,hanger:$('ahan').checked,grounding:$('agnd').checked,pmount:$('apm').checked,line:num('i1'),neutral:num('in'),remarks:$('trem').value.trim()}:null};
 }
 function sv(id,v){var s=$(id);if(v&&![].some.call(s.options,function(o){return o.value===v}))s.appendChild(new Option(v,v));s.value=v||''}
 function fill(r){
   $('pno').value=r.pole.no;var pp=r.pole.p||{m:r.pole.primary,l:''},ss=r.pole.s||{m:r.pole.secondary,l:''};sv('pri',pp.m);sv('pril',pp.l);sv('sec',ss.m);sv('secl',ss.l);setRadio('mat',r.pole.material==='Cement'?'Concrete':r.pole.material);$('vp').value=r.pole.voltage;$('lc').value=r.pole.lineA==null?'':r.pole.lineA;$('conn').value=r.from||'';$('prem').value=r.pole.remarks;
   var t=r.tx;$('hasTx').checked=!!t;$('txBox').hidden=!t;t=t||{};
   $('kva').value=t.rating==null?'':t.rating;setRadio('ttype',t.type||'');$('tap').value=t.tap||'';
-  $('acut').checked=!!t.cutout;$('ahan').checked=!!t.hanger;$('agnd').checked=!!t.grounding;
+  $('acut').checked=!!t.cutout;$('ahan').checked=!!t.hanger;$('agnd').checked=!!t.grounding;$('apm').checked=!!t.pmount;
   var ln=t.line==null?t.i1:t.line;$('i1').value=ln==null?'':ln;$('in').value=t.neutral==null?'':t.neutral;$('trem').value=t.remarks||'';
   pos=r.pos||null;showPos();
 }
@@ -561,14 +561,14 @@ function stamp(){return new Date().toISOString().slice(0,10)}
 function q(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
 $('xCsv').onclick=function(){var recs=vis();
   if(!recs.length)return toast('Nothing to export');
-  var H=['Project','Pole #','Primary structure','Secondary structure','Material','Voltage V','Pole remarks','Has transformer','Rating kVA','Type','Tap','Cutout','Hanger','Grounding','Line A','Neutral A','Load kVA (230 V)','Load %','Voltage dev % (230 V)','Transformer remarks','Latitude','Longitude','Accuracy m','Recorded','Line current A','Connected to pole #','Peak load % (projected)','Voltage status','Pole grade','Line grade','Line drop % at peak','Line drop V at peak','Line loss W at peak','Line loss kWh/day','Conductor'];var AI=anaInfo();
+  var H=['Project','Pole #','Primary structure','Secondary structure','Material','Voltage V','Pole remarks','Has transformer','Rating kVA','Type','Tap','Cutout','Hanger','Grounding','Pole mounting','Line A','Neutral A','Load kVA (230 V)','Load %','Voltage dev % (230 V)','Transformer remarks','Latitude','Longitude','Accuracy m','Recorded','Line current A','Connected to pole #','Peak load % (projected)','Voltage status','Pole grade','Line grade','Line drop % at peak','Line drop V at peak','Line loss W at peak','Line loss kWh/day','Conductor'];var AI=anaInfo();
   var rows=recs.map(function(r){var t=r.tx||{},p=r.pole,g=r.pos||{};
-    return [r.project,p.no,p.primary,p.secondary,p.material,p.voltage,p.remarks,r.tx?'Yes':'No',t.rating,t.type,t.tap,r.tx?(t.cutout?'Y':'N'):'',r.tx?(t.hanger?'Y':'N'):'',r.tx?(t.grounding?'Y':'N'):'',t.line,t.neutral,cval(r,'kva'),cval(r,'pct'),cval(r,'dev'),t.remarks,g.lat,g.lon,g.acc,r.time,p.lineA,pn(r.from)].concat((function(x){return [n1(x.pk,1),gl(x.vg),gl(x.g),gl(x.lg),n1(x.dp,2),n1(x.dv,1),n1(x.lw,0),n1(x.ld,2),x.cd]})(AI(r))).map(q).join(',')});
+    return [r.project,p.no,p.primary,p.secondary,p.material,p.voltage,p.remarks,r.tx?'Yes':'No',t.rating,t.type,t.tap,r.tx?(t.cutout?'Y':'N'):'',r.tx?(t.hanger?'Y':'N'):'',r.tx?(t.grounding?'Y':'N'):'',r.tx?(t.pmount?'Y':'N'):'',t.line,t.neutral,cval(r,'kva'),cval(r,'pct'),cval(r,'dev'),t.remarks,g.lat,g.lon,g.acc,r.time,p.lineA,pn(r.from)].concat((function(x){return [n1(x.pk,1),gl(x.vg),gl(x.g),gl(x.lg),n1(x.dp,2),n1(x.dv,1),n1(x.lw,0),n1(x.ld,2),x.cd]})(AI(r))).map(q).join(',')});
   dlFile('pole-survey-'+stamp()+'.csv','\ufeff'+H.map(q).join(',')+'\n'+rows.join('\n'),'text/csv')};
 $('xGeo').onclick=function(){var recs=vis(),AI=anaInfo();
   var f=recs.filter(function(r){return r.pos}).map(function(r){
     var p=r.pole,t=r.tx||{};
-    return {type:'Feature',geometry:{type:'Point',coordinates:[r.pos.lon,r.pos.lat]},properties:{project:r.project,pole_no:p.no,primary:p.primary,secondary:p.secondary,material:p.material,voltage_v:p.voltage,pole_remarks:p.remarks,has_tx:!!r.tx,kva:t.rating,tx_type:t.type,tap:t.tap,cutout:t.cutout,hanger:t.hanger,grounding:t.grounding,i_line:t.line,i_neutral:t.neutral,load_kva:cc(r).kva,load_pct:cc(r).pct,volt_dev_pct:cc(r).dev,tx_remarks:t.remarks,gps_acc_m:r.pos.acc,recorded:r.time,grade:gl(AI(r).g),voltage_status:gl(AI(r).vg),peak_load_pct:AI(r).pk===''?null:+n1(AI(r).pk,1)}}});
+    return {type:'Feature',geometry:{type:'Point',coordinates:[r.pos.lon,r.pos.lat]},properties:{project:r.project,pole_no:p.no,primary:p.primary,secondary:p.secondary,material:p.material,voltage_v:p.voltage,pole_remarks:p.remarks,has_tx:!!r.tx,kva:t.rating,tx_type:t.type,tap:t.tap,cutout:t.cutout,hanger:t.hanger,grounding:t.grounding,pole_mounting:t.pmount,i_line:t.line,i_neutral:t.neutral,load_kva:cc(r).kva,load_pct:cc(r).pct,volt_dev_pct:cc(r).dev,tx_remarks:t.remarks,gps_acc_m:r.pos.acc,recorded:r.time,grade:gl(AI(r).g),voltage_status:gl(AI(r).vg),peak_load_pct:AI(r).pk===''?null:+n1(AI(r).pk,1)}}});
   if(!f.length)return toast('No records with GPS');
   var ln=[];recs.forEach(function(r){var a=recs.find(function(x){return x.id===r.from});if(a&&a.pos&&r.pos)ln.push({type:'Feature',geometry:{type:'LineString',coordinates:[[a.pos.lon,a.pos.lat],[r.pos.lon,r.pos.lat]]},properties:{project:r.project,from_pole:a.pole.no,to_pole:r.pole.no,current_a:r.pole.lineA,conductor:AI(r).cd,drop_pct_at_peak:AI(r).dp===''?null:+n1(AI(r).dp,2),loss_w_at_peak:AI(r).lw===''?null:+n1(AI(r).lw,0),grade:gl(AI(r).lg)}})});
   dlFile('pole-survey-'+stamp()+'.geojson',JSON.stringify({type:'FeatureCollection',features:f.concat(ln)},null,1),'application/geo+json');
@@ -1507,34 +1507,32 @@ function rptMap(a,by){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});
   for(var ty=Math.floor(y0/256);ty<=Math.floor((y0+H)/256);ty++)for(var tx=Math.floor(x0/256);tx<=Math.floor((x0+W)/256);tx++){(function(tx,ty){if(ty<0||ty>=n)return;var xx=((tx%n)+n)%n;
     jobs.push(new Promise(function(res){var im=new Image(),t=setTimeout(res,9000);im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);res()};im.onerror=function(){clearTimeout(t);res()};im.src=tileUrl('gsat',z,xx,ty)}))})(tx,ty)}
   return Promise.all(jobs).then(function(){
-    var G=gradeMap(),P=function(r){var p=px(r.pos.lat,r.pos.lon,z);return{x:p.x-x0,y:p.y-y0}};
+    var P=function(r){var p=px(r.pos.lat,r.pos.lon,z);return{x:p.x-x0,y:p.y-y0}};
     g.lineCap='round';g.font='bold 15px system-ui,sans-serif';g.textBaseline='middle';
-    L.forEach(function(r){var f=r.from&&by[r.from];if(!f||!f.pos)return;var p1=P(f),p2=P(r);g.beginPath();g.moveTo(p1.x,p1.y);g.lineTo(p2.x,p2.y);g.lineWidth=7;g.strokeStyle='#000';g.stroke();g.lineWidth=4.5;g.strokeStyle=G.l[r.id]?gcol(G.l[r.id]):'#ffd400';g.stroke();
-      if(z>=16){var tt=Math.round(hav(f.pos,r.pos))+' m',mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;g.textAlign='center';g.lineWidth=4;g.strokeStyle='#000';g.strokeText(tt,mx,my-12);g.fillStyle='#fff';g.fillText(tt,mx,my-12)}});
+    L.forEach(function(r){var f=r.from&&by[r.from];if(!f||!f.pos)return;var p1=P(f),p2=P(r);g.beginPath();g.moveTo(p1.x,p1.y);g.lineTo(p2.x,p2.y);g.lineWidth=7;g.strokeStyle='#000';g.stroke();g.lineWidth=4.5;g.strokeStyle='#ffd400';g.stroke()});
     g.textAlign='left';
     L.forEach(function(r){var p=P(r),t=!!r.tx;g.beginPath();if(t){g.moveTo(p.x,p.y-13);g.lineTo(p.x+12,p.y+9);g.lineTo(p.x-12,p.y+9);g.closePath()}else g.arc(p.x,p.y,8,0,7);
-      g.fillStyle=G.p[r.id]?gcol(G.p[r.id]):(t?'#ff4d4f':'#3b82f6');g.fill();g.lineWidth=r.flag?5:2.5;g.strokeStyle=r.flag?'#ff9f1a':'#fff';g.stroke();
+      g.fillStyle=t?'#ff4d4f':'#3b82f6';g.fill();g.lineWidth=r.flag?5:2.5;g.strokeStyle=r.flag?'#ff9f1a':'#fff';g.stroke();
       var lb=String(r.pole.no||'');g.lineWidth=4;g.strokeStyle='#000';g.strokeText(lb,p.x+15,p.y);g.fillStyle='#fff';g.fillText(lb,p.x+15,p.y)});
     return{cv:cv,ok:ok}})}
 $('xPrint').onclick=function(){var a=vis();if(!a.length)return toast('Nothing to print');var by={};a.forEach(function(r){by[r.id]=r});
-  var G=gradeMap(),TX={},cnt={'v-ok':0,'v-warn':0,'v-bad':0};anaRows().forEach(function(x){TX[x.id]=x});Object.keys(G.p).forEach(function(k){cnt[G.p[k]]++});
+  var G=gradeMap(),TX={};anaRows().forEach(function(x){TX[x.id]=x});
   function gt(g){return g?'<span class="gk" style="color:'+gcol(g)+'">'+gl(g)+'</span>':''}
   function yn(v){return v?'Y':'N'}
   var d=document.createElement('div');d.id='rpt';
-  d.innerHTML='<h1>'+esc(lastProj)+' — pole survey report</h1><div>'+new Date().toLocaleString()+' · '+a.length+' poles · '+a.filter(function(r){return r.tx}).length+' transformers · '+a.filter(function(r){return r.flag}).length+' flagged</div>'
-   +'<div>Status: <b>'+cnt['v-bad']+'</b> ACTION · <b>'+cnt['v-warn']+'</b> WATCH · <b>'+cnt['v-ok']+'</b> OK · voltage standard '+AS.vlo+'–'+AS.vhi+' V · '+esc(CNAME[AS.curve])+' demand curve, peak '+PKL()+'</div>'
+  d.innerHTML='<h1>'+esc(lastProj)+' - TLM Inspection Report</h1><div>'+new Date().toLocaleDateString()+'</div>'
    +'<h2>Poles</h2><table><tr><th>Pole</th><th>Material</th><th>Primary</th><th>Secondary</th><th>Voltage</th><th>Span</th><th>GPS</th><th>Remarks</th></tr>'
    +a.map(function(r){var f=r.from&&by[r.from];return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no)+'</td><td>'+esc(r.pole.material)+'</td><td>'+esc(r.pole.primary)+'</td><td>'+esc(r.pole.secondary)+'</td><td>'+(r.pole.voltage!==''?esc(r.pole.voltage)+' V':'')+'</td><td>'+(f&&f.pos&&r.pos?Math.round(hav(f.pos,r.pos))+' m':'')+'</td><td>'+(r.pos?r.pos.lat.toFixed(5)+', '+r.pos.lon.toFixed(5):'')+'</td><td>'+esc(r.pole.remarks||'')+'</td></tr>'}).join('')+'</table>'
    +(function(txs){if(!txs.length)return '';
-    return '<h2>Transformers &mdash; data and load at the '+PKL()+' peak</h2><table><tr><th>Pole</th><th>Transformer</th><th>C&middot;H&middot;G</th><th>Line &middot; neutral (A)</th><th>Peak (A)</th><th>Load</th><th>kVA &middot; kW</th><th>Remarks</th><th>Photo</th></tr>'
-     +txs.map(function(r){var t=r.tx,x=TX[r.id],ln=t.line==null?t.i1:t.line;return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no||'—')+'</td><td>'+esc([t.rating+' kVA',t.type,t.tap?'tap '+t.tap:''].filter(Boolean).join(' · '))+'</td><td>'+[yn(t.cutout),yn(t.hanger),yn(t.grounding)].join('·')+'</td><td>'+(ln===''||ln==null?'—':esc(ln)+(t.neutral===''||t.neutral==null?'':esc(' · '+t.neutral)))+'</td><td>'+(x?x.pk.i.toFixed(1):'—')+'</td><td>'+(x?'<span class="gk" style="color:'+gcol(anaGrade(x))+'">'+x.pk.pct.toFixed(0)+'%</span>':'')+'</td><td>'+(x?esc(n1(x.pk.kVA,1)+' · '+n1(x.pk.kW,1)):'')+'</td><td>'+esc(t.remarks||'')+'</td><td data-txph="'+esc(r.id)+'"></td></tr>'}).join('')+'</table>'
-     +'<div style="font-size:11px;margin-top:4px">C&middot;H&middot;G = cutout, hanger, grounding. Line and neutral are the amps as read; Peak is the current projected for '+PKL()+', Load the share of the transformer&rsquo;s full-load current at that peak and kVA &middot; kW the power it carries. A dash or blank means no current was recorded.</div>'})(a.filter(function(r){return r.tx}));
+    return '<h2>Transformers &mdash; data and load at the '+PKL()+' peak</h2><table><tr><th>Pole</th><th>Transformer</th><th>C&middot;H&middot;G&middot;P</th><th>Line &middot; neutral (A)</th><th>Peak (A)</th><th>Load</th><th>kVA &middot; kW</th><th>Remarks</th><th>Photo</th></tr>'
+     +txs.map(function(r){var t=r.tx,x=TX[r.id],ln=t.line==null?t.i1:t.line;return '<tr><td>'+(r.flag?'⚑ ':'')+esc(r.pole.no||'—')+'</td><td>'+esc([t.rating+' kVA',t.type,t.tap?'tap '+t.tap:''].filter(Boolean).join(' · '))+'</td><td>'+[yn(t.cutout),yn(t.hanger),yn(t.grounding),yn(t.pmount)].join('·')+'</td><td>'+(ln===''||ln==null?'—':esc(ln)+(t.neutral===''||t.neutral==null?'':esc(' · '+t.neutral)))+'</td><td>'+(x?x.pk.i.toFixed(1):'—')+'</td><td>'+(x?'<span class="gk" style="color:'+gcol(anaGrade(x))+'">'+x.pk.pct.toFixed(0)+'%</span>':'')+'</td><td>'+(x?esc(n1(x.pk.kVA,1)+' · '+n1(x.pk.kW,1)):'')+'</td><td>'+esc(t.remarks||'')+'</td><td data-txph="'+esc(r.id)+'"></td></tr>'}).join('')+'</table>'
+     +'<div style="font-size:11px;margin-top:4px">C&middot;H&middot;G&middot;P = cutout, hanger, grounding, pole mounting. Line and neutral are the amps as read; Peak is the current projected for '+PKL()+', Load the share of the transformer&rsquo;s full-load current at that peak and kVA &middot; kW the power it carries. A dash or blank means no current was recorded.</div>'})(a.filter(function(r){return r.tx}));
   var jobs=[];a.forEach(function(r){phAll(r.id).forEach(function(x){jobs.push(pget(x[2]).then(function(v){return v?{r:r,w:x[0],n:x[1]+1,src:uGet(x[2],v)}:null}))})});
   toast('Preparing report…');
   Promise.all([rptMap(a,by),Promise.all(jobs)]).then(function(res){var m=res[0],ph=res[1].filter(Boolean);
     var tp={};ph.forEach(function(q){if(q.w==='T')(tp[q.r.id]=tp[q.r.id]||[]).push(q.src)});
     [].slice.call(d.querySelectorAll('[data-txph]')).forEach(function(td){var s=tp[td.getAttribute('data-txph')];if(s)td.innerHTML=s.map(function(u){return '<img class="txp" src="'+u+'" alt="">'}).join('')});
-    if(m){var w=document.createElement('div');w.style.cssText='page-break-inside:avoid;margin:10px 0';w.appendChild(m.cv);var lg=document.createElement('div');lg.style.cssText='font-size:11px;margin-top:3px';lg.textContent='Pins and lines coloured by grade: green OK, amber WATCH, red ACTION · ● pole  ▲ transformer · orange ring = flagged'+(m.ok?' · Imagery © Google':' · Satellite imagery could not load (offline?)');w.appendChild(lg);d.insertBefore(w,d.querySelector('h2'))}
+    if(m){var w=document.createElement('div');w.style.cssText='page-break-inside:avoid;margin:10px 0';w.appendChild(m.cv);var lg=document.createElement('div');lg.style.cssText='font-size:11px;margin-top:3px';lg.textContent='Yellow line = surveyed span · ● pole  ▲ transformer · orange ring = flagged'+(m.ok?' · Imagery © Google':' · Satellite imagery could not load (offline?)');w.appendChild(lg);d.insertBefore(w,d.querySelector('h2'))}
     if(ph.length){var h='<h2>Photos</h2>',cur=null;a.forEach(function(r){var mine=ph.filter(function(q){return q.r===r});if(!mine.length)return;h+='<div class="pp"><b>'+poleTitle(r)+'</b> '+gt(G.p[r.id])+'<div class="ph">'+mine.map(function(q){return '<figure><img src="'+q.src+'" alt=""><figcaption>'+(q.w==='P'?'Pole':'Transformer')+' photo '+q.n+'</figcaption></figure>'}).join('')+'</div></div>'});var pd=document.createElement('div');pd.innerHTML=h;d.appendChild(pd)}
     document.body.appendChild(d);var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);
     Promise.all([].slice.call(d.querySelectorAll('img')).map(function(im){return im.complete?1:new Promise(function(z){im.onload=im.onerror=z;setTimeout(z,6000)})})).then(function(){setTimeout(function(){window.print()},50)})})};
