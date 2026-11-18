@@ -277,7 +277,7 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 #drawer .note{color:var(--mute)}
 body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
 #drScrim{background:rgba(5,7,12,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
-@media (min-width:900px){#drawer{box-shadow:none}}
+@media (min-width:900px){#drawer{box-shadow:none}body.mapwide main{max-width:none}}
 /* toast + lightbox */
 #toast{background:var(--ink);color:var(--bg);border-radius:99px;padding:11px 20px;font-weight:550;font-size:.9rem;box-shadow:0 12px 32px -8px rgba(0,0,0,.5)}
 #lb{background:rgba(5,7,12,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
@@ -313,7 +313,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 }
 </style>
 </head>
-<body>
+<body class="mapwide">
 <header><button id="menu" type="button" aria-label="Menu" aria-controls="drawer" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1 id="title">COTELCO System: TLM</h1><button id="projNow" type="button" aria-label="Open project. Change it in the menu">Project 1</button><span id="net" role="status" aria-label="Offline" title="Offline"></span></header>
 <aside id="drawer" aria-label="Menu" aria-hidden="true">
   <div class="dh"><b>Menu</b><button type="button" id="drX" aria-label="Close menu">&#10005;</button></div>
@@ -472,6 +472,7 @@ document.querySelectorAll('#drTabs button').forEach(function(b){b.onclick=functi
   document.querySelectorAll('#drTabs button').forEach(function(x){x.setAttribute('aria-selected',x===b)});
   var t=b.dataset.t;
   $('list').hidden=t!=='list';$('mapSec').hidden=t!=='map';$('ana').hidden=t!=='ana';
+  document.body.classList.toggle('mapwide',t==='map');
   if(t==='list')render();if(t==='ana')renderAna();if(t==='map')mapOpen();else mapClose()}});
 function net(){var n=$('net'),on=navigator.onLine,t=on?'Online':'Offline';n.classList.toggle('on',on);n.title=t;n.setAttribute('aria-label',t)}
 addEventListener('online',net);addEventListener('offline',net);net();
