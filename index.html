@@ -68,7 +68,7 @@ textarea{min-height:60px;resize:vertical}
 #toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
 #map{position:relative;height:calc(100vh - 84px);min-height:340px;background:var(--card);border:1.5px solid var(--line);border-radius:8px;overflow:hidden;transition:height .34s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease)}
 #cv{width:100%;height:100%;display:block;touch-action:none}
-.mb{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+.mb{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;max-height:calc(100% - 16px);overflow:auto;scrollbar-width:none}
 .mb button{width:46px;height:46px;border-radius:8px;border:1.5px solid var(--acc);background:var(--card);color:var(--acc);font:inherit;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease),background-color .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease),filter .2s var(--ease),opacity .2s var(--ease)}
 .mb svg{display:block}
 .mb button:disabled{opacity:.35;cursor:not-allowed;filter:none;transform:none}
@@ -287,7 +287,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 
 /* ===== v3 additions ===== */
-#gcol[aria-pressed=false]{opacity:.55}
+#gcol[aria-pressed=false],#labB[aria-pressed=false]{opacity:.55}
 #loc[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
 #drawer .grp select,#drawer .grp #labC{margin-bottom:8px}
 #rpt h2{font-size:14px;margin:14px 0 4px}#rpt .gk{font-weight:700}#rpt{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -344,8 +344,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <button class="btn" id="xGeo" type="button">Export GeoJSON</button>
     <button class="btn" id="xKml" type="button">Export KML (Google Earth)</button>
     <button class="btn" id="xPrint" type="button">Print / save PDF report</button>
-    <button class="btn" id="xMapPng" type="button">Save map as image (PNG)</button>
-    <p class="note">The report holds the map of the line, the transformer load table, the pole table and the photos. <b>Print</b> goes through the browser, so choose &ldquo;Save as PDF&rdquo; there and untick <i>Headers and footers</i> to drop the date the browser stamps above the title. <b>Map image</b> saves just the map &mdash; satellite underneath with the spans, pins and pole numbers &mdash; as one picture. That satellite is <b>Esri world imagery</b>, so it also lands in the PDF report; pick <i>Satellite (Esri)</i> in Map &rarr; <i>Offline map tiles</i> and download the area to get the same background with no signal.</p>
+    <p class="note">The report holds the map of the line, the transformer load table, the pole table and the photos. <b>Print</b> goes through the browser, so choose &ldquo;Save as PDF&rdquo; there and untick <i>Headers and footers</i> to drop the date the browser stamps above the title. The map sits on <b>Google satellite</b>; where a tile cannot be reached &mdash; no signal, or imagery that shallow out here &mdash; a previously downloaded <i>Satellite (Esri)</i> tile fills the same cell, so the report keeps a background in the field.</p>
   </div>
   <div class="grp"><b>Map</b>
     <button class="btn" id="dlBtn" type="button">Offline map tiles</button>
@@ -368,6 +367,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 <div class="grid">
   <div><label for="pno">Pole #</label><input type="text" id="pno" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></div>
   <div><label for="vp">Voltage at pole</label><div class="unit"><input type="number" id="vp" inputmode="decimal" step="any"><b>V</b></div></div>
+  <div><label for="cust">Customers connected</label><input type="number" id="cust" inputmode="numeric" min="0" step="1" placeholder="how many service drops hang on this pole"></div>
   <div id="vcalc" class="calc full"></div><div class="full"><label for="pri">Primary line structure (main / lateral)</label><div class="grid3"><select id="pri"></select><select id="pril" aria-label="Primary lateral"></select></div></div>
   <div class="full"><label for="sec">Secondary line structure * (main / lateral)</label><div class="grid3"><select id="sec"></select><select id="secl" aria-label="Secondary lateral"></select></div></div>
   <div class="full"><label>Material *</label>
@@ -412,7 +412,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 
 <section id="mapSec">
   <div id="map"><canvas id="cv" tabindex="0" role="img" aria-label="Survey map. Use plus and minus to zoom, arrow keys to pan."></canvas><div id="mnote"></div><div id="gstat" hidden><span id="gmsg"></span><button type="button" class="btn" id="greq">Enable location</button></div><select id="baseSel" aria-label="Base map"></select><button id="offBadge" type="button" hidden title="Offline map"></button>
-    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="gcol" aria-label="Color poles and lines by grade" aria-pressed="true" title="Color by OK / WATCH / ACTION"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="7" cy="8" r="3.4" style="fill:var(--ok)"/><circle cx="17" cy="8" r="3.4" style="fill:var(--warn)"/><circle cx="12" cy="17" r="3.4" style="fill:var(--off)"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Follow my location" title="Follow my location — stays on and keeps the map centred on you" aria-pressed="false"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button><button id="mp" aria-label="New pole at my location" title="New pole at my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.2s6.7-6 6.7-10.7a6.7 6.7 0 1 0-13.4 0C5.3 15.2 12 21.2 12 21.2Z"/><path d="M12 7.9v5M9.5 10.4h5"/></svg></button></div>
+    <div class="mb"><button id="zi" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button id="gcol" aria-label="Color poles and lines by grade" aria-pressed="true" title="Color by OK / WATCH / ACTION"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="7" cy="8" r="3.4" style="fill:var(--ok)"/><circle cx="17" cy="8" r="3.4" style="fill:var(--warn)"/><circle cx="12" cy="17" r="3.4" style="fill:var(--off)"/></svg></button><button id="zo" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button id="fitB" aria-label="Show all poles" title="Show every surveyed pole in view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5.6A1.6 1.6 0 0 1 5.6 4H9M15 4h3.4A1.6 1.6 0 0 1 20 5.6V9M20 15v3.4a1.6 1.6 0 0 1-1.6 1.6H15M9 20H5.6A1.6 1.6 0 0 1 4 18.4V15"/></svg></button><button id="labB" aria-label="Pole labels" aria-pressed="true" title="Show or hide the pole labels"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="6.6" width="17.6" height="10.8" rx="2.6"/><path d="M7.2 12h9.6"/></svg></button><button id="dl" aria-label="Download offline map" title="Download offline map"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10.5M7.5 9.8 12 14.3l4.5-4.5"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/></svg></button><button id="loc" aria-label="Follow my location" title="Follow my location — stays on and keeps the map centred on you" aria-pressed="false"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/><path d="M12 1.6v3.4M12 19v3.4M1.6 12h3.4M19 12h3.4"/></svg></button><button id="mp" aria-label="New pole at my location" title="New pole at my location"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.2s6.7-6 6.7-10.7a6.7 6.7 0 1 0-13.4 0C5.3 15.2 12 21.2 12 21.2Z"/><path d="M12 7.9v5M9.5 10.4h5"/></svg></button></div>
     <div id="pop" hidden></div></div>
 </section>
 
@@ -426,7 +426,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 <div id="dlStat" style="font-size:.85rem;color:var(--mute);margin-top:6px"></div>
 <div class="row" style="margin-top:10px"><button type="button" class="btn p" id="dlGo">Download</button><button type="button" class="btn d" id="dlCancel" hidden>Cancel</button><button type="button" class="btn d" id="dlClear" hidden>Clear offline map</button></div>
 </fieldset>
-<fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly. <b>Whole island: Mindanao</b> stores the entire island group at z11–12 (about 8,000 tiles / 142 MB) — towns, roads and your feeder layout, but not street detail, so still download the area you work in at higher zoom. Past whatever you stored the map enlarges the nearest level you have instead of going blank.<br><br><b>Satellite can be stored now.</b> Pick <b>Satellite (Esri)</b> in the base map list before you press Download — that imagery is the background the printed report and the saved map image are drawn on, so storing it is what makes both of them work out on the feeder with no signal. <b>OpenStreetMap</b> stores the same way. <b>Google Satellite</b> does not: it blocks the requests a download needs, so it stays view-only. Each base map keeps its own offline area, so download the one you rely on. Please download modestly — heavy tile traffic gets a tile server to refuse your phone for a while.</p></fieldset>
+<fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly. <b>Whole island: Mindanao</b> stores the entire island group at z11–12 (about 8,000 tiles / 142 MB) — towns, roads and your feeder layout, but not street detail, so still download the area you work in at higher zoom. Past whatever you stored the map enlarges the nearest level you have instead of going blank.<br><br><b>Satellite can be stored now.</b> Pick <b>Satellite (Esri)</b> in the base map list before you press Download — that imagery is the background the printed report is drawn on, so storing it is what makes the report work out on the feeder with no signal. <b>OpenStreetMap</b> stores the same way. <b>Google Satellite</b> does not: it blocks the requests a download needs, so it stays view-only. Each base map keeps its own offline area, so download the one you rely on. Please download modestly — heavy tile traffic gets a tile server to refuse your phone for a while.</p></fieldset>
 </div></section>
 <section id="list" hidden>
   <div id="fbar"><input type="search" id="fq" placeholder="Search pole no., line, remarks…" aria-label="Search saved poles"><select id="fm" aria-label="Filter poles"><option value="all">All</option><option value="tx">With transformer</option><option value="plain">Plain poles</option><option value="flag">Flagged</option><option value="nogps">No GPS</option><option value="photo">Has photo</option><option value="nophoto">No photo</option></select></div>
@@ -485,12 +485,12 @@ function num(id){var v=$(id).value;return v===''?'':Number(v)}
 function collect(){
   var tx=$('hasTx').checked;
   return {id:editId||('r'+Date.now()),time:new Date().toISOString(),up:new Date().toISOString(),pos:pos,project:(editId&&(recs.find(function(x){return x.id===editId})||{}).project)||lastProj,from:$('conn').value,
-    pole:{no:$('pno').value.trim(),primary:priStr(),secondary:secStr(),p:{m:$('pri').value,l:$('pril').value},s:{m:$('sec').value,l:$('secl').value},material:radio('mat'),voltage:num('vp'),lineA:num('lc'),remarks:$('prem').value.trim()},
+    pole:{no:$('pno').value.trim(),primary:priStr(),secondary:secStr(),p:{m:$('pri').value,l:$('pril').value},s:{m:$('sec').value,l:$('secl').value},material:radio('mat'),voltage:num('vp'),cust:num('cust'),lineA:num('lc'),remarks:$('prem').value.trim()},
     tx:tx?{rating:$('kva').value,type:radio('ttype'),tap:$('tap').value,cutout:$('acut').checked,hanger:$('ahan').checked,grounding:$('agnd').checked,pmount:$('apm').checked,line:num('i1'),neutral:num('in'),remarks:$('trem').value.trim()}:null};
 }
 function sv(id,v){var s=$(id);if(v&&![].some.call(s.options,function(o){return o.value===v}))s.appendChild(new Option(v,v));s.value=v||''}
 function fill(r){
-  $('pno').value=r.pole.no;var pp=r.pole.p||{m:r.pole.primary,l:''},ss=r.pole.s||{m:r.pole.secondary,l:''};sv('pri',pp.m);sv('pril',pp.l);sv('sec',ss.m);sv('secl',ss.l);setRadio('mat',r.pole.material==='Cement'?'Concrete':r.pole.material);$('vp').value=r.pole.voltage;$('lc').value=r.pole.lineA==null?'':r.pole.lineA;$('conn').value=r.from||'';$('prem').value=r.pole.remarks;
+  $('pno').value=r.pole.no;var pp=r.pole.p||{m:r.pole.primary,l:''},ss=r.pole.s||{m:r.pole.secondary,l:''};sv('pri',pp.m);sv('pril',pp.l);sv('sec',ss.m);sv('secl',ss.l);setRadio('mat',r.pole.material==='Cement'?'Concrete':r.pole.material);$('vp').value=r.pole.voltage;$('cust').value=r.pole.cust==null?'':r.pole.cust;$('lc').value=r.pole.lineA==null?'':r.pole.lineA;$('conn').value=r.from||'';$('prem').value=r.pole.remarks;
   var t=r.tx;$('hasTx').checked=!!t;$('txBox').hidden=!t;t=t||{};
   $('kva').value=t.rating==null?'':t.rating;setRadio('ttype',t.type||'');$('tap').value=t.tap||'';
   $('acut').checked=!!t.cutout;$('ahan').checked=!!t.hanger;$('agnd').checked=!!t.grounding;$('apm').checked=!!t.pmount;
@@ -561,14 +561,14 @@ function stamp(){return new Date().toISOString().slice(0,10)}
 function q(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}
 $('xCsv').onclick=function(){var recs=vis();
   if(!recs.length)return toast('Nothing to export');
-  var H=['Project','Pole #','Primary structure','Secondary structure','Material','Voltage V','Pole remarks','Has transformer','Rating kVA','Type','Tap','Cutout','Hanger','Grounding','Pole mounting','Line A','Neutral A','Load kVA (230 V)','Load %','Voltage dev % (230 V)','Transformer remarks','Latitude','Longitude','Accuracy m','Recorded','Line current A','Connected to pole #','Peak load % (projected)','Voltage status','Pole grade','Line grade','Line drop % at peak','Line drop V at peak','Line loss W at peak','Line loss kWh/day','Conductor'];var AI=anaInfo();
+  var H=['Project','Pole #','Primary structure','Secondary structure','Material','Voltage V','Pole remarks','Has transformer','Rating kVA','Type','Tap','Cutout','Hanger','Grounding','Pole mounting','Line A','Neutral A','Load kVA (230 V)','Load %','Voltage dev % (230 V)','Transformer remarks','Latitude','Longitude','Accuracy m','Recorded','Line current A','Customers','Connected to pole #','Peak load % (projected)','Voltage status','Pole grade','Line grade','Line drop % at peak','Line drop V at peak','Line loss W at peak','Line loss kWh/day','Conductor'];var AI=anaInfo();
   var rows=recs.map(function(r){var t=r.tx||{},p=r.pole,g=r.pos||{};
-    return [r.project,p.no,p.primary,p.secondary,p.material,p.voltage,p.remarks,r.tx?'Yes':'No',t.rating,t.type,t.tap,r.tx?(t.cutout?'Y':'N'):'',r.tx?(t.hanger?'Y':'N'):'',r.tx?(t.grounding?'Y':'N'):'',r.tx?(t.pmount?'Y':'N'):'',t.line,t.neutral,cval(r,'kva'),cval(r,'pct'),cval(r,'dev'),t.remarks,g.lat,g.lon,g.acc,r.time,p.lineA,pn(r.from)].concat((function(x){return [n1(x.pk,1),gl(x.vg),gl(x.g),gl(x.lg),n1(x.dp,2),n1(x.dv,1),n1(x.lw,0),n1(x.ld,2),x.cd]})(AI(r))).map(q).join(',')});
+    return [r.project,p.no,p.primary,p.secondary,p.material,p.voltage,p.remarks,r.tx?'Yes':'No',t.rating,t.type,t.tap,r.tx?(t.cutout?'Y':'N'):'',r.tx?(t.hanger?'Y':'N'):'',r.tx?(t.grounding?'Y':'N'):'',r.tx?(t.pmount?'Y':'N'):'',t.line,t.neutral,cval(r,'kva'),cval(r,'pct'),cval(r,'dev'),t.remarks,g.lat,g.lon,g.acc,r.time,p.lineA,p.cust,pn(r.from)].concat((function(x){return [n1(x.pk,1),gl(x.vg),gl(x.g),gl(x.lg),n1(x.dp,2),n1(x.dv,1),n1(x.lw,0),n1(x.ld,2),x.cd]})(AI(r))).map(q).join(',')});
   dlFile('pole-survey-'+stamp()+'.csv','\ufeff'+H.map(q).join(',')+'\n'+rows.join('\n'),'text/csv')};
 $('xGeo').onclick=function(){var recs=vis(),AI=anaInfo();
   var f=recs.filter(function(r){return r.pos}).map(function(r){
     var p=r.pole,t=r.tx||{};
-    return {type:'Feature',geometry:{type:'Point',coordinates:[r.pos.lon,r.pos.lat]},properties:{project:r.project,pole_no:p.no,primary:p.primary,secondary:p.secondary,material:p.material,voltage_v:p.voltage,pole_remarks:p.remarks,has_tx:!!r.tx,kva:t.rating,tx_type:t.type,tap:t.tap,cutout:t.cutout,hanger:t.hanger,grounding:t.grounding,pole_mounting:t.pmount,i_line:t.line,i_neutral:t.neutral,load_kva:cc(r).kva,load_pct:cc(r).pct,volt_dev_pct:cc(r).dev,tx_remarks:t.remarks,gps_acc_m:r.pos.acc,recorded:r.time,grade:gl(AI(r).g),voltage_status:gl(AI(r).vg),peak_load_pct:AI(r).pk===''?null:+n1(AI(r).pk,1)}}});
+    return {type:'Feature',geometry:{type:'Point',coordinates:[r.pos.lon,r.pos.lat]},properties:{project:r.project,pole_no:p.no,primary:p.primary,secondary:p.secondary,material:p.material,voltage_v:p.voltage,customers:p.cust,pole_remarks:p.remarks,has_tx:!!r.tx,kva:t.rating,tx_type:t.type,tap:t.tap,cutout:t.cutout,hanger:t.hanger,grounding:t.grounding,pole_mounting:t.pmount,i_line:t.line,i_neutral:t.neutral,load_kva:cc(r).kva,load_pct:cc(r).pct,volt_dev_pct:cc(r).dev,tx_remarks:t.remarks,gps_acc_m:r.pos.acc,recorded:r.time,grade:gl(AI(r).g),voltage_status:gl(AI(r).vg),peak_load_pct:AI(r).pk===''?null:+n1(AI(r).pk,1)}}});
   if(!f.length)return toast('No records with GPS');
   var ln=[];recs.forEach(function(r){var a=recs.find(function(x){return x.id===r.from});if(a&&a.pos&&r.pos)ln.push({type:'Feature',geometry:{type:'LineString',coordinates:[[a.pos.lon,a.pos.lat],[r.pos.lon,r.pos.lat]]},properties:{project:r.project,from_pole:a.pole.no,to_pole:r.pole.no,current_a:r.pole.lineA,conductor:AI(r).cd,drop_pct_at_peak:AI(r).dp===''?null:+n1(AI(r).dp,2),loss_w_at_peak:AI(r).lw===''?null:+n1(AI(r).lw,0),grade:gl(AI(r).lg)}})});
   dlFile('pole-survey-'+stamp()+'.geojson',JSON.stringify({type:'FeatureCollection',features:f.concat(ln)},null,1),'application/geo+json');
@@ -730,11 +730,11 @@ $('mp').onclick=function(){
   M.pendGps=1;toast('The new pole form opens as soon as GPS finds you');gpsAsk()};
 // map labels: the naming convention you asked for (#1234/C) and placement that never stacks
 // two labels on top of each other
-var LAB_DF='{no} / {m} / {pri} / {sec}',LAB={m:'short',f:LAB_DF};
+var LAB_DF='{no} / {m} / {pri} / {sec}',LAB={m:'short',f:LAB_DF,prev:'short'};
 // LAB_F0: formats shipped by earlier builds — a stored copy of one is replaced by the current default
 var LAB_F0=/^\{no\}\/\{m\}( \{pri\}\/\{sec\})?$/;
-try{var lb0=localStorage.getItem(KEY+'.lab');if(lb0){var lsp=String(lb0).split('~');LAB.m=/^(short|full|custom|off)$/.test(lsp[0])?lsp[0]:'short';if(lsp[1]){var f0=decodeURIComponent(lsp[1]);if(f0&&!LAB_F0.test(f0))LAB.f=f0}}}catch(e){}
-function labSave(){try{localStorage.setItem(KEY+'.lab',LAB.m+'~'+encodeURIComponent(LAB.f))}catch(e){}}
+try{var lb0=localStorage.getItem(KEY+'.lab');if(lb0){var lsp=String(lb0).split('~');LAB.m=/^(short|full|custom|off)$/.test(lsp[0])?lsp[0]:'short';if(lsp[1]){var f0=decodeURIComponent(lsp[1]);if(f0&&!LAB_F0.test(f0))LAB.f=f0}if(/^(short|full|custom)$/.test(lsp[2]))LAB.prev=lsp[2];else if(/^(short|full|custom)$/.test(LAB.m))LAB.prev=LAB.m}}catch(e){}
+function labSave(){try{localStorage.setItem(KEY+'.lab',LAB.m+'~'+encodeURIComponent(LAB.f)+'~'+(LAB.prev||'short'))}catch(e){}}
 function matLtr(m){var s=String(m||'').trim().toLowerCase();return s==='wood'?'W':s==='steel'?'S':s==='concrete'||s==='cement'?'C':s?s.charAt(0).toUpperCase():''}
 function labTok(r){var p=r.pole||{};return{no:p.no||'',m:matLtr(p.material),mat:p.material||'',tx:r.tx?'T':'',kva:r.tx&&r.tx.rating!=null&&r.tx.rating!==''?String(r.tx.rating):'',pri:p.primary||'',sec:p.secondary||'',v:p.voltage===''||p.voltage==null?'':String(p.voltage)}}
 function labJoin(a){return a.filter(Boolean).join(' / ')}
@@ -766,8 +766,10 @@ function labPass(g,q,w,h,dk,blk){
       if(c)continue;
       box.push(fits[i]);labInk(g,it,fits[i],dk);return}})}
 function labInk(g,it,R,dk){g.textAlign='left';g.lineWidth=it.lw||3;g.strokeStyle=it.halo||(dk?'#000':'#fff');g.strokeText(it.s,R.x,R.y+R.h/2);g.fillStyle=it.ink||(dk?'#f1f1f1':'#111');g.fillText(it.s,R.x,R.y+R.h/2)}
-function labSync(){var s=$('labSel');if(!s)return;s.value=LAB.m;$('labC').hidden=LAB.m!=='custom';$('labFmt').value=LAB.f}
-$('labSel').onchange=function(){LAB.m=this.value;labSave();labSync();draw()};
+function labSync(){var s=$('labSel');if(!s)return;s.value=LAB.m;$('labC').hidden=LAB.m!=='custom';$('labFmt').value=LAB.f;$('labB').setAttribute('aria-pressed',LAB.m==='off'?'false':'true')}
+$('labSel').onchange=function(){LAB.m=this.value;if(this.value!=='off')LAB.prev=this.value;labSave();labSync();draw()};
+// the map button is a straight show/hide: turning labels back on returns to the format the drawer was last set to
+$('labB').onclick=function(){if(LAB.m==='off')LAB.m=LAB.prev||'short';else{LAB.prev=LAB.m;LAB.m='off'}labSave();labSync();draw()};
 $('labFmt').oninput=function(){LAB.f=this.value.trim()||LAB_DF;labSave();draw()};
 labSync();
 function draw(){
@@ -823,7 +825,7 @@ var P={},mv=0,cv=$('cv'),pinch=null;
 function pinchD(){var k=Object.keys(P);return k.length===2?Math.hypot(P[k[0]].x-P[k[1]].x,P[k[0]].y-P[k[1]].y):0}
 function pMid(){var k=Object.keys(P);return{x:(P[k[0]].x+P[k[1]].x)/2,y:(P[k[0]].y+P[k[1]].y)/2}}
 function atLL(x,y){return ll(M.cx-cv.clientWidth/2+x,M.cy-cv.clientHeight/2+y,M.z)}
-cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);P[e.pointerId]={x:e.clientX,y:e.clientY};mv=0;M.anchor=null;
+cv.onpointerdown=function(e){if(e.button!==0)return;cv.setPointerCapture(e.pointerId);P[e.pointerId]={x:e.clientX,y:e.clientY};mv=0;M.anchor=null;
   if(Object.keys(P).length===2){var b=cv.getBoundingClientRect(),m=pMid();pinch={d0:pinchD()||1,z0:M.z,ll:atLL(m.x-b.left,m.y-b.top)}}};
 cv.onpointermove=function(e){var o=P[e.pointerId];if(!o)return;var n=Object.keys(P).length;
   if(n===1){var dx=e.clientX-o.x,dy=e.clientY-o.y;M.cx-=dx;M.cy-=dy;mv+=Math.abs(dx)+Math.abs(dy)}
@@ -865,6 +867,7 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
     if(hp)loadThumbs()}
   draw()}
 $('zi').onclick=function(){zoom(ZS_BTN)};$('zo').onclick=function(){zoom(-ZS_BTN)};
+$('fitB').onclick=function(){if(!vis().some(function(r){return r.pos}))return toast('No pole with a position yet');fit()};
 $('greq').onclick=gpsAsk;
 // view-only mode: browse and inspect, never edit
 var viewMode=0;
@@ -1061,6 +1064,7 @@ function sg(d){return(d>=0?'+':'')+d.toFixed(1)+'%'}
 function loadHtml(r){var c=cc(r),a=[];
   if(c.kva!=null)a.push('Load '+c.kva.toFixed(2)+' kVA, '+c.pct.toFixed(1)+'% of rating'+(c.pct>100?' (overloaded)':''));
   if(c.dev!=null)a.push('Voltage '+sg(c.dev)+' vs '+VN+' V');
+  if(r.pole.cust!==''&&r.pole.cust!=null)a.push(r.pole.cust+' customer'+(r.pole.cust==1?'':'s'));
   if(r.pole.lineA!==''&&r.pole.lineA!=null)a.push('Line current '+r.pole.lineA+' A');
   return a.length?'<p>'+a.join(' | ')+'</p>':''}
 function liveCalc(){var i=$('i1').value,v=$('vp').value,c=calc($('kva').value,i===''?'':+i,v===''?'':+v);
@@ -1112,25 +1116,36 @@ function anaRows(){
 function lineCalc(I,km,k){var c=conV(k),pf=anaPF(),sn=Math.sqrt(1-pf*pf),vb=+AS.vb||230,
   dv=I*(c.r*pf+c.x*sn)*km,loss=I*I*c.r*km/1000,load=vb*I*pf/1000; // single-phase, line to neutral: one phase conductor, neutral/earth return not counted
  return{dv:dv,pct:dv/vb*100,loss:loss,lp:load>0?loss/load*100:0,load:load}}
-function anaLines(){var by={},out=[];vis().forEach(function(r){by[r.id]=r});
-  vis().forEach(function(r){var a=r.from&&by[r.from],c=r.pole.lineA;if(!a||!a.pos||!r.pos||c===''||c==null||!(+c>0))return;
-    var h=anaHour(r),f=Math.max(ANACUR[h]||1,.05),ip=+c/f,km=hav(a.pos,r.pos)/1000,k=CON0[r.cond]?r.cond:'2/0',pk=lineCalc(ip,km,k),day=0;
+function anaDerived(){var o={};
+  vis().forEach(function(tx){if(!tx.tx)return;
+    var A=Number(tx.tx.line==null?tx.tx.i1:tx.tx.line);if(!isFinite(A)||!(A>0))return;
+    var net=sysCur(sysNet(tx),A,tx);if(net.apc==null)return;
+    net.forEach(function(e){if(e.meas||e.i==null)return;
+      o[e.c.id]={i:e.i,sub:e.sub,apc:net.apc,cust:net.cust,seed:A,tx:tx,h:anaHour(tx)}})});
+  return o}
+function anaLines(){var by={},out=[],DR=anaDerived();vis().forEach(function(r){by[r.id]=r});
+  vis().forEach(function(r){var a=r.from&&by[r.from];if(!a||!a.pos||!r.pos)return;
+    var c=r.pole.lineA,meas=c!==''&&c!=null&&isFinite(+c)&&+c>0,d=meas?null:DR[r.id];if(!meas&&!d)return;
+    var h=meas?anaHour(r):d.h,f=Math.max(ANACUR[h]||1,.05),i0=meas?+c:d.i,ip=i0/f,km=hav(a.pos,r.pos)/1000,k=CON0[r.cond]?r.cond:'2/0',pk=lineCalc(ip,km,k),day=0;
     for(var x=0;x<24;x++)day+=lineCalc(ip*ANACUR[x],km,k).loss;
-    out.push({r:r,a:a,id:r.id,m:km*1000,k:k,h:h,i0:+c,ip:ip,pk:pk,day:day,dg:pk.pct>AS.act?'v-bad':pk.pct>AS.warn?'v-warn':'v-ok',g:gWorst(pk.pct>AS.act?'v-bad':pk.pct>AS.warn?'v-warn':'v-ok',anaVg(r.pole.voltage)),vg:anaVg(r.pole.voltage),cf:anaConf({best:f})})});
+    var dg=pk.pct>AS.act?'v-bad':pk.pct>AS.warn?'v-warn':'v-ok';
+    out.push({r:r,a:a,id:r.id,m:km*1000,k:k,h:h,i0:i0,ip:ip,pk:pk,day:day,dg:dg,g:gWorst(dg,anaVg(r.pole.voltage)),vg:anaVg(r.pole.voltage),cf:anaConf({best:f}),drv:d})});
   return out}
 function lineVerdict(l){var c=conV(l.k),o=[];
   o.push('Over '+Math.round(l.m)+' m of '+c.n+', the projected '+l.ip.toFixed(1)+' A at '+PKL()+' drops '+l.pk.dv.toFixed(1)+' V ('+l.pk.pct.toFixed(2)+'% of '+(+AS.vb||230)+' V) and wastes '+(l.pk.loss*1000).toFixed(0)+' W ('+l.pk.lp.toFixed(1)+'% of the power carried).');
+  if(l.drv)o.push('No clamp reading on this span: its '+l.drv.i.toFixed(1)+' A is the share of the '+l.drv.seed.toFixed(1)+' A read at the transformer earned by the '+l.drv.sub+' customer'+(l.drv.sub===1?'':'s')+' downstream of it ('+l.drv.apc.toFixed(2)+' A each over '+l.drv.cust+' on the whole unit).');
   o.push(l.dg==='v-bad'?'ACTION — drop is above the '+AS.act+'% limit. Use a larger conductor, shorten the run, or add a transformer nearer the load.':l.dg==='v-warn'?'WATCH — drop is above '+AS.warn+'%; extra load on this line will likely breach '+AS.act+'%.':'OK — drop is within '+AS.warn+'%.');
   if(l.vg)o.push('Voltage read at Pole '+esc(l.r.pole.no)+': '+(+l.r.pole.voltage).toFixed(0)+' V ('+(l.vg==='v-ok'?'inside':l.vg==='v-warn'?'close to the limit of':'outside')+' the '+AS.vlo+'–'+AS.vhi+' V standard).');
   if(l.cf.c==='Low')o.push('Low confidence: '+l.cf.t);return o.join(' ')}
 function lineCard(l){var lb={'v-ok':'OK','v-warn':'WATCH','v-bad':'ACTION'}[l.g];
-  return '<div class="rec"><h3>Line: Pole '+esc(l.a.pole.no)+' → Pole '+esc(l.r.pole.no)+'<span class="tag '+l.g+'">'+lb+'</span></h3><p class="ameta">'+esc(l.r.project||'')+' · '+Math.round(l.m)+' m span · current read at '+anaHH(l.h)+' · confidence <span class="tag '+l.cf.cls+'">'+l.cf.c+'</span></p><div class="ag">'
+  var meta=esc(l.r.project||'')+' · '+Math.round(l.m)+' m span · '+(l.drv?'allocated from the '+l.drv.seed.toFixed(1)+' A read at '+anaHH(l.drv.h)+' on Pole '+esc(l.drv.tx.pole.no||'—'):'current read at '+anaHH(l.h))+' · confidence <span class="tag '+l.cf.cls+'">'+l.cf.c+'</span>';
+  return '<div class="rec"><h3>Line: Pole '+esc(l.a.pole.no)+' → Pole '+esc(l.r.pole.no)+'<span class="tag '+l.g+'">'+lb+'</span></h3><p class="ameta">'+meta+'</p><div class="ag">'
    +acell('Voltage drop at peak',l.pk.pct.toFixed(2)+'%',l.pk.dv.toFixed(1)+' V of '+(+AS.vb||230)+' V',l.g)
    +acell('Loss at peak',(l.pk.loss*1000).toFixed(0)+' W',l.pk.lp.toFixed(1)+'% of '+l.pk.load.toFixed(2)+' kW')
    +acell('Loss per day',l.day.toFixed(2)+' kWh','following the demand curve')
-   +acell('Current',l.i0.toFixed(1)+' A read',l.ip.toFixed(1)+' A projected at '+anaHH(ANAPK))+'</div>'
-   +'<p class="verdict '+l.g+'">'+lineVerdict(l)+'</p><div class="row" style="margin-top:8px"><div><label>Conductor</label><select data-lc="'+esc(l.id)+'">'+conOpts(l.k)+'</select></div><div><label>Current read at</label><select data-rh="'+esc(l.id)+'">'+hrOpts(l.h)+'</select></div></div></div>'}
-function anaLineSum(L){if(!L.length)return '<div class="anasum"><h3>No line currents yet</h3><p>Tap a line on the map and enter its current. This tab then works out the voltage drop and losses for every span.</p></div>';
+   +acell(l.drv?'Current (allocated)':'Current',l.i0.toFixed(1)+' A '+(l.drv?'allocated':'read'),l.drv?l.drv.sub+' of '+l.drv.cust+' customers · '+l.drv.apc.toFixed(2)+' A each':l.ip.toFixed(1)+' A projected at '+anaHH(ANAPK))+'</div>'
+   +'<p class="verdict '+l.g+'">'+lineVerdict(l)+'</p><div class="row" style="margin-top:8px"><div><label>Conductor</label><select data-lc="'+esc(l.id)+'">'+conOpts(l.k)+'</select></div>'+(l.drv?'':'<div><label>Current read at</label><select data-rh="'+esc(l.id)+'">'+hrOpts(l.h)+'</select></div>')+'</div></div>'}
+function anaLineSum(L){if(!L.length)return '<div class="anasum"><h3>No line currents yet</h3><p>Tap a line on the map and enter its current, or record the transformer\'s secondary line current plus the customers on every pole it feeds — the current is then divided by the customers beyond each span. Either way this tab works out the voltage drop and losses for every span.</p></div>';
   var m=0,day=0,w=L[0],bad=0;L.forEach(function(l){m+=l.m;day+=l.day;if(l.g==='v-bad')bad++;if(l.pk.pct>w.pk.pct)w=l});
   return '<div class="anasum"><h3>'+L.length+' line'+(L.length>1?'s':'')+' in '+esc(lastProj)+'</h3><div class="ag">'+acell('Total length',(m/1000).toFixed(2)+' km',L.length+' span'+(L.length>1?'s':''))
    +acell('Losses per day',day.toFixed(1)+' kWh','all lines together')+acell('Worst drop',w.pk.pct.toFixed(2)+'%','Pole '+esc(w.a.pole.no)+' → '+esc(w.r.pole.no),w.g)+acell('Over limit',bad+' of '+L.length,'above '+AS.act+'% drop',bad?'v-bad':'v-ok')+'</div></div>'}
@@ -1226,11 +1241,29 @@ function sysAnc(a,q){for(var x=q&&q.pa;x;x=x.pa)if(x===a)return 1;return 0}
 function sysNet(tx){var out=[],seen={};seen[tx.id]=1;
   (function walk(p,n,pa){sysKids(p.id,tx.project).forEach(function(c){if(seen[c.id])return;seen[c.id]=1;var e={p:p,c:c,n:n,pa:pa};out.push(e);walk(c,n+1,e)})})(tx,1,null);
   return out}
+// customers counted on this pole, or null where the survey left it blank
+function custN(r){var v=r&&r.pole?r.pole.cust:'';if(v===''||v==null||!isFinite(+v)||+v<0)return null;return +v}
+// one pass over the tree: every span gets the customers hanging off it out to the dead ends (e.sub)
+function sysSubT(out){var ch=out.map(function(){return[]});
+  out.forEach(function(e,j){if(!e.pa)return;var p=out.indexOf(e.pa);if(p>=0)ch[p].push(j)});
+  function sum(j){var v=custN(out[j].c);
+    for(var k=0;k<ch[j].length;k++){var q=sum(ch[j][k]);v=v==null||q==null?null:v+q}
+    out[j].sub=v;return v}
+  out.forEach(function(e,j){if(!e.pa)sum(j)})}
 // a span with no clamp reading gets the mean of the readings either side of it (uniform pick-up along the run),
-// or half the last measured reading for every span beyond it
-function sysCur(out,seed){
+// or half the last measured reading for every span beyond it —
+// unless every pole this transformer feeds carries a customer count, which spreads its amps equally over them
+function sysCur(out,seed,tx){
   out.forEach(function(e){var v=Number(e.c.pole.lineA);e.meas=isFinite(v)&&v>0;e.i=e.meas?v:null});
-  out.forEach(function(e){if(e.meas)return;var up,dn=null;
+  var hc=custN(tx),tot=hc==null?null:hc,full=hc!=null;
+  out.forEach(function(e){var v=custN(e.c);if(v==null)full=false;else tot=(tot||0)+v});
+  var apc=full&&tot>0&&seed!=null&&seed>0?seed/tot:null;
+  out.apc=apc;out.cust=tot;out.nca=0;
+  if(apc!=null){sysSubT(out);
+    out.forEach(function(e){var s=e.sub;if(s==null)return;var a=+(s*apc).toFixed(2);
+      if(e.meas){if(Math.abs(a-e.i)>Math.max(.5,e.i*.1))e.bad='reads '+e.i+' A against '+a+' A for the '+s+' customers it feeds'}
+      else{e.i=a;e.aka=1;out.nca++}})}
+  if(apc==null)out.forEach(function(e){if(e.meas)return;var up,dn=null;
     for(up=e.pa;up&&!up.meas;up=up.pa);
     out.forEach(function(q){if(!q.meas||q.n<=e.n||!sysAnc(e,q))return;if(!dn||q.n<dn.n)dn=q});
     if(!up&&seed)up={i:seed,n:0};
@@ -1244,19 +1277,19 @@ function sysCur(out,seed){
     for(var x=e.pa;x;x=x.pa)if(x.meas){if(e.i>x.i+.05)e.bad='reads '+e.i+' A against '+x.i+' A closer to the transformer';break}});
   return out}
 function sysOne(tx){
-  var net=sysCur(sysNet(tx),(function(){var v=Number(tx.tx.line==null?tx.tx.i1:tx.tx.line);return isFinite(v)&&v>0?v:null})()),P=anaPF();
-  var rating=Number(tx.tx.rating),fla=rating>0?rating*1000/VN:null;
   var ai=Number(tx.tx.line==null?tx.tx.i1:tx.tx.line),A=isFinite(ai)&&ai>0?ai:null;
+  var net=sysCur(sysNet(tx),A,tx),P=anaPF();
+  var rating=Number(tx.tx.rating),fla=rating>0?rating*1000/VN:null;
   var kVA=A==null?null:VN*A/1000,pct=A==null||!fla?null:A/fla*100;
   var vt=anaVol(tx),w=null,nv=0;
   net.forEach(function(e){var v=anaVol(e.c);if(v==null)return;nv++;if(!w||v<w.v)w={v:v,no:e.c.pole.no||'—'}});
-  var dp=vt&&w&&vt>0?(vt-w.v)/vt*100:null,lkw=0,kwh=0,del=0,nm=0,nd=0,nn=0,ng=0,cs=0,i;
+  var dp=vt&&w&&vt>0?(vt-w.v)/vt*100:null,lkw=0,kwh=0,del=0,nm=0,nd=0,nca=0,nn=0,ng=0,cs=0,i;
   for(i=0;i<24;i++)cs+=ANACUR[i]*ANACUR[i];
   net.forEach(function(e){if(e.i==null){nn++;return}
     if(!e.p.pos||!e.c.pos){ng++;return}
     var km=hav(e.p.pos,e.c.pos)/1000;if(!(km>0)){ng++;return}
     var c=lineCalc(e.i,km,CON0[e.c.cond]?e.c.cond:'2/0');lkw+=c.loss;del+=c.load;kwh+=c.loss*cs;
-    if(e.meas)nm++;else nd++});
+    if(e.meas)nm++;else{if(e.aka)nca++;nd++}});
   var g=null;
   // % loss is measured against what this transformer actually exports; only the spans it feeds are counted
   var out=kVA==null?null:kVA*P;
@@ -1265,6 +1298,7 @@ function sysOne(tx){
   if(w)g=gWorst(g,anaVg(w.v));
   return{r:tx,no:tx.pole.no||'—',rating:isFinite(rating)&&rating>0?rating:null,fla:fla,A:A,kVA:kVA,pct:pct,vt:vt,w:w,dp:dp,
     lkw:lkw,kwh:kwh,out:out,del:del,lp:out>0?lkw/out*100:(del>0?lkw/del*100:null),tsp:net.length,nm:nm,nd:nd,nn:nn,ng:ng,nv:nv,g:g,
+    ncust:net.cust,apc:net.apc,nca:nca,
     warn:net.filter(function(e){return e.bad})}}
 function anaSysRows(){var o=[];recs.forEach(function(r){if(r.tx)o.push(sysOne(r))});return o}
 function sysFmt(v,d){return v==null||!isFinite(+v)?'—':(+v).toFixed(d)}
@@ -1275,6 +1309,7 @@ function sysSort(o){var s=$('sysSel').value;return o.sort(function(p,q){
   if(s==='tx')return String(p.no).localeCompare(String(q.no),void 0,{numeric:true});
   return String(p.r.project||'').localeCompare(String(q.r.project||''),void 0,{numeric:true})||((q.pct==null?-1:+q.pct)-(p.pct==null?-1:+p.pct))})}
 function sysTr(x){var bas=x.tsp?(x.nm+x.nd)+'/'+x.tsp+' span'+(x.tsp>1?'s':'')+' · '+x.nv+'/'+x.tsp+' V':'no poles linked';
+  var cs=x.apc==null?'':'<small>'+x.ncust+' customers · '+sysFmt(x.apc,2)+' A each'+(x.nca?' · '+x.nca+' span'+(x.nca>1?'s':'')+' allocated':' · all clamped')+'</small>';
   return'<tr class="'+(x.r.project===lastProj?'cur ':'')+(x.g?'s-'+x.g:'')+'">'
    +'<td>'+esc(x.r.project||'—')+'</td>'
    +'<td>Pole '+esc(x.no)+(x.rating?'<small>'+x.rating+' kVA · '+x.fla.toFixed(1)+' A FLC</small>':'<small>rating not recorded</small>')+'</td>'
@@ -1284,10 +1319,10 @@ function sysTr(x){var bas=x.tsp?(x.nm+x.nd)+'/'+x.tsp+' span'+(x.tsp>1?'s':'')+'
    +'<td>'+sysFmt(x.vt,0)+'</td>'
    +'<td class="'+(x.w?anaVg(x.w.v):'')+'">'+sysFmt(x.w?x.w.v:null,0)+(x.w?'<small>Pole '+esc(x.w.no)+'</small>':(x.tsp?'<small>none read</small>':''))+'</td>'
    +'<td class="'+(x.dp==null?'':+x.dp>+AS.act?'v-bad':+x.dp>+AS.warn?'v-warn':'v-ok')+'">'+sysFmt(x.dp,2)+'</td>'
-   +'<td>'+sysFmt(x.lkw,3)+(x.nd?'<small>'+x.nd+' derived</small>':(x.nn+x.ng?'<small>partial</small>':''))+'</td>'
+   +'<td>'+sysFmt(x.lkw,3)+(x.nd?(x.apc==null?'<small>'+x.nd+' derived</small>':''):(x.nn+x.ng?'<small>partial</small>':''))+'</td>'
    +'<td>'+sysFmt(x.kwh,2)+'</td>'
    +'<td>'+sysFmt(x.lp,2)+'</td>'
-   +'<td class="bas">'+bas+(x.warn.length?'<small class="wn">'+x.warn.length+' current check</small>':'')+'</td></tr>'}
+   +'<td class="bas">'+bas+cs+(x.warn.length?'<small class="wn">'+x.warn.length+' current check</small>':'')+'</td></tr>'}
 function sysFoot(o){var t={tx:0,rd:0,A:0,kVA:0,cap:0,lkw:0,kwh:0,del:0,out:0,sp:0,nm:0,nd:0,wv:null,wd:null},i;
   o.forEach(function(x){t.tx++;if(x.A!=null&&x.rating){t.rd++;t.A+=x.A;t.kVA+=x.kVA;t.cap+=x.rating}
     t.lkw+=x.lkw;t.kwh+=x.kwh;t.del+=x.del;t.out+=x.out||0;t.sp+=x.tsp;t.nm+=x.nm;t.nd+=x.nd;
@@ -1312,6 +1347,7 @@ function anaSys(){var o=sysSort(anaSysRows());
    +o.map(sysTr).join('')+'</tbody>'+sysFoot(o)+'</table></div>'
    +'<p class="ameta">'+o.length+' transformers across '+np+' project'+(np>1?'s':'')+'. Each row covers only the poles linked downstream of that unit, so a span belongs to exactly one transformer. '
    +'Loading, demand and amps are as surveyed, against '+VN+' V full-load current; the '+PKL()+' projection stays on the per-transformer cards below. '
+   +'A span with no clamp reading takes its share of the head current when every pole this unit feeds carries a customer count (head A ÷ total customers × the customers hanging beyond that span); with any count missing it falls back to interpolation between the readings either side, or half the last reading per span beyond it. '
    +'Losses are secondary-conductor I²R on the spans surveyed, as a share of what the transformer exports — '+(o2?o2+' of '+nn+' spans have no current or no position and are excluded, ':'all '+nn+' spans carry a current and a distance, ')
    +(o.filter(function(x){return x.nd}).length?'derived currents are marked. ':'every span current was read with a clamp. ')
    +'Transformer losses are not included: they need test data the survey does not capture.</p>'
@@ -1479,9 +1515,9 @@ function drWide(){$('drawer').setAttribute('aria-hidden',(drW.matches||dr)?'fals
 if(drW.addEventListener)drW.addEventListener('change',drWide);else drW.addListener(drWide);drWide();
 $('dlBtn').onclick=openDl;
 
-function badNum(r){var c=[['Voltage',r.pole.voltage,35000],['Line current',r.pole.lineA,10000]];if(r.tx)c.push(['Transformer line current',r.tx.line,10000],['Neutral current',r.tx.neutral,10000]);
+function badNum(r){var c=[['Voltage',r.pole.voltage,35000],['Customers',r.pole.cust,500],['Line current',r.pole.lineA,10000]];if(r.tx)c.push(['Transformer line current',r.tx.line,10000],['Neutral current',r.tx.neutral,10000]);
   for(var k=0;k<c.length;k++){var v=c[k][1];if(v===''||v==null)continue;if(isNaN(v)||+v<0||+v>c[k][2])return c[k][0]+' must be between 0 and '+c[k][2]}return ''}
-function chgs(a,b){var o=[],ta=a.tx||{},tb=b.tx||{},f=[['Pole no.',a.pole.no,b.pole.no],['Primary',a.pole.primary,b.pole.primary],['Secondary',a.pole.secondary,b.pole.secondary],['Material',a.pole.material,b.pole.material],['Voltage',a.pole.voltage,b.pole.voltage],['Line A',a.pole.lineA,b.pole.lineA],['Remarks',a.pole.remarks,b.pole.remarks]];
+function chgs(a,b){var o=[],ta=a.tx||{},tb=b.tx||{},f=[['Pole no.',a.pole.no,b.pole.no],['Primary',a.pole.primary,b.pole.primary],['Secondary',a.pole.secondary,b.pole.secondary],['Material',a.pole.material,b.pole.material],['Voltage',a.pole.voltage,b.pole.voltage],['Line A',a.pole.lineA,b.pole.lineA],['Customers',a.pole.cust,b.pole.cust],['Remarks',a.pole.remarks,b.pole.remarks]];
   if(!a.tx!==!b.tx)o.push(b.tx?'Transformer added':'Transformer removed');
   if(a.tx&&b.tx)[['kVA','rating'],['Type','type'],['Tap','tap'],['Line current','line'],['Neutral','neutral']].forEach(function(k){f.push([k[0],ta[k[1]],tb[k[1]]])});
   function sh(v){v=v==null||v===''?'-':String(v);return v.length>30?v.slice(0,30)+'…':v}
@@ -1494,7 +1530,7 @@ try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)$
 // KML + printable report
 $('xKml').onclick=function(){var AI=anaInfo(),a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles');
   dlFile('poles-'+stamp()+'.kml','<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(lastProj)+'</name>'+a.map(function(r){return '<Placemark><name>Pole '+esc(r.pole.no)+'</name><description>'+esc([r.pole.material,r.pole.primary,r.pole.secondary,r.pole.voltage!==''?r.pole.voltage+' V':'',r.tx?r.tx.rating+' kVA '+r.tx.type:'',AI(r).g?'Grade '+gl(AI(r).g):''].filter(Boolean).join(' | '))+'</description><Point><coordinates>'+r.pos.lon+','+r.pos.lat+',0</coordinates></Point></Placemark>'}).join('')+'</Document></kml>','application/vnd.google-earth.kml+xml')};
-function rptMap(a,by){var PAD=90,TGT=1200,SB='esat',L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
+function rptMap(a,by){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
   var la=L.map(function(r){return r.pos.lat}),lo=L.map(function(r){return r.pos.lon}),mnA=Math.min.apply(0,la),mxA=Math.max.apply(0,la),mnO=Math.min.apply(0,lo),mxO=Math.max.apply(0,lo),z=19;
   // deepest zoom the whole line still fits at, then a canvas cut to the line itself so no frame is wasted around it
   for(;z>3;z--){var q1=px(mxA,mnO,z),q2=px(mnA,mxO,z);if(Math.max(q2.x-q1.x,q2.y-q1.y)<=TGT)break}
@@ -1503,12 +1539,16 @@ function rptMap(a,by){var PAD=90,TGT=1200,SB='esat',L=a.filter(function(r){retur
   var c=px((mnA+mxA)/2,(mnO+mxO)/2,z),x0=c.x-W/2,y0=c.y-H/2,cv=document.createElement('canvas'),ok=0,n=Math.pow(2,z),jobs=[];
   cv.width=W;cv.height=H;cv.style.cssText='width:100%;height:auto;border:1px solid #999';
   var g=cv.getContext('2d');g.fillStyle='#2b3a2b';g.fillRect(0,0,W,H);
-  for(var ty=Math.floor(y0/256);ty<=Math.floor((y0+H)/256);ty++)for(var tx=Math.floor(x0/256);tx<=Math.floor((x0+W)/256);tx++){(function(tx,ty){if(ty<0||ty>=n)return;var xx=((tx%n)+n)%n;
-    // Esri imagery answers with CORS headers, so both the cached blob and the live tile leave the canvas readable — Google tiles taint it and lock the picture out of toBlob
-    jobs.push(getOff(SB,z,xx,ty).then(function(r){return r?r.blob():null}).then(function(bl){var u=bl?URL.createObjectURL(bl):null;
-      return new Promise(function(res){var im=new Image(),t=setTimeout(function(){if(u)URL.revokeObjectURL(u);res()},9000),fr=function(){if(u)URL.revokeObjectURL(u)};
-        im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);fr();res()};im.onerror=function(){clearTimeout(t);fr();res()};
-        if(!u)im.crossOrigin='anonymous';im.src=u||tileUrl(SB,z,xx,ty)})}))})(tx,ty)}
+  for(var ty=Math.floor(y0/256);ty<=Math.floor((y0+H)/256);ty++)for(var tx=Math.floor(x0/256);tx<=Math.floor((x0+W)/256);tx++){(function(tx,ty){if(ty<0||ty>=n)return;var xx=((tx%n)+n)%n,X=tx*256-x0,Y=ty*256-y0;
+    jobs.push(new Promise(function(res){var done=0,fin=function(im){if(done)return;done=1;if(im){ok++;g.drawImage(im,X,Y)}res()};
+      // Google imagery sits under the report map. It sends no CORS headers, which does not affect printing — the browser composites what was drawn.
+      // a cell Google cannot supply (no signal, or imagery that shallow out here) falls back to the same cell from the downloaded Esri tiles
+      function fromCache(){getOff('esat',z,xx,ty).then(function(r){return r?r.blob():null}).then(function(bl){if(!bl)return fin(null);
+        var u=URL.createObjectURL(bl),i=new Image(),t2=setTimeout(function(){URL.revokeObjectURL(u);fin(null)},9000);
+        i.onload=function(){clearTimeout(t2);URL.revokeObjectURL(u);fin(i)};i.onerror=function(){clearTimeout(t2);URL.revokeObjectURL(u);fin(null)}})}
+      var im=new Image(),t=setTimeout(function(){im.onload=im.onerror=null;fromCache()},9000);
+      im.onload=function(){clearTimeout(t);fin(im)};im.onerror=function(){clearTimeout(t);fromCache()};
+      im.src=tileUrl('gsat',z,xx,ty)}))})(tx,ty)}
   return Promise.all(jobs).then(function(){
     var P=function(r){var p=px(r.pos.lat,r.pos.lon,z);return{x:p.x-x0,y:p.y-y0}};
     g.lineCap='round';g.font='bold 15px system-ui,sans-serif';g.textBaseline='middle';
@@ -1538,16 +1578,6 @@ function rptBuild(){var a=vis();if(!a.length)return null;var by={};a.forEach(fun
     return Promise.all([].slice.call(d.querySelectorAll('img')).map(function(im){return im.complete?1:new Promise(function(z){im.onload=im.onerror=z;setTimeout(z,6000)})})).then(function(){return d})})}
 $('xPrint').onclick=function(){var p=rptBuild();if(!p)return toast('Nothing to print');toast('Preparing report…');
   p.then(function(d){var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(function(){window.print()},50)})};
-// ---------- map image export: the same fitted map the report draws, saved as one PNG ----------
-$('xMapPng').onclick=function(){var a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles to map');
-  var by={};a.forEach(function(r){by[r.id]=r});toast('Drawing map image…');
-  // satellite tiles for the picture come from Esri: their reply carries CORS headers, so the canvas is allowed to be written out as a file
-  rptMap(a,by).then(function(m){if(!m||!m.cv||!m.cv.toBlob)return toast('Nothing to map');
-    m.cv.toBlob(function(b){if(!b)return toast('Could not write the PNG file');
-      dlBlob((lastProj||'TLM')+' map '+stamp()+'.png',b);
-      toast(m.ok?'Map image saved':'Map image saved — no satellite underneath, because this device has no internet and has not downloaded this area')},'image/png')}).catch(function(e){toast('Map image failed: '+(e&&e.message||e))})};
-function dlBlob(name,blob){var a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1000)}
 // keyboard map controls
 $('cv').addEventListener('keydown',function(e){var k=e.key,st=60,h=1;if(k==='+'||k==='=')zoom(ZS_BTN);else if(k==='-'||k==='_')zoom(-ZS_BTN);else if(k==='ArrowLeft')M.cx-=st;else if(k==='ArrowRight')M.cx+=st;else if(k==='ArrowUp')M.cy-=st;else if(k==='ArrowDown')M.cy+=st;else h=0;if(h){e.preventDefault();M.anchor=null;draw()}});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
