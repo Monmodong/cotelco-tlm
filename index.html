@@ -345,7 +345,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <button class="btn" id="xKml" type="button">Export KML (Google Earth)</button>
     <button class="btn" id="xPrint" type="button">Print / save PDF report</button>
     <button class="btn" id="xMapPng" type="button">Save map as image (PNG)</button>
-    <p class="note">The report holds the map of the line, the transformer load table, the pole table and the photos. <b>Print</b> goes through the browser, so choose &ldquo;Save as PDF&rdquo; there and untick <i>Headers and footers</i> to drop the date the browser stamps above the title. <b>Map image</b> saves just the map &mdash; spans, pins and pole numbers &mdash; as one picture. It is drawn only from the satellite tiles cached on this device, so press <i>Offline map tiles</i> and download the area first; without them you still get the pole map on a plain background.</p>
+    <p class="note">The report holds the map of the line, the transformer load table, the pole table and the photos. <b>Print</b> goes through the browser, so choose &ldquo;Save as PDF&rdquo; there and untick <i>Headers and footers</i> to drop the date the browser stamps above the title. <b>Map image</b> saves just the map &mdash; satellite underneath with the spans, pins and pole numbers &mdash; as one picture. That satellite is <b>Esri world imagery</b>, so it also lands in the PDF report; pick <i>Satellite (Esri)</i> in Map &rarr; <i>Offline map tiles</i> and download the area to get the same background with no signal.</p>
   </div>
   <div class="grp"><b>Map</b>
     <button class="btn" id="dlBtn" type="button">Offline map tiles</button>
@@ -426,7 +426,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 <div id="dlStat" style="font-size:.85rem;color:var(--mute);margin-top:6px"></div>
 <div class="row" style="margin-top:10px"><button type="button" class="btn p" id="dlGo">Download</button><button type="button" class="btn d" id="dlCancel" hidden>Cancel</button><button type="button" class="btn d" id="dlClear" hidden>Clear offline map</button></div>
 </fieldset>
-<fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly. <b>Whole island: Mindanao</b> stores the entire island group at z11–12 (about 8,000 tiles / 142 MB) — towns, roads and your feeder layout, but not street detail, so still download the area you work in at higher zoom. Past whatever you stored the map enlarges the nearest level you have instead of going blank.<br><br><b>Use OpenStreetMap for offline maps.</b> Google Satellite blocks the requests this download needs, so Google tiles usually cannot be saved. The offline area is shared by both base maps only if you download each of them. Please download modestly — heavy tile traffic gets the OpenStreetMap server to refuse your phone for a while.</p></fieldset>
+<fieldset><legend>How this works</legend><p style="margin:0;font-size:.9rem;color:var(--mute)">Tiles are saved on this phone, so the map still loads with no internet. Your poles, lines and photos are always stored offline — this only affects the background map. A phone-sized area at street detail is usually 20–80 MB; whole provinces get large quickly. <b>Whole island: Mindanao</b> stores the entire island group at z11–12 (about 8,000 tiles / 142 MB) — towns, roads and your feeder layout, but not street detail, so still download the area you work in at higher zoom. Past whatever you stored the map enlarges the nearest level you have instead of going blank.<br><br><b>Satellite can be stored now.</b> Pick <b>Satellite (Esri)</b> in the base map list before you press Download — that imagery is the background the printed report and the saved map image are drawn on, so storing it is what makes both of them work out on the feeder with no signal. <b>OpenStreetMap</b> stores the same way. <b>Google Satellite</b> does not: it blocks the requests a download needs, so it stays view-only. Each base map keeps its own offline area, so download the one you rely on. Please download modestly — heavy tile traffic gets a tile server to refuse your phone for a while.</p></fieldset>
 </div></section>
 <section id="list" hidden>
   <div id="fbar"><input type="search" id="fq" placeholder="Search pole no., line, remarks…" aria-label="Search saved poles"><select id="fm" aria-label="Filter poles"><option value="all">All</option><option value="tx">With transformer</option><option value="plain">Plain poles</option><option value="flag">Flagged</option><option value="nogps">No GPS</option><option value="photo">Has photo</option><option value="nophoto">No photo</option></select></div>
@@ -643,7 +643,7 @@ try{lastProj=localStorage.getItem(KEY+'.proj')||''}catch(e){}
 try{projects=JSON.parse(localStorage.getItem(KEY+'.projects')||'[]')}catch(e){}
 
 // map (own slippy map: works with no tiles, poles still plot over a scale bar)
-var BASES={osm:{inv:1,n:'OpenStreetMap',u:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',a:'© OpenStreetMap contributors',mz:19},gsat:{n:'Google Satellite',u:'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',a:'© Google',mz:20},cus:{inv:1,n:'Custom tile URL...',u:'',a:''},none:{n:'No map (poles only)',u:'',a:''}};
+var BASES={osm:{inv:1,n:'OpenStreetMap',u:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',a:'© OpenStreetMap contributors',mz:19},gsat:{n:'Google Satellite',u:'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',a:'© Google',mz:20},esat:{n:'Satellite (Esri)',u:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',a:'Imagery © Esri, Maxar, Earthstar Geographics',mz:19,cors:1},cus:{inv:1,n:'Custom tile URL...',u:'',a:''},none:{n:'No map (poles only)',u:'',a:''}};
 var M={base:'gsat',cust:'',err:0,pend:null,cen:0,z:16,zt:16,cx:0,cy:0,t:{},me:null,watch:null,sel:null,hits:[],init:0,anchor:null,gpsBtn:0};
 var ZMIN=3,ZMAX=20,zraf=0;
 function clampZ(z){return Math.max(ZMIN,Math.min(ZMAX,z))}
@@ -900,7 +900,10 @@ function offKeyFor(url){
   var u=new URL(url),t=u.pathname.match(/\/(\d+)\/(\d+)\/(\d+)/)||u.search.match(/x=(\d+).*?y=(\d+).*?z=(\d+)/);
   if(!t)return null;
   var ks=Object.keys(BASES);ks.push('cus');
-  for(var i=0;i<ks.length;i++)if(tileUrl(ks[i],+t[1],+t[2],+t[3])===url)return ks[i]+'/'+t[1]+'/'+t[2]+'/'+t[3];
+  // a URL template may swap the axis order in its path (Esri uses z/y/x), so try both readings
+  for(var i=0;i<ks.length;i++){var a=+t[1],b=+t[2],c=+t[3];
+    if(tileUrl(ks[i],a,b,c)===url)return ks[i]+'/'+a+'/'+b+'/'+c;
+    if(tileUrl(ks[i],a,c,b)===url)return ks[i]+'/'+a+'/'+c+'/'+b}
   return null}
 function loadOffIdx(){
   if(!window.caches)return;
@@ -1491,7 +1494,7 @@ try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)$
 // KML + printable report
 $('xKml').onclick=function(){var AI=anaInfo(),a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles');
   dlFile('poles-'+stamp()+'.kml','<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(lastProj)+'</name>'+a.map(function(r){return '<Placemark><name>Pole '+esc(r.pole.no)+'</name><description>'+esc([r.pole.material,r.pole.primary,r.pole.secondary,r.pole.voltage!==''?r.pole.voltage+' V':'',r.tx?r.tx.rating+' kVA '+r.tx.type:'',AI(r).g?'Grade '+gl(AI(r).g):''].filter(Boolean).join(' | '))+'</description><Point><coordinates>'+r.pos.lon+','+r.pos.lat+',0</coordinates></Point></Placemark>'}).join('')+'</Document></kml>','application/vnd.google-earth.kml+xml')};
-function rptMap(a,by,cacheOnly){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
+function rptMap(a,by){var PAD=90,TGT=1200,SB='esat',L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
   var la=L.map(function(r){return r.pos.lat}),lo=L.map(function(r){return r.pos.lon}),mnA=Math.min.apply(0,la),mxA=Math.max.apply(0,la),mnO=Math.min.apply(0,lo),mxO=Math.max.apply(0,lo),z=19;
   // deepest zoom the whole line still fits at, then a canvas cut to the line itself so no frame is wasted around it
   for(;z>3;z--){var q1=px(mxA,mnO,z),q2=px(mnA,mxO,z);if(Math.max(q2.x-q1.x,q2.y-q1.y)<=TGT)break}
@@ -1501,10 +1504,11 @@ function rptMap(a,by,cacheOnly){var PAD=90,TGT=1200,L=a.filter(function(r){retur
   cv.width=W;cv.height=H;cv.style.cssText='width:100%;height:auto;border:1px solid #999';
   var g=cv.getContext('2d');g.fillStyle='#2b3a2b';g.fillRect(0,0,W,H);
   for(var ty=Math.floor(y0/256);ty<=Math.floor((y0+H)/256);ty++)for(var tx=Math.floor(x0/256);tx<=Math.floor((x0+W)/256);tx++){(function(tx,ty){if(ty<0||ty>=n)return;var xx=((tx%n)+n)%n;
-    // cached tiles come from local blobs, so the canvas stays readable and can be saved as a picture; live Google tiles taint it
-    jobs.push(getOff('gsat',z,xx,ty).then(function(r){return r?r.blob():null}).then(function(bl){if(!bl&&cacheOnly)return;var u=bl?URL.createObjectURL(bl):null;
+    // Esri imagery answers with CORS headers, so both the cached blob and the live tile leave the canvas readable — Google tiles taint it and lock the picture out of toBlob
+    jobs.push(getOff(SB,z,xx,ty).then(function(r){return r?r.blob():null}).then(function(bl){var u=bl?URL.createObjectURL(bl):null;
       return new Promise(function(res){var im=new Image(),t=setTimeout(function(){if(u)URL.revokeObjectURL(u);res()},9000),fr=function(){if(u)URL.revokeObjectURL(u)};
-        im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);fr();res()};im.onerror=function(){clearTimeout(t);fr();res()};im.src=u||tileUrl('gsat',z,xx,ty)})}))})(tx,ty)}
+        im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);fr();res()};im.onerror=function(){clearTimeout(t);fr();res()};
+        if(!u)im.crossOrigin='anonymous';im.src=u||tileUrl(SB,z,xx,ty)})}))})(tx,ty)}
   return Promise.all(jobs).then(function(){
     var P=function(r){var p=px(r.pos.lat,r.pos.lon,z);return{x:p.x-x0,y:p.y-y0}};
     g.lineCap='round';g.font='bold 15px system-ui,sans-serif';g.textBaseline='middle';
@@ -1537,11 +1541,11 @@ $('xPrint').onclick=function(){var p=rptBuild();if(!p)return toast('Nothing to p
 // ---------- map image export: the same fitted map the report draws, saved as one PNG ----------
 $('xMapPng').onclick=function(){var a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles to map');
   var by={};a.forEach(function(r){by[r.id]=r});toast('Drawing map image…');
-  // cache-only tiles: a canvas built from live Google tiles is locked out of toBlob, so an uncached area exports as a plain pole map
-  rptMap(a,by,1).then(function(m){if(!m||!m.cv||!m.cv.toBlob)return toast('Nothing to map');
+  // satellite tiles for the picture come from Esri: their reply carries CORS headers, so the canvas is allowed to be written out as a file
+  rptMap(a,by).then(function(m){if(!m||!m.cv||!m.cv.toBlob)return toast('Nothing to map');
     m.cv.toBlob(function(b){if(!b)return toast('Could not write the PNG file');
       dlBlob((lastProj||'TLM')+' map '+stamp()+'.png',b);
-      toast(m.ok?'Map image saved':'Map image saved — download this area under Offline map tiles to get the satellite underneath')},'image/png')}).catch(function(e){toast('Map image failed: '+(e&&e.message||e))})};
+      toast(m.ok?'Map image saved':'Map image saved — no satellite underneath, because this device has no internet and has not downloaded this area')},'image/png')}).catch(function(e){toast('Map image failed: '+(e&&e.message||e))})};
 function dlBlob(name,blob){var a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1000)}
 // keyboard map controls
