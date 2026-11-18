@@ -344,8 +344,8 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <button class="btn" id="xGeo" type="button">Export GeoJSON</button>
     <button class="btn" id="xKml" type="button">Export KML (Google Earth)</button>
     <button class="btn" id="xPrint" type="button">Print / save PDF report</button>
-    <button class="btn" id="xWord" type="button">Export Word report (.docx)</button>
-    <p class="note">Both reports hold the same thing: the map of the line, the transformer load table, the pole table and the photos. <b>Print</b> goes through the browser, so choose &ldquo;Save as PDF&rdquo; there and untick <i>Headers and footers</i> to drop the date the browser stamps above the title. <b>Word</b> gives you an editable <i>.docx</i>; the satellite map inside it comes from the tiles cached on this device, so download the area first if you want it there.</p>
+    <button class="btn" id="xMapPng" type="button">Save map as image (PNG)</button>
+    <p class="note">The report holds the map of the line, the transformer load table, the pole table and the photos. <b>Print</b> goes through the browser, so choose &ldquo;Save as PDF&rdquo; there and untick <i>Headers and footers</i> to drop the date the browser stamps above the title. <b>Map image</b> saves just the map &mdash; spans, pins and pole numbers &mdash; as one picture. It is drawn only from the satellite tiles cached on this device, so press <i>Offline map tiles</i> and download the area first; without them you still get the pole map on a plain background.</p>
   </div>
   <div class="grp"><b>Map</b>
     <button class="btn" id="dlBtn" type="button">Offline map tiles</button>
@@ -1491,7 +1491,7 @@ try{if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)$
 // KML + printable report
 $('xKml').onclick=function(){var AI=anaInfo(),a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles');
   dlFile('poles-'+stamp()+'.kml','<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(lastProj)+'</name>'+a.map(function(r){return '<Placemark><name>Pole '+esc(r.pole.no)+'</name><description>'+esc([r.pole.material,r.pole.primary,r.pole.secondary,r.pole.voltage!==''?r.pole.voltage+' V':'',r.tx?r.tx.rating+' kVA '+r.tx.type:'',AI(r).g?'Grade '+gl(AI(r).g):''].filter(Boolean).join(' | '))+'</description><Point><coordinates>'+r.pos.lon+','+r.pos.lat+',0</coordinates></Point></Placemark>'}).join('')+'</Document></kml>','application/vnd.google-earth.kml+xml')};
-function rptMap(a,by){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
+function rptMap(a,by,cacheOnly){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});if(!L.length)return Promise.resolve(null);
   var la=L.map(function(r){return r.pos.lat}),lo=L.map(function(r){return r.pos.lon}),mnA=Math.min.apply(0,la),mxA=Math.max.apply(0,la),mnO=Math.min.apply(0,lo),mxO=Math.max.apply(0,lo),z=19;
   // deepest zoom the whole line still fits at, then a canvas cut to the line itself so no frame is wasted around it
   for(;z>3;z--){var q1=px(mxA,mnO,z),q2=px(mnA,mxO,z);if(Math.max(q2.x-q1.x,q2.y-q1.y)<=TGT)break}
@@ -1501,8 +1501,8 @@ function rptMap(a,by){var PAD=90,TGT=1200,L=a.filter(function(r){return r.pos});
   cv.width=W;cv.height=H;cv.style.cssText='width:100%;height:auto;border:1px solid #999';
   var g=cv.getContext('2d');g.fillStyle='#2b3a2b';g.fillRect(0,0,W,H);
   for(var ty=Math.floor(y0/256);ty<=Math.floor((y0+H)/256);ty++)for(var tx=Math.floor(x0/256);tx<=Math.floor((x0+W)/256);tx++){(function(tx,ty){if(ty<0||ty>=n)return;var xx=((tx%n)+n)%n;
-    // cached tiles come from local blobs, so the canvas stays readable and the map can go inside a Word file
-    jobs.push(getOff('gsat',z,xx,ty).then(function(r){return r?r.blob():null}).then(function(bl){var u=bl?URL.createObjectURL(bl):null;
+    // cached tiles come from local blobs, so the canvas stays readable and can be saved as a picture; live Google tiles taint it
+    jobs.push(getOff('gsat',z,xx,ty).then(function(r){return r?r.blob():null}).then(function(bl){if(!bl&&cacheOnly)return;var u=bl?URL.createObjectURL(bl):null;
       return new Promise(function(res){var im=new Image(),t=setTimeout(function(){if(u)URL.revokeObjectURL(u);res()},9000),fr=function(){if(u)URL.revokeObjectURL(u)};
         im.onload=function(){clearTimeout(t);ok++;g.drawImage(im,tx*256-x0,ty*256-y0);fr();res()};im.onerror=function(){clearTimeout(t);fr();res()};im.src=u||tileUrl('gsat',z,xx,ty)})}))})(tx,ty)}
   return Promise.all(jobs).then(function(){
@@ -1534,148 +1534,14 @@ function rptBuild(){var a=vis();if(!a.length)return null;var by={};a.forEach(fun
     return Promise.all([].slice.call(d.querySelectorAll('img')).map(function(im){return im.complete?1:new Promise(function(z){im.onload=im.onerror=z;setTimeout(z,6000)})})).then(function(){return d})})}
 $('xPrint').onclick=function(){var p=rptBuild();if(!p)return toast('Nothing to print');toast('Preparing report…');
   p.then(function(d){var done=function(){d.remove();removeEventListener('afterprint',done)};addEventListener('afterprint',done);setTimeout(function(){window.print()},50)})};
-// ---------- Word export: the report DOM is re-emitted as WordprocessingML and packed into a .docx ----------
-var WW=9638,MM=36000,WPG={w:'11906',h:'16838',m:'1134'};
-function wEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function wHex(v){var m;if(!v)return '';
-  if((m=/^#([0-9a-f]{3})$/i.exec(v)))return m[1].split('').map(function(c){return c+c}).join('').toUpperCase();
-  if((m=/^#([0-9a-f]{6})$/i.exec(v)))return m[1].toUpperCase();
-  if((m=/^rgba?\(([^)]+)\)/i.exec(v)))return m[1].split(',').slice(0,3).map(function(x){var n=parseInt(x,10)||0;return('0'+n.toString(16)).slice(-2)}).join('').toUpperCase();
-  return ''}
-function wRun(t,o){o=o||{};var c=wEsc(t.replace(/\s+/g,' '));if(!c)return '';
-  var pr=(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'');
-  return '<w:r>'+(pr?'<w:rPr>'+pr+'</w:rPr>':'')+'<w:t xml:space="preserve">'+c+'</w:t></w:r>'}
-function wP(runs,st){st=st?'<w:pPr><w:pStyle w:val="'+st+'"/></w:pPr>':'';return '<w:p>'+st+(runs||[]).join('')+'</w:p>'}
-function wImgP(el,ctx){var mi=ctx[el.__wi];if(!mi)return '';
-  var cv=el.tagName.toLowerCase()==='canvas',maxW=cv?165:45,maxH=cv?195:60;
-  var wmm=mi.w/96*25.4,hmm=mi.h/96*25.4,k=Math.min(1,maxW/wmm,maxH/hmm);
-  if(!isFinite(k)||k<=0)k=1;
-  var cx=Math.round(wmm*k*MM),cy=Math.round(hmm*k*MM),id=mi.i+1;
-  return '<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+cx+'" cy="'+cy+'"/>'
-    +'<wp:docPr id="'+id+'" name="Picture '+id+'"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
-    +'<pic:pic><pic:nvPicPr><pic:cNvPr id="'+id+'" name="image'+id+'.'+mi.ext+'"/><pic:cNvPicPr/></pic:nvPicPr>'
-    +'<pic:blipFill><a:blip r:embed="rId'+(mi.i+2)+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
-    +'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
-    +'</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'}
-var WIN=['b','strong','i','em','span','a','small','label','br','u'];
-function wInline(n,o,ctx){o=o||{};var out=[];
-  if(n.nodeType===3){var r=wRun(n.textContent,o);return r?[r]:[]}
-  var tg=n.tagName.toLowerCase();
-  if(tg==='br')return['<w:r><w:br/></w:r>'];
-  if(tg==='img'||tg==='canvas')return[];
-  if(tg==='span'){var m=/color:\s*([^;]+)/i.exec(n.getAttribute('style')||''),c=m?wHex(m[1].trim()):'';if(c)o={b:o.b,color:c}}
-  if(tg==='b'||tg==='strong')o={b:1,color:o.color};
-  [].slice.call(n.childNodes).forEach(function(k){out=out.concat(wInline(k,o,ctx))});
-  return out}
-function wHasBlock(el){return !!el.querySelector('table,canvas,figure,div,h1,h2')}
-function wTbl(t,ctx){var rows=[].slice.call(t.querySelectorAll('tr')),nc=1;
-  rows.forEach(function(r){nc=Math.max(nc,r.children.length)});var cw=Math.floor(WW/nc);
-  var out='<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>';
-  for(var i=0;i<nc;i++)out+='<w:gridCol w:w="'+cw+'"/>';
-  out+='</w:tblGrid>';
-  rows.forEach(function(r){out+='<w:tr>';
-    [].slice.call(r.children).forEach(function(c){var hd=c.tagName.toLowerCase()==='th';
-      out+='<w:tc><w:tcPr><w:tcW w:w="'+cw+'" w:type="dxa"/>'+(hd?'<w:shd w:val="clear" w:color="auto" w:fill="EAF0F7"/>':'')+'</w:tcPr>';
-      if(hd){out+=wP(wInline(c,{b:1},ctx),null)}
-      else out+=wP(wInline(c,{},ctx),null);
-      out+='</w:tc>'});
-    out+='</w:tr>'});
-  return out+'</w:tbl>'+wP([],null)}
-function wFig(f,ctx){var im=f.querySelector('img'),cap=f.querySelector('figcaption');
-  var out=(im?wImgP(im,ctx):wP([],null))+(wP([wRun(cap?cap.textContent:'',{color:'666666'})],'Small'));
-  return out}
-function wPhGrid(el,ctx){var fs=[].slice.call(el.querySelectorAll('figure'));if(!fs.length)return '';
-  var cols=2,cw=Math.floor(WW/cols),out='<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>';
-  for(var i=0;i<cols;i++)out+='<w:gridCol w:w="'+cw+'"/>';
-  out+='</w:tblGrid>';
-  for(var j=0;j<fs.length;j+=cols){out+='<w:tr>';
-    for(var k=0;k<cols;k++)out+='<w:tc><w:tcPr><w:tcW w:w="'+cw+'" w:type="dxa"/></w:tcPr>'+(fs[j+k]?wFig(fs[j+k],ctx):wP([],null))+'</w:tc>';
-    out+='</w:tr>'}
-  return out+'</w:tbl>'+wP([],null)}
-function wBlocks(el,ctx){var out='',buf=[];
-  function flush(){if(buf.length){out+=wP(buf,null);buf=[]}}
-  [].slice.call(el.childNodes).forEach(function(n){
-    if(n.nodeType===3||WIN.indexOf(n.tagName&&n.tagName.toLowerCase())>=0){buf=buf.concat(wInline(n,{},ctx));return}
-    flush();out+=wBlock(n,ctx)});
-  flush();return out}
-function wBlock(n,ctx){if(!n.tagName)return '';var tg=n.tagName.toLowerCase(),cls=' '+n.className+' ';
-  if(tg==='h1')return wP(wInline(n,{},ctx),'Title');
-  if(tg==='h2')return wP(wInline(n,{},ctx),'Heading1');
-  if(tg==='table')return wTbl(n,ctx);
-  if(tg==='figure')return wFig(n,ctx);
-  if(tg==='img')return wImgP(n,ctx);
-  if(tg==='canvas')return wImgP(n,ctx)||wP([wRun('Satellite map not embedded: open the Print report for that, or download the area tiles first.',{color:'C00000'})],null);
-  if(cls.indexOf(' ph ')>=0)return wPhGrid(n,ctx);
-  if(wHasBlock(n))return wBlocks(n,ctx);
-  var r=wInline(n,{},ctx);if(!r.length)return '';
-  return wP(r,cls.indexOf(' note ')>=0?'Small':null)}
-// media parts: every picture in the report DOM has to become a file inside the package
-function wMedia(d,ctx){var els=[].slice.call(d.querySelectorAll('canvas,img')),push=[];
-  els.forEach(function(el){
-    if(el.tagName.toLowerCase()==='canvas'){var u='';try{u=el.toDataURL('image/png')}catch(e){return}
-      el.__wi=ctx.length;ctx.push({i:ctx.length,w:el.width,h:el.height,ext:'png',b64:u.split(',')[1]});return}
-    var w=el.naturalWidth||0,h=el.naturalHeight||0;if(!w||!h)return;
-    push.push(fetch(el.src).then(function(r){return r.blob()}).then(function(b){
-      var ext=/png/.test(b.type)?'png':/gif/.test(b.type)?'gif':'jpg';
-      return b.arrayBuffer().then(function(x){el.__wi=ctx.length;ctx.push({i:ctx.length,w:w,h:h,ext:ext,b64:wB64(new Uint8Array(x))})})}).catch(function(){}))});
-  return Promise.all(push).then(function(){return ctx})}
-function wB64(u){var s='',CH=0x8000;for(var i=0;i<u.length;i+=CH)s+=String.fromCharCode.apply(null,u.subarray(i,i+CH));return btoa(s)}
-var CRC=(function(){var t=[],n,c;for(n=0;n<256;n++){c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
-function wCrc(u){var c=0xFFFFFFFF;for(var i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
-// store-only zip: Word accepts uncompressed parts and it keeps this dependency-free
-function wZip(fl){var en=new TextEncoder(),d=new Date();
-  var dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(),tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
-  var out=[],cen=[],off=0;
-  fl.forEach(function(f){var nm=en.encode(f.name),u=typeof f.data==='string'?en.encode(f.data):f.data,c=wCrc(u);
-    var lh=new DataView(new ArrayBuffer(30));
-    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(8,0,true);lh.setUint16(10,tm,true);lh.setUint16(12,dt,true);
-    lh.setUint32(14,c,true);lh.setUint32(18,u.length,true);lh.setUint32(22,u.length,true);lh.setUint16(26,nm.length,true);
-    out.push(new Uint8Array(lh.buffer),nm,u);
-    var ch=new DataView(new ArrayBuffer(46));
-    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(28,nm.length,true);
-    ch.setUint32(16,c,true);ch.setUint32(20,u.length,true);ch.setUint32(24,u.length,true);ch.setUint32(42,off,true);
-    cen.push([new Uint8Array(ch.buffer),nm]);off+=30+nm.length+u.length});
-  var co=0;cen.forEach(function(e){out.push(e[0],e[1]);co+=46+e[1].length});
-  var eo=new DataView(new ArrayBuffer(22));
-  eo.setUint32(0,0x06054b50,true);eo.setUint16(8,cen.length,true);eo.setUint16(10,cen.length,true);
-  eo.setUint32(12,co,true);eo.setUint32(16,off,true);out.push(new Uint8Array(eo.buffer));
-  return new Blob(out,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
-function wU8(b64s){var s=atob(b64s),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
-var WXML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-var WSTY=WXML+'<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-  +'<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="21"/></w:rPr></w:rPrDefault>'
-  +'<w:pPrDefault><w:pPr><w:spacing w:after="80"/></w:pPr></w:pPrDefault></w:docDefaults>'
-  +'<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'
-  +'<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="160"/></w:pPr><w:rPr><w:b/><w:sz w:val="34"/><w:color w:val="1F4E79"/></w:rPr></w:style>'
-  +'<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="200" w:after="80"/></w:pPr><w:rPr><w:b/><w:sz w:val="26"/><w:color w:val="1F4E79"/></w:rPr></w:style>'
-  +'<w:style w:type="paragraph" w:styleId="Small"><w:name w:val="Small"/><w:basedOn w:val="Normal"/><w:rPr><w:sz w:val="17"/><w:color w:val="595959"/></w:rPr></w:style>'
-  +'<w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/><w:tblPr><w:tblBorders>'
-  +'<w:top w:val="single" w:sz="4" w:color="A6A6A6"/><w:left w:val="single" w:sz="4" w:color="A6A6A6"/><w:bottom w:val="single" w:sz="4" w:color="A6A6A6"/><w:right w:val="single" w:sz="4" w:color="A6A6A6"/><w:insideH w:val="single" w:sz="4" w:color="A6A6A6"/><w:insideV w:val="single" w:sz="4" w:color="A6A6A6"/>'
-  +'</w:tblBorders></w:tblPr></w:style></w:styles>';
-function wDocx(d){var ctx=[];
-  return wMedia(d,ctx).then(function(){
-    var body=wBlocks(d,ctx);
-    var exts={};ctx.forEach(function(m){exts[m.ext]=1});
-    var dt='<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>';
-    Object.keys(exts).forEach(function(e){dt+='<Default Extension="'+e+'" ContentType="image/'+(e==='jpg'?'jpeg':e)+'"/>'});
-    var fl=[{name:'[Content_Types].xml',data:WXML+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+dt
-        +'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-        +'<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'},
-      {name:'_rels/.rels',data:WXML+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
-      {name:'word/_rels/document.xml.rels',data:WXML+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
-        +ctx.map(function(m){return '<Relationship Id="rId'+(m.i+2)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image'+(m.i+1)+'.'+m.ext+'"/>'}).join('')
-        +'</Relationships>'},
-      {name:'word/styles.xml',data:WSTY},
-      {name:'word/document.xml',data:WXML+'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
-        +' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
-        +' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>'+body
-        +'<w:sectPr><w:pgSz w:w="'+WPG.w+'" w:h="'+WPG.h+'"/><w:pgMar w:top="'+WPG.m+'" w:right="'+WPG.m+'" w:bottom="'+WPG.m+'" w:left="'+WPG.m+'" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>'}];
-    ctx.forEach(function(m){fl.push({name:'word/media/image'+(m.i+1)+'.'+m.ext,data:wU8(m.b64)})});
-    return wZip(fl)})}
-$('xWord').onclick=function(){var p=rptBuild();if(!p)return toast('Nothing to report');toast('Building Word report…');
-  p.then(function(d){return wDocx(d).then(function(b){d.remove();dlBlob((lastProj||'TLM')+' report '+stamp()+'.docx',b);toast('Word report saved')})}).catch(function(e){toast('Word export failed: '+(e&&e.message||e))})};
+// ---------- map image export: the same fitted map the report draws, saved as one PNG ----------
+$('xMapPng').onclick=function(){var a=vis().filter(function(r){return r.pos});if(!a.length)return toast('No located poles to map');
+  var by={};a.forEach(function(r){by[r.id]=r});toast('Drawing map image…');
+  // cache-only tiles: a canvas built from live Google tiles is locked out of toBlob, so an uncached area exports as a plain pole map
+  rptMap(a,by,1).then(function(m){if(!m||!m.cv||!m.cv.toBlob)return toast('Nothing to map');
+    m.cv.toBlob(function(b){if(!b)return toast('Could not write the PNG file');
+      dlBlob((lastProj||'TLM')+' map '+stamp()+'.png',b);
+      toast(m.ok?'Map image saved':'Map image saved — download this area under Offline map tiles to get the satellite underneath')},'image/png')}).catch(function(e){toast('Map image failed: '+(e&&e.message||e))})};
 function dlBlob(name,blob){var a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1000)}
 // keyboard map controls
