@@ -164,6 +164,7 @@ body.dr #drScrim{opacity:1;visibility:visible;transition:opacity .26s var(--ease
   #drawer{visibility:visible;transform:none;box-shadow:1.5px 0 0 var(--line)}
   body{padding-left:280px}
   #sheet,#dlSheet{left:280px}
+  body.view #pNew,body.view #pRen,body.view #pDel{display:block}
 }
 
 /* ===== modern UI layer ===== */
@@ -663,9 +664,13 @@ function zoom(d){var base=M.zt==null?M.z:M.zt,z=clampZ(base+d);if(Math.abs(z-bas
 function fit(){
   var a=vis().filter(function(r){return r.pos});if(!a.length){ctr(7.07,125.61,12);draw();return}
   var w=$('map').clientWidth,h=$('map').clientHeight,la=a.map(function(r){return r.pos.lat}),lo=a.map(function(r){return r.pos.lon});
-  var n=Math.max.apply(0,la),s=Math.min.apply(0,la),e=Math.max.apply(0,lo),o=Math.min.apply(0,lo),z=ZMAX;
-  for(;z>ZMIN;z--){var p1=px(n,o,z),p2=px(s,e,z);if(p2.x-p1.x<w-90&&p2.y-p1.y<h-90)break}
-  ctr((n+s)/2,(e+o)/2,Math.min(z,ZMAX));draw()}
+  var n=Math.max.apply(0,la),s=Math.min.apply(0,la),e=Math.max.apply(0,lo),o=Math.min.apply(0,lo),pad=24,padR=72;
+  var p1=px(n,o,0),p2=px(s,e,0),sx=Math.abs(p2.x-p1.x),sy=Math.abs(p2.y-p1.y),z=ZMAX;
+  if(sx>1e-9)z=Math.min(z,Math.log(Math.max(1,w-pad-padR)/sx)/Math.LN2);
+  if(sy>1e-9)z=Math.min(z,Math.log(Math.max(1,h-pad*2)/sy)/Math.LN2);
+  z=Math.max(ZMIN,Math.min(ZMAX,z));
+  var q1=px(n,o,z),q2=px(s,e,z),c=ll((q1.x+q2.x)/2+(padR-pad)/2,(q1.y+q2.y)/2,z);
+  ctr(c.lat,c.lon,z);draw()}
 function mapOpen(){if(!M.init){M.init=1;fit()}
   gpsStart();
   draw()}
