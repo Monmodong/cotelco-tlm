@@ -18,10 +18,12 @@
 #projNow:hover{filter:brightness(1.1)}#projNow:active{transform:scale(.95)}
 body.view #vM{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
 body.view #pNew,body.view #pRen,body.view #pDel{display:none}
-.th img{cursor:zoom-in}
+.th img,.thumbs img{cursor:zoom-in}
 #lb{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:16px;animation:popIn .2s var(--ease)}
-#lb img{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain}
-#lbX{position:absolute;top:calc(10px + env(safe-area-inset-top));right:14px;width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;border-radius:99px;border:1px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-size:1.1rem;cursor:pointer}
+#lb img{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain;cursor:zoom-in}
+#lb.z{align-items:flex-start;justify-content:flex-start;overflow:auto;padding:0}
+#lb.z img{max-width:none;max-height:none;border-radius:0;cursor:zoom-out;margin:auto}
+#lbX{position:fixed;z-index:71;top:calc(10px + env(safe-area-inset-top));right:14px;width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;border-radius:99px;border:1px solid #fff;background:rgba(0,0,0,.5);color:#fff;font-size:1.1rem;cursor:pointer}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);transition:background-color .3s var(--ease),color .3s var(--ease)}
@@ -449,7 +451,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 </section>
 </main>
 <div id="toast" role="status"></div>
-<div id="lb" hidden><button type="button" id="lbX" aria-label="Close photo">&#10005;</button><img id="lbI" alt="Survey photo enlarged"></div>
+<div id="lb" hidden><img id="lbI" alt="Survey photo enlarged"></div><button type="button" id="lbX" aria-label="Close photo" hidden>&#10005;</button>
 
 <script>
 (function(){
@@ -885,11 +887,13 @@ function setView(on,quiet){viewMode=!!on;document.body.classList.toggle('view',v
   if(!quiet){try{localStorage.setItem(KEY+'.view',viewMode?'1':'0')}catch(e){}toast(viewMode?'View mode — pins open details only, nothing can be edited':'Survey mode — tap the map to place a new pole')}}
 $('vM').onclick=function(){setView(!viewMode)};
 // photo lightbox
-function lbOpen(src){$('lbI').src=src;$('lb').hidden=false;document.body.style.overflow='hidden'}
-function lbClose(){$('lb').hidden=true;$('lbI').removeAttribute('src');if($('sheet').hidden)document.body.style.overflow=''}
-$('lb').onclick=lbClose;
+function lbOpen(src){var l=$('lb'),i=$('lbI');l.classList.remove('z');l.scrollLeft=0;l.scrollTop=0;i.title='Click to view at full size';i.src=src;l.hidden=false;$('lbX').hidden=false;document.body.style.overflow='hidden'}
+function lbClose(){var l=$('lb');l.hidden=true;$('lbX').hidden=true;l.classList.remove('z');l.scrollLeft=0;l.scrollTop=0;$('lbI').removeAttribute('src');$('lbI').title='';if($('sheet').hidden)document.body.style.overflow=''}
+$('lb').onclick=function(e){if(e.target===$('lb')&&!e.currentTarget.classList.contains('z'))lbClose()};
+$('lbX').onclick=lbClose;
+$('lbI').onclick=function(e){e.stopPropagation();var l=$('lb'),on=l.classList.toggle('z');this.title=on?'Click to fit the screen':'Click to view at full size';if(on){l.scrollLeft=Math.max(0,(l.scrollWidth-l.clientWidth)/2);l.scrollTop=Math.max(0,(l.scrollHeight-l.clientHeight)/2)}else{l.scrollLeft=0;l.scrollTop=0}};
 addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('lb').hidden)lbClose()});
-document.addEventListener('click',function(e){var im=e.target.closest('.th img');if(im&&im.src)lbOpen(im.src)});
+document.addEventListener('click',function(e){var im=e.target.closest('.th img,.thumbs img');if(im&&im.src)lbOpen(im.src)});
 addEventListener('resize',draw);
 if(window.ResizeObserver){var ro=new ResizeObserver(function(){if(ro.p)return;ro.p=requestAnimationFrame(function(){ro.p=0;draw()})});ro.observe($('map'))}
 Object.keys(BASES).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=BASES[k].n;$('baseSel').appendChild(o)});
@@ -1465,7 +1469,7 @@ function pallD(){return pall().then(function(p){return Promise.all(Object.keys(p
     if(typeof v==='string')return {k:k,v:v};return bToD(v).then(function(s){return {k:k,v:s}})}))})
   .then(function(a){var out={};a.forEach(function(x){out[x.k]=x.v});return out})}
 function shrink(file){return new Promise(function(res){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,2560/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);if(!c.toBlob)return res(dToB(c.toDataURL('image/jpeg',.92)));c.toBlob(function(b){res(b||null)},'image/jpeg',.92)};im.onerror=function(){res(null)};im.src=u})}
-function showPh(){$('thP').innerHTML=ph.map(function(b,i){return'<span class="phc"><img src="'+uGet('sheet:'+i,b)+'" alt="Pole photo '+(i+1)+'"><button type="button" class="x" data-i="'+i+'" aria-label="Remove this photo">&#10005;</button></span>'}).join('')
+function showPh(){$('thP').innerHTML=ph.map(function(b,i){return'<span class="phc"><img src="'+uGet('sheet:'+i,b)+'" alt="Pole photo '+(i+1)+', tap to enlarge" title="Click to enlarge"><button type="button" class="x" data-i="'+i+'" aria-label="Remove this photo">&#10005;</button></span>'}).join('')
     +'<b class="cnt">'+ph.length+' of '+PHN+' photos</b>'}
 function savePh(r){if(!phD)return Promise.resolve();var jobs=[];
   for(var i=0;i<PHN;i++)jobs.push(pput(phKey(r.id,i),ph[i]||null));
