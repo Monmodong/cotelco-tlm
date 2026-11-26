@@ -78,7 +78,7 @@ body.cap{overflow:hidden;background:#111}
 body.cap>header,body.cap>aside,body.cap>#drScrim,body.cap>main>section:not(#mapSec),body.cap>#toast,body.cap>#lb,body.cap>#lbX{display:none!important}
 body.cap>main{padding:0!important;margin:0!important;max-width:none!important}
 body.cap #map{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;min-height:0;border:0;border-radius:0;transition:none;z-index:50}
-body.cap #map .mb,body.cap #baseSel,body.cap #offBadge,body.cap #gstat,body.cap #pop{display:none!important}
+body.cap #map .mb,body.cap #mnote,body.cap #baseSel,body.cap #offBadge,body.cap #gstat,body.cap #pop{display:none!important}
 #gstat{position:absolute;left:6px;right:64px;top:62px;background:var(--card);border:1.5px solid var(--warn);border-radius:8px;padding:6px 10px;font-size:.82rem;animation:popIn .22s var(--ease);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #gstat span{flex:1;min-width:140px}
 #gstat .btn{padding:6px 10px;font-size:.78rem;line-height:1.2}
@@ -497,7 +497,7 @@ function collect(){
     pole:{no:$('pno').value.trim(),primary:priStr(),secondary:secStr(),p:{m:$('pri').value,l:$('pril').value},s:{m:$('sec').value,l:$('secl').value},material:radio('mat'),voltage:num('vp'),cust:num('cust'),lineA:num('lc'),remarks:$('prem').value.trim()},
     tx:tx?{rating:$('kva').value,type:radio('ttype'),tap:$('tap').value,cutout:$('acut').checked,hanger:$('ahan').checked,grounding:$('agnd').checked,pmount:$('apm').checked,line:num('i1'),neutral:num('in'),remarks:$('trem').value.trim()}:null};
 }
-function sv(id,v){var s=$(id);if(v&&![].some.call(s.options,function(o){return o.value===v}))s.appendChild(new Option(v,v));s.value=v||''}
+function sv(id,v){var s=$(id);if(v&&![].some.call(s.options,function(o){return o.value===String(v)}))s.appendChild(new Option(v,v));s.value=v||''}
 function fill(r){
   $('pno').value=r.pole.no;var pp=r.pole.p||{m:r.pole.primary,l:''},ss=r.pole.s||{m:r.pole.secondary,l:''};sv('pri',pp.m);sv('pril',pp.l);sv('sec',ss.m);sv('secl',ss.l);setRadio('mat',r.pole.material==='Cement'?'Concrete':r.pole.material);$('vp').value=r.pole.voltage;$('cust').value=r.pole.cust==null?'':r.pole.cust;$('lc').value=r.pole.lineA==null?'':r.pole.lineA;$('conn').value=r.from||'';$('prem').value=r.pole.remarks;
   var t=r.tx;$('hasTx').checked=!!t;$('txBox').hidden=!t;t=t||{};
