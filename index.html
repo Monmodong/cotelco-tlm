@@ -882,9 +882,9 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
 $('zi').onclick=function(){zoom(ZS_BTN)};$('zo').onclick=function(){zoom(-ZS_BTN)};
 $('fitB').onclick=function(){if(!vis().some(function(r){return r.pos}))return toast('No pole with a position yet');fit()};
 // the browser composites Google imagery on screen; capture that frame instead of asking the tainted map canvas for its pixels
-function mapCapture(stream,b){var tracks=stream.getVideoTracks();if(!tracks.length){stream.getTracks().forEach(function(t){t.stop()});b.disabled=false;toast('No map video to capture');return}
+function mapCapture(stream,b){var tracks=stream.getVideoTracks();if(!tracks.length){stream.getTracks().forEach(function(t){t.stop()});document.body.classList.remove('cap');b.disabled=false;draw();toast('No map video to capture');return}
   var st=tracks[0].getSettings?tracks[0].getSettings():{};
-  if(st.displaySurface&&st.displaySurface!=='browser'){stream.getTracks().forEach(function(t){t.stop()});b.disabled=false;toast('Choose a browser tab, not the whole screen');return}
+  if(st.displaySurface&&st.displaySurface!=='browser'){stream.getTracks().forEach(function(t){t.stop()});document.body.classList.remove('cap');b.disabled=false;draw();toast('Choose a browser tab, not the whole screen');return}
   var v=document.createElement('video'),done=0;v.muted=true;v.playsInline=true;v.autoplay=true;v.style.cssText='position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
   function clean(){if(done)return;done=1;stream.getTracks().forEach(function(t){t.stop()});v.remove();document.body.classList.remove('cap');b.disabled=false;draw()}
   function fail(m){clean();toast(m)}
@@ -896,13 +896,14 @@ function mapCapture(stream,b){var tracks=stream.getVideoTracks();if(!tracks.leng
       var a=document.createElement('a'),u=URL.createObjectURL(bl);a.href=u;a.download=(lastProj||'TLM')+' map '+stamp()+'.png';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1000);toast('Map image saved')},'image/png')}catch(e){toast('This browser could not save the captured map')}}
   tracks[0].addEventListener('ended',function(){if(!done){clean();toast('Map capture stopped')}});
   document.body.appendChild(v);v.srcObject=stream;
-  v.play().then(function(){document.body.classList.add('cap');requestAnimationFrame(function(){requestAnimationFrame(function(){draw();setTimeout(save,180)})})}).catch(function(){fail('Could not start map capture')});
+  v.play().then(function(){document.body.classList.add('cap');requestAnimationFrame(function(){requestAnimationFrame(function(){draw();
+    if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(function(){save()},{once:true});else setTimeout(save,250)})})}).catch(function(){fail('Could not start map capture')});
   setTimeout(function(){if(!done&&!v.videoWidth)fail('Map capture timed out')},10000)}
 $('capB').onclick=function(){var b=this;if(b.disabled)return;
   if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia)return toast('This browser cannot capture the map. Use Print → Save as PDF or a screenshot.');
-  b.disabled=true;toast('Choose this browser tab and allow capture…');
+  b.disabled=true;document.body.classList.add('cap');draw();toast('Choose this browser tab and allow capture…');
   navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser',frameRate:1},audio:false,preferCurrentTab:true,selfBrowserSurface:'include'}).then(function(s){mapCapture(s,b)}).catch(function(e){
-    b.disabled=false;toast(e&&e.name==='NotAllowedError'?'Capture cancelled or blocked. Choose this tab and allow capture.':'This browser could not capture the map. Use Print → Save as PDF.')})};
+    document.body.classList.remove('cap');draw();b.disabled=false;toast(e&&e.name==='NotAllowedError'?'Capture cancelled or blocked. Choose this tab and allow capture.':'This browser could not capture the map. Use Print → Save as PDF.')})};
 $('greq').onclick=gpsAsk;
 // view-only mode: browse and inspect, never edit
 var viewMode=0;
