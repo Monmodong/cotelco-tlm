@@ -385,6 +385,9 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <button class="btn d" id="pDel" type="button">Delete project</button>
   </div>
   <div class="grp"><b>Move data</b>
+    <label for="hScope">Send / merge scope</label>
+    <select id="hScope"><option value="project">This project only</option><option value="all">All projects</option></select>
+    <p class="note" id="hNote"></p>
     <button class="btn p" id="hSend" type="button">Send to PC</button>
     <button class="btn" id="hMerge" type="button">Merge phone file</button>
     <label class="sw"><input type="checkbox" id="hPh" checked><span>Include photos in the file</span></label>
@@ -392,7 +395,7 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
     <button class="btn" id="imp" type="button">Import backup</button>
     <input type="file" id="file" accept=".json,application/json" hidden>
     <input type="file" id="hFile" accept=".json,application/json" hidden>
-    <p class="note">No account needed. <b>Send to PC</b> hands one file to the phone&rsquo;s share sheet &mdash; WhatsApp to yourself, your Drive app, email, a cable. On the PC press <b>Merge phone file</b> and pick it: poles added on either side both arrive, the newer copy of a pole changed on both wins, deletes carry over. Photos off makes the file a few hundred kilobytes instead of megabytes.</p>
+    <p class="note">No account needed. <b>Send to PC</b> hands one file to the phone&rsquo;s share sheet &mdash; WhatsApp to yourself, your Drive app, email, a cable. On the PC press <b>Merge phone file</b> and pick it: poles added on either side both arrive, the newer copy of a pole changed on both wins, deletes carry over. Choose <b>This project only</b> to send or merge just the open project, or <b>All projects</b> for everything on the device. Photos off makes the file a few hundred kilobytes instead of megabytes.</p>
   </div>
   <div class="grp"><b>Reports</b>
     <button class="btn" id="xCsv" type="button">Export CSV</button>
@@ -569,7 +572,7 @@ function lists(){var pj={};recs.forEach(function(r){if(r.project)pj[r.project]=1
   ['pri','sec'].forEach(function(k){
     var seen={};recs.forEach(function(r){var v=r.pole[k==='pri'?'primary':'secondary'];if(v)seen[v]=1});
     $(k+'L').innerHTML=Object.keys(seen).map(function(v){return '<option value="'+esc(v)+'">'}).join('')})}
-function count(){$('tabList').textContent='Saved ('+vis().length+')'}
+function count(){$('tabList').textContent='Saved ('+vis().length+')';hNote()}
 
 // list
 function hav(a,b){var R=6371000,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r,x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)*Math.sin(dn/2);return 2*R*Math.asin(Math.min(1,Math.sqrt(x)))}
@@ -649,13 +652,27 @@ function hSave(){try{localStorage.setItem(KEY+'.del',JSON.stringify(hand))}catch
 function hMark(id,up,p){var w=String(up||new Date().toISOString());
   for(var i=0;i<hand.length;i++)if(hand[i].id===id){hand[i]={id:id,up:w,p:p||''};hSave();return}
   hand.push({id:id,up:w,p:p||''});hSave()}
-function hFile(){return ($('hPh').checked?pallD():Promise.resolve({})).then(function(ph){
-  return JSON.stringify({v:3,kind:'cotelco-handoff',projects:projects,recs:recs,deleted:hand,photos:ph||{}})})}
+function hScope(){return $('hScope').value==='all'?'all':'project'}
+function hInP(r){return (r.project||lastProj)===lastProj}
+function hRecs(){return hScope()==='all'?recs:recs.filter(hInP)}
+function hDels(){return hScope()==='all'?hand:hand.filter(function(x){return x.p===lastProj})}
+function hNote(){var n=$('hNote');if(!n)return;var c=hRecs().length;
+  n.textContent=hScope()==='all'?'Everything on this device: '+recs.length+' pole'+(recs.length===1?'':'s')+' across '+projects.length+' project'+(projects.length===1?'':'s')+'.':'Only \u201c'+lastProj+'\u201d: '+c+' pole'+(c===1?'':'s')+'. Merging also applies only to this project.'}
+function hFile(){var rs=hRecs(),ok={},all=hScope()==='all';rs.forEach(function(r){ok[r.id]=1});
+  return ($('hPh').checked?pallD(all?null:function(k){return ok[k.slice(0,k.lastIndexOf(':P'))]}):Promise.resolve({})).then(function(ph){
+  return JSON.stringify({v:3,kind:'cotelco-handoff',scope:all?'all':'project',project:lastProj,projects:all?projects:[lastProj],recs:rs,deleted:hDels(),photos:ph||{}})})}
 function hTake(r,D,box){var q=D.photos||{};phAll(r.id).forEach(function(x){var v=q[x[1]];if(v){pput(x[1],asBlob(v));box.p++}})}
 function hApply(D){
   var ins={},rdel={};
   (D.recs||[]).forEach(function(r){if(r&&r.id&&r.pole)ins[r.id]=r});
   (D.deleted||[]).forEach(function(x){if(x&&x.id)rdel[x.id]=x});
+  var mode=hScope(),skipped=0,seenP={};
+  if(mode==='project'){
+    Object.keys(ins).forEach(function(id){var p=ins[id].project||D.project||lastProj;seenP[p]=1;if(p!==lastProj){delete ins[id];skipped++}});
+    Object.keys(rdel).forEach(function(id){var x=rdel[id],l0=recs.find(function(q){return q.id===id}),p=x.p||(l0&&l0.project)||D.project||'';if(p&&p!==lastProj)seenP[p]=1;if(p!==lastProj){delete rdel[id];skipped++}});
+    if(!Object.keys(ins).length&&!Object.keys(rdel).length){
+      var nm=Object.keys(seenP).join(', ');
+      return toast(skipped?'This file is for \u201c'+nm+'\u201d, not \u201c'+lastProj+'\u201d. Open that project or choose All projects.':'Nothing in this file for \u201c'+lastProj+'\u201d')}}
   var ldel={},byId={};hand.forEach(function(x){ldel[x.id]=x});recs.forEach(function(r){byId[r.id]=r});
   var ids=Object.keys(ins);Object.keys(rdel).forEach(function(id){if(!ins[id])ids.push(id)});
   var a={n:0,u:0,g:0,p:0};
@@ -668,14 +685,15 @@ function hApply(D){
     if(ld){if(upOf(i)<=upOf(ld))return;                    // deleted here, and that edit predates the delete
       hand=hand.filter(function(x){return x.id!==id});hSave()}
     if(l){if(upOf(i)>upOf(l)){recs[recs.indexOf(l)]=i;byId[id]=i;hTake(i,D,a);a.u++}return}
-    secStd(i);if(!i.project)i.project=lastProj;recs.push(i);byId[id]=i;hTake(i,D,a);a.n++});
-  (D.projects||[]).forEach(function(p){if(p&&projects.indexOf(p)<0)projects.push(p)});
+    secStd(i);if(!i.project)i.project=D.project||lastProj;recs.push(i);byId[id]=i;hTake(i,D,a);a.n++});
+  if(mode==='all')(D.projects||[]).forEach(function(p){if(p&&projects.indexOf(p)<0)projects.push(p)});
   persist();projUI();render();count();lists();draw();
-  if(!a.n&&!a.u&&!a.g)toast('Nothing to merge — this device already has the newest copies');
-  else toast(a.n+' new, '+a.u+' newer, '+a.g+' deleted'+(a.p?', '+a.p+' photo(s)':''))}
+  var sk=skipped?' ('+skipped+' from other projects skipped)':'';
+  if(!a.n&&!a.u&&!a.g)toast('Nothing to merge — this device already has the newest copies'+sk);
+  else toast(a.n+' new, '+a.u+' newer, '+a.g+' deleted'+(a.p?', '+a.p+' photo(s)':'')+sk)}
 var hCache=null;
-function hKey(){return recs.length+'|'+recs.reduce(function(m,r){return Math.max(m,Date.parse(upOf(r))||0)},0)+'|'+hand.length+'|'+$('hPh').checked}
-function hPrep(){var k=hKey();if(hCache&&hCache.key===k)return Promise.resolve(hCache);return hFile().then(function(txt){return hCache={key:k,txt:txt,nm:'cotelco-handoff-'+stamp()+'.json',mb:Math.round(txt.length/104857.6)/10}})}
+function hKey(){return recs.length+'|'+recs.reduce(function(m,r){return Math.max(m,Date.parse(upOf(r))||0)},0)+'|'+hand.length+'|'+$('hPh').checked+'|'+hScope()+'|'+lastProj}
+function hPrep(){var k=hKey();if(hCache&&hCache.key===k)return Promise.resolve(hCache);return hFile().then(function(txt){return hCache={key:k,txt:txt,nm:'cotelco-handoff-'+(hScope()==='all'?'all-projects':(lastProj.replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,30)||'project'))+'-'+stamp()+'.json',mb:Math.round(txt.length/104857.6)/10}})}
 function hShare(c){if(!navigator.share||!navigator.canShare)return null;var ty=['application/json','text/plain','application/octet-stream'];
   for(var i=0;i<ty.length;i++){var f=new File([c.txt],c.nm,{type:ty[i]});if(navigator.canShare({files:[f]}))return navigator.share({files:[f],title:'COTELCO survey',text:'Open in COTELCO TLM on the PC, then press Merge phone file'})}return null}
 function hGo(c,fresh){var p;try{p=hShare(c)}catch(e){p=Promise.reject(e)}
@@ -683,10 +701,12 @@ function hGo(c,fresh){var p;try{p=hShare(c)}catch(e){p=Promise.reject(e)}
   p.then(function(){toast('Handed off, '+c.mb+' MB')},function(e){if(e&&e.name==='AbortError')return;
     if(e&&e.name==='NotAllowedError'&&fresh){toast('File is ready — tap Send again to open the share menu');return}
     dlFile(c.nm,c.txt,'application/json');toast('Share did not run — saved to Downloads instead')})}
-$('hSend').onclick=function(){if(!recs.length&&!hand.length)return toast('Nothing to send yet');
+$('hSend').onclick=function(){if(!hRecs().length&&!hDels().length)return toast(hScope()==='all'?'Nothing to send yet':'Nothing to send in this project yet');
   if(hCache&&hCache.key===hKey())return hGo(hCache,0);   // file already built: share opens instantly inside the tap
   toast('Preparing file…');hPrep().then(function(c){hGo(c,1)})};
 $('hPh').addEventListener('change',function(){hCache=null;hPrep().catch(function(){})});
+try{var hs0=localStorage.getItem(KEY+'.hscope');if(hs0==='all'||hs0==='project')$('hScope').value=hs0}catch(e){}
+$('hScope').addEventListener('change',function(){try{localStorage.setItem(KEY+'.hscope',this.value)}catch(e){}hCache=null;hNote();if(recs.length)hPrep().catch(function(){})});
 $('menu').addEventListener('click',function(){setTimeout(function(){if(recs.length)hPrep().catch(function(){})},400)});
 var _pp=pput;pput=function(){hCache=null;return _pp.apply(this,arguments)};
 $('hMerge').onclick=function(){$('hFile').click()};
@@ -1544,7 +1564,7 @@ function bSig(v){var b=asBlob(v);if(!b)return Promise.resolve('');
   return b.slice(0,4096).arrayBuffer().then(function(x){var a=new Uint8Array(x),h=5381;for(var i=0;i<a.length;i++)h=((h<<5)+h+a[i])|0;return (h>>>0)+':'+b.size},function(){return String(b.size)})}
 function pall(){return idb().then(function(d){return new Promise(function(res){var o={},c=d.transaction('p').objectStore('p').openCursor();c.onsuccess=function(){var x=c.result;if(x){o[x.key]=x.value;x.continue()}else res(o)};c.onerror=function(){res(o)}})}).catch(function(){return{}})}
 // backups keep the old base64 format, so Blobs are converted only for the export file
-function pallD(){return pall().then(function(p){return Promise.all(Object.keys(p).map(function(k){var v=p[k];
+function pallD(f){return pall().then(function(p){return Promise.all(Object.keys(p).filter(function(k){return !f||f(k)}).map(function(k){var v=p[k];
     if(typeof v==='string')return {k:k,v:v};return bToD(v).then(function(s){return {k:k,v:s}})}))})
   .then(function(a){var out={};a.forEach(function(x){out[x.k]=x.v});return out})}
 function shrink(file){return new Promise(function(res){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,2560/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);if(!c.toBlob)return res(dToB(c.toDataURL('image/jpeg',.92)));c.toBlob(function(b){res(b||null)},'image/jpeg',.92)};im.onerror=function(){res(null)};im.src=u})}
