@@ -559,7 +559,11 @@ $('f').onsubmit=function(e){
   e.preventDefault();var r=collect();var o0=recs.find(function(x){return x.id===r.id})||{pole:{}};r.pole.ph=phD?!!ph.length:!!o0.pole.ph;var miss=[];if(!r.pole.s.m)miss.push('Secondary structure');if(!r.pole.material)miss.push('Material');if(r.tx){if(r.tx.rating==='')miss.push('Transformer rating');if(!r.tx.type)miss.push('Transformer type');if(r.tx.line===''||r.tx.line==null)miss.push('Line current')}if(miss.length){toast('Required: '+miss.join(', '));return}if(!pos){toast('No location: tap the map to place the pole');return}var bn=badNum(r);if(bn){toast(bn);return}var nb=recs.find(function(x){return x.id!==r.id&&x.project===r.project&&x.pos&&hav(x.pos,pos)<3});if(nb&&!confirm('Pole '+nb.pole.no+' is only '+Math.round(hav(nb.pos,pos))+' m away. Save anyway?'))return;if(r.pole.no&&recs.some(function(x){return x.id!==r.id&&x.project===r.project&&String(x.pole.no).toLowerCase()===r.pole.no.toLowerCase()})&&!confirm('Pole '+r.pole.no+' already exists in this project. Save anyway?'))return;if(r.tx){var n=recs.filter(function(x){return x.tx&&x.project===r.project&&x.id!==r.id}).length;if(n>=5&&!confirm('This project already has '+n+' transformers (max 5). Save anyway?'))return}
   var i=recs.findIndex(function(x){return x.id===r.id});
   var HR=HD==null?null:Math.round(HD);if(i>=0){var o1=recs[i];r.flag=o1.flag;r.hdg=o1.hdg!=null?o1.hdg:HR;if(o1.rh!=null)r.rh=o1.rh;if(o1.cond!=null)r.cond=o1.cond;if(r.tx&&o1.tx&&o1.tx.reads)r.tx.reads=o1.tx.reads;var ch=chgs(o1,r);r.hist=(o1.hist||[]).concat(ch.length?[{t:r.up,c:ch}]:[]).slice(-20);recs[i]=r}else{r.hdg=HR;r.hist=[];recs.unshift(r)}
-  if(persist()){toast('Saved pole '+r.pole.no);savePh(r);reset();closeSheet();lists();count();render();M.pend=null;M.sel=null;draw()}
+  if(persist()){var nid=r.id,old=(i>=0)?o1:null;savePh(r);reset();closeSheet();lists();count();render();M.pend=null;M.sel=null;draw();
+    toastU((old?'Updated pole ':'Saved pole ')+r.pole.no,function(){
+      if(old){var k=recs.findIndex(function(x){return x.id===nid});if(k>=0)recs[k]=old}
+      else{recs=recs.filter(function(x){return x.id!==nid});delete SEL[nid];phDel(nid)}
+      persist();render();count();lists();M.pend=null;M.sel=null;$('pop').hidden=true;draw();toast(old?'Change undone':'Pole removed')},10000)}
 };
 function lists(){var pj={};recs.forEach(function(r){if(r.project)pj[r.project]=1});$('projL').innerHTML=Object.keys(pj).map(function(v){return '<option value="'+esc(v)+'">'}).join('');
   ['pri','sec'].forEach(function(k){
@@ -575,7 +579,7 @@ function match(r){var m=F.m,q=F.q.toLowerCase();if(m==='tx'&&!r.tx)return 0;if(m
   return !q||[r.pole.no,r.pole.primary,r.pole.secondary,r.pole.material,r.pole.remarks,r.pole.voltage,r.tx&&r.tx.remarks,r.tx&&r.tx.type,r.tx&&r.tx.rating].join(' ').toLowerCase().indexOf(q)>=0}
 function bkInfo(){if(!recs.length)return{t:'',w:0};var b=0,c=0;try{b=+localStorage.getItem(KEY+'.bk')||0;c=+localStorage.getItem(KEY+'.chg')||0}catch(e){}
   var d=b?Math.floor((Date.now()-b)/864e5):0,old=!b||d>=7||c>=25;return{t:(b?'Last backup '+(d===0?'today':d+' day'+(d>1?'s':'')+' ago'):'No backup yet')+' · '+c+' change'+(c===1?'':'s')+' since'+(old?' — please tap Backup JSON in the menu':''),w:old?1:0}}
-function toastU(m,fn){var t=$('toast');t.textContent=m+' ';var b=document.createElement('button');b.className='undo';b.textContent='Undo';b.onclick=function(){fn();t.className=''};t.appendChild(b);t.className='show u';clearTimeout(toast.h);toast.h=setTimeout(function(){t.className=''},7000)}
+function toastU(m,fn,ms){var t=$('toast');t.textContent=m+' ';var b=document.createElement('button');b.className='undo';b.textContent='Undo';b.onclick=function(){t.className='';fn()};t.appendChild(b);t.className='show u';clearTimeout(toast.h);toast.h=setTimeout(function(){t.className=''},ms||7000)}
 function delRecs(ids){var gone=recs.filter(function(x){return ids.indexOf(x.id)>=0});if(!gone.length)return;recs=recs.filter(function(x){return ids.indexOf(x.id)<0});ids.forEach(function(i){delete SEL[i]});persist();render();count();lists();draw();
   var undone=0,tm=setTimeout(function(){if(!undone)gone.forEach(function(rd){hMark(rd.id,upOf(rd),rd.project||'');phDel(rd.id)})},7000);
   toastU(gone.length+(gone.length>1?' poles':' pole')+' deleted',function(){undone=1;clearTimeout(tm);recs=gone.concat(recs);persist();render();count();lists();draw()})}
@@ -921,8 +925,8 @@ function tap(e){var b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-
     $('pop').hidden=false;$('pop').innerHTML='<b>Pole '+esc(p.no)+'</b> ('+esc(r.project||'')+')<br>'+esc(p.primary||'-')+' / '+esc(p.secondary||'-')+(p.voltage!==''?', '+p.voltage+' V':'')
       +(t?'<br>'+esc(t.rating)+' kVA '+esc(t.type)+', tap '+esc(t.tap)+', line '+(t.line===''||t.line==null?'-':t.line)+' A':'')
       +loadHtml(r)+(hp?'<div class="th" data-i="'+r.id+'"></div>':'')
-      +'<div class="row" style="margin-top:8px">'+(viewMode?'':'<button class="btn" id="pe">Edit</button>')+'<button class="btn" id="pc">Close</button></div>';
-    if(!viewMode)$('pe').onclick=function(){openSheet(r)};
+      +'<div class="row" style="margin-top:8px">'+(viewMode?'':'<button class="btn" id="pe">Edit</button><button class="btn d" id="pd">Delete</button>')+'<button class="btn" id="pc">Close</button></div>';
+    if(!viewMode){$('pe').onclick=function(){openSheet(r)};$('pd').onclick=function(){$('pop').hidden=true;M.sel=null;delRecs([r.id])}}
     $('pc').onclick=function(){$('pop').hidden=true;M.sel=null;draw()};
     if(hp)loadThumbs()}
   draw()}
@@ -962,13 +966,13 @@ function setView(on,quiet){viewMode=!!on;document.body.classList.toggle('view',v
   if(!quiet){try{localStorage.setItem(KEY+'.view',viewMode?'1':'0')}catch(e){}toast(viewMode?'View mode — pins open details only, nothing can be edited':'Survey mode — tap the map to place a new pole')}}
 $('vM').onclick=function(){setView(!viewMode)};
 // photo lightbox
-function lbOpen(src){var l=$('lb'),i=$('lbI');l.classList.remove('z');l.scrollLeft=0;l.scrollTop=0;i.title='Click to view at full size';i.src=src;l.hidden=false;$('lbX').hidden=false;document.body.style.overflow='hidden'}
-function lbClose(){var l=$('lb');l.hidden=true;$('lbX').hidden=true;l.classList.remove('z');l.scrollLeft=0;l.scrollTop=0;$('lbI').removeAttribute('src');$('lbI').title='';if($('sheet').hidden)document.body.style.overflow=''}
+function lbOpen(src,blob){var l=$('lb'),i=$('lbI');if(l._u){URL.revokeObjectURL(l._u);l._u=null}if(blob&&window.Blob&&blob instanceof Blob){l._u=URL.createObjectURL(blob);src=l._u}i.onerror=function(){if(!i.getAttribute('src'))return;toast('Could not open this photo');lbClose()};l.classList.remove('z');l.scrollLeft=0;l.scrollTop=0;i.title='Click to view at full size';i.src=src;l.hidden=false;$('lbX').hidden=false;document.body.style.overflow='hidden'}
+function lbClose(){var l=$('lb');if(l._u){URL.revokeObjectURL(l._u);l._u=null}l.hidden=true;$('lbX').hidden=true;l.classList.remove('z');l.scrollLeft=0;l.scrollTop=0;$('lbI').removeAttribute('src');$('lbI').title='';if($('sheet').hidden)document.body.style.overflow=''}
 $('lb').onclick=function(e){if(e.target===$('lb')&&!e.currentTarget.classList.contains('z'))lbClose()};
 $('lbX').onclick=lbClose;
 $('lbI').onclick=function(e){e.stopPropagation();var l=$('lb'),on=l.classList.toggle('z');this.title=on?'Click to fit the screen':'Click to view at full size';if(on){l.scrollLeft=Math.max(0,(l.scrollWidth-l.clientWidth)/2);l.scrollTop=Math.max(0,(l.scrollHeight-l.clientHeight)/2)}else{l.scrollLeft=0;l.scrollTop=0}};
 addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('lb').hidden)lbClose()});
-document.addEventListener('click',function(e){var im=e.target.closest('.th img,.thumbs img');if(im&&im.src)lbOpen(im.src)});
+document.addEventListener('click',function(e){var im=e.target.closest('.th img,.thumbs img');if(!im)return;var b=im._b;if(!b){var x=im.parentNode&&im.parentNode.querySelector('button.x');if(x&&ph[+x.dataset.i])b=ph[+x.dataset.i]}if(b&&window.Blob&&b instanceof Blob)lbOpen('',b);else if(im.src)lbOpen(im.src)});
 addEventListener('resize',draw);
 if(window.ResizeObserver){var ro=new ResizeObserver(function(){if(ro.p)return;ro.p=requestAnimationFrame(function(){ro.p=0;draw()})});ro.observe($('map'))}
 Object.keys(BASES).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=BASES[k].n;$('baseSel').appendChild(o)});
@@ -1551,7 +1555,7 @@ function savePh(r){if(!phD)return Promise.resolve();var jobs=[];
   return Promise.all(jobs).then(loadThumbs)}
 function loadThumbs(){document.querySelectorAll('.th[data-i]').forEach(function(el){el.innerHTML='';
   phAll(el.dataset.i).forEach(function(x){var s=document.createElement('span');el.appendChild(s);
-    pget(x[1]).then(function(v){if(v){var i=new Image();i.src=uGet(x[1],v);i.alt='Pole photo '+(x[0]+1)+', tap to enlarge';s.appendChild(i)}})})})}
+    pget(x[1]).then(function(v){if(v){var i=new Image();i._b=v;i.src=uGet(x[1],v);i.alt='Pole photo '+(x[0]+1)+', tap to enlarge';s.appendChild(i)}})})})}
 $('phP').onclick=function(){if(phCap())return toast('Four photos per record — remove one first');$('phF').click()};
 $('phF').onchange=function(){var fs=[].slice.call(this.files);this.value='';if(!fs.length)return;
   Promise.all(fs.map(function(f){return shrink(f)})).then(function(a){var ok=0,bad=0,skip=0;
