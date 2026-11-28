@@ -14,6 +14,8 @@
 <style>
 :root{--bg:#0a0c11;--card:#12151c;--field:#0d1016;--ink:#eef0f5;--mute:#8d95a8;--line:#222735;--acc:#5b8cff;--acc-soft:rgba(91,140,255,.14);--acc-ink:#fff;--warn:#f5a54a;--ok:#3ecf8e;--off:#ff6369;--hdr:rgba(10,12,17,.72);--hdr-ink:#eef0f5;--r:14px;--sh:0 1px 2px rgba(0,0,0,.4),0 8px 24px -8px rgba(0,0,0,.5);--ease:cubic-bezier(.22,.78,.28,1);color-scheme:dark}
 :root[data-theme=light]{--bg:#f3f4f8;--card:#fff;--field:#f6f7fa;--ink:#10131a;--mute:#667085;--line:#e3e6ee;--acc:#2f5bff;--acc-soft:rgba(47,91,255,.09);--acc-ink:#fff;--warn:#c2620f;--ok:#12915c;--off:#d92d3a;--hdr:rgba(255,255,255,.78);--hdr-ink:#10131a;--sh:0 1px 2px rgba(16,19,26,.05),0 8px 24px -10px rgba(16,19,26,.14);color-scheme:light}
+/* Nothing theme: black / white / red */
+:root[data-theme=nothing]{--bg:#000;--card:#0b0b0b;--field:#000;--ink:#fff;--mute:#9a9a9a;--line:#2b2b2b;--acc:#ff1f2d;--acc-soft:rgba(255,31,45,.14);--acc-ink:#fff;--warn:#ffb02e;--ok:#fff;--off:#ff1f2d;--hdr:rgba(0,0,0,.9);--hdr-ink:#fff;--r:6px;--sh:none;color-scheme:dark}
 #projNow{flex:none;max-width:46%;padding:4px 12px;border-radius:99px;border:1px solid var(--hdr-ink);background:none;color:var(--hdr-ink);font:inherit;font-size:.8rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #projNow:hover{filter:brightness(1.1)}#projNow:active{transform:scale(.95)}
 body.view #vM{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
@@ -319,6 +321,51 @@ body.view #vM{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
+
+/* ===== Nothing theme overrides ===== */
+:root[data-theme=nothing] body{background-image:radial-gradient(rgba(255,255,255,.11) 1px,transparent 1.2px);background-size:14px 14px;background-attachment:fixed;font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;letter-spacing:0}
+:root[data-theme=nothing] header{-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:1px dashed #444}
+:root[data-theme=nothing] header h1,:root[data-theme=nothing] legend,:root[data-theme=nothing] #drawer .dh b,:root[data-theme=nothing] #drawer .grp>b,:root[data-theme=nothing] .ac label,:root[data-theme=nothing] #sheet .bar b,:root[data-theme=nothing] #dlSheet .bar b{font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;text-transform:uppercase;letter-spacing:.14em;font-weight:700}
+:root[data-theme=nothing] #net.on{background:var(--acc);box-shadow:0 0 0 3px rgba(255,31,45,.2);animation:none}
+:root[data-theme=nothing] #net{background:#555;box-shadow:none}
+:root[data-theme=nothing] fieldset,:root[data-theme=nothing] .rec,:root[data-theme=nothing] .anasum,:root[data-theme=nothing] .curve,:root[data-theme=nothing] #map,:root[data-theme=nothing] #pop,:root[data-theme=nothing] #gstat{background:var(--card);border:1px solid #333;border-radius:8px;box-shadow:none}
+:root[data-theme=nothing] .rec.tx{box-shadow:inset 3px 0 0 var(--acc)}
+:root[data-theme=nothing] legend{color:var(--acc);font-size:.7rem}
+:root[data-theme=nothing] input[type=text],:root[data-theme=nothing] input[type=number],:root[data-theme=nothing] input[type=search],:root[data-theme=nothing] select,:root[data-theme=nothing] textarea{background:#000;border:1px solid #3a3a3a;border-radius:4px}
+:root[data-theme=nothing] input:focus,:root[data-theme=nothing] select:focus,:root[data-theme=nothing] textarea:focus{background:#000;border-color:var(--acc);box-shadow:0 0 0 3px rgba(255,31,45,.25)}
+:root[data-theme=nothing] .seg span{background:#000;border:1px solid #3a3a3a;border-radius:4px;text-transform:uppercase;letter-spacing:.06em;font-size:.82rem}
+:root[data-theme=nothing] .seg input:checked+span{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:none}
+:root[data-theme=nothing] .btn{background:#000;border:1px solid #fff;color:#fff;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;font-size:.82rem;box-shadow:none}
+:root[data-theme=nothing] .btn:hover{border-color:var(--acc);color:var(--acc)}
+:root[data-theme=nothing] .btn.p{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:none}
+:root[data-theme=nothing] .btn.p:not(:disabled):hover{box-shadow:none;filter:brightness(1.12);color:#fff}
+:root[data-theme=nothing] .btn.d{border-color:#666;color:var(--warn);background:#000}
+:root[data-theme=nothing] #menu,:root[data-theme=nothing] #projNow{background:#000;border:1px solid #fff;border-radius:4px;color:#fff}
+:root[data-theme=nothing] #projNow::before{background:var(--acc)}
+:root[data-theme=nothing] #drawer{background:#000;border-right:1px dashed #444}
+:root[data-theme=nothing] #drawer button{background:#000;border:1px solid #333;border-radius:4px;text-transform:uppercase;letter-spacing:.06em;font-size:.8rem}
+:root[data-theme=nothing] #drawer button:hover{background:#000;border-color:var(--acc);color:var(--acc)}
+:root[data-theme=nothing] #drawer button.p{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:none}
+:root[data-theme=nothing] #drawer button.p:hover{color:#fff}
+:root[data-theme=nothing] #drTabs button[aria-selected=true]{background:#fff;border-color:#fff;color:#000;box-shadow:none}
+:root[data-theme=nothing] body.view #vM{background:var(--acc);border-color:var(--acc);color:#fff}
+:root[data-theme=nothing] #drScrim,:root[data-theme=nothing] #lb{-webkit-backdrop-filter:none;backdrop-filter:none}
+:root[data-theme=nothing] #sheet .bar,:root[data-theme=nothing] #dlSheet .bar{-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:1px dashed #444}
+:root[data-theme=nothing] #sheet,:root[data-theme=nothing] #dlSheet{background:#000;background-image:radial-gradient(rgba(255,255,255,.11) 1px,transparent 1.2px);background-size:14px 14px}
+:root[data-theme=nothing] .mb button,:root[data-theme=nothing] #mnote,:root[data-theme=nothing] #offBadge,:root[data-theme=nothing] #baseSel{background:#000;border:1px solid #fff;border-radius:4px;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;color:#fff}
+:root[data-theme=nothing] .mb button:hover{border-color:var(--acc);color:var(--acc)}
+:root[data-theme=nothing] #loc[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+:root[data-theme=nothing] .calc{background:#000;border:1px dashed #555;border-radius:4px}
+:root[data-theme=nothing] .ac,:root[data-theme=nothing] .atab i,:root[data-theme=nothing] .verdict{background:#000;border-color:#333;border-radius:4px}
+:root[data-theme=nothing] .atab i.hi{background:var(--acc);border-color:var(--acc)}
+:root[data-theme=nothing] .tag{background:#000;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+:root[data-theme=nothing] .tag.v-ok,:root[data-theme=nothing] .tag.v-warn,:root[data-theme=nothing] .tag.v-bad{background:#000}
+:root[data-theme=nothing] .stbl tr.cur td,:root[data-theme=nothing] .tbl tr.meas td{background:rgba(255,31,45,.12)}
+:root[data-theme=nothing] .thumbs img,:root[data-theme=nothing] .th img{border-radius:4px;border:1px solid #444;box-shadow:none}
+:root[data-theme=nothing] #toast{background:#fff;color:#000;border-radius:4px;box-shadow:none;text-transform:uppercase;letter-spacing:.06em;font-size:.8rem}
+:root[data-theme=nothing] #dlProg i{background:var(--acc)}
+:root[data-theme=nothing] #dlProg{background:#000;border:1px solid #333}
+:root[data-theme=nothing] #bulk{background:rgba(255,31,45,.08);border-radius:6px}
 </style>
 </head>
 <body class="mapwide">
@@ -1529,8 +1576,8 @@ function secStd(r){var p=r.pole;if(!p)return false;var pr=String(p.secondary||''
 function pinLabel(r){var t=[r.tx&&r.tx.rating?r.tx.rating+' kVA':'',r.pole.no?'Pole # '+r.pole.no:'',r.pole.material,[r.pole.primary,r.pole.secondary].filter(Boolean).join(' / ')].filter(Boolean).join(', ');return t+(r.pole.voltage!==''&&r.pole.voltage!=null?'; '+r.pole.voltage+' V':'')}
 function isDark(){return document.documentElement.dataset.theme!=='light'}
 function themeMeta(){var m=document.querySelector('meta[name=theme-color]');if(m)m.content=anaVr('--bg')}
-$('thm').textContent=isDark()?'Light theme':'Dark theme';themeMeta();
-$('thm').onclick=function(){var l=isDark();document.documentElement.dataset.theme=l?'light':'dark';try{localStorage.setItem(KEY+'.theme',l?'light':'dark')}catch(e){}$('thm').textContent=l?'Dark theme':'Light theme';GCLR=null;themeMeta();draw()};
+var THN={dark:'Dark',light:'Light',nothing:'Nothing'},THX={dark:'light',light:'nothing',nothing:'dark'};function thCur(){var t=document.documentElement.dataset.theme;return THN[t]?t:'dark'}function thLabel(){$('thm').textContent=THN[THX[thCur()]]+' theme'}thLabel();themeMeta();
+$('thm').onclick=function(){var n=THX[thCur()];document.documentElement.dataset.theme=n;try{localStorage.setItem(KEY+'.theme',n)}catch(e){}thLabel();GCLR=null;themeMeta();draw()};
 // hamburger drawer: everything that is not the map, the list or the analysis
 var dr=0,drFrom=null,drW=matchMedia('(min-width:900px)');
 function drSet(on){on=!!on;if(on===dr)return;dr=on;
